@@ -1,0 +1,47 @@
+from django.contrib import admin
+from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan
+
+
+@admin.register(TipoPago)
+class TipoPagoAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'activo']
+    list_filter = ['activo']
+    search_fields = ['nombre']
+
+
+class DetallePagoInline(admin.TabularInline):
+    model = DetallePago
+    extra = 1
+
+
+@admin.register(Pago)
+class PagoAdmin(admin.ModelAdmin):
+    list_display = ['id', 'contrato', 'usuario', 'monto', 'tipo_pago', 'estado', 'fecha_pago']
+    list_filter = ['estado', 'tipo_pago', 'fecha_pago']
+    search_fields = ['referencia', 'usuario__username']
+    inlines = [DetallePagoInline]
+
+
+@admin.register(DetallePago)
+class DetallePagoAdmin(admin.ModelAdmin):
+    list_display = ['pago', 'concepto', 'monto']
+    search_fields = ['concepto']
+
+
+@admin.register(HistorialPago)
+class HistorialPagoAdmin(admin.ModelAdmin):
+    list_display = ['pago', 'estado_anterior', 'estado_nuevo', 'usuario', 'fecha']
+    list_filter = ['estado_nuevo']
+
+
+@admin.register(TipoPlan)
+class TipoPlanAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'descripcion']
+    search_fields = ['nombre']
+
+
+@admin.register(Plan)
+class PlanAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'tipo_plan', 'precio_mensual', 'duracion_meses', 'activo']
+    list_filter = ['activo', 'tipo_plan']
+    search_fields = ['nombre']
