@@ -15,20 +15,22 @@ class RolViewSet(viewsets.ModelViewSet):
     """CRUD para roles del sistema."""
     queryset = Rol.objects.all()
     serializer_class = RolSerializer
+    permission_classes = [permissions.IsAdminUser]
 
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     """CRUD para usuarios."""
     queryset = Usuario.objects.select_related('rol').all()
+    permission_classes = [permissions.IsAdminUser] # <-- SOLO ADMINS
 
     def get_serializer_class(self):
         if self.action == 'create':
             return UsuarioCreateSerializer
         return UsuarioSerializer
 
-    @action(detail=False, methods=['get'], url_path='me')
+    @action(detail=False, methods=['get'], url_path='me', permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
-        """Retorna el perfil del usuario autenticado."""
+        """Retorna el perfil del usuario autenticado. (Cualquier usuario logueado)"""
         serializer = UsuarioSerializer(request.user)
         return Response(serializer.data)
 

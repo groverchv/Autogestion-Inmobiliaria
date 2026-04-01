@@ -8,6 +8,7 @@ import AuthLayout from './layouts/AuthLayout';
 // Pages - Public
 import Home from './pages/Public/Home';
 import Login from './pages/Public/Login';
+import Registro from './pages/Public/Registro';
 
 // Pages - Admin
 import DashboardAdmin from './pages/Admin/DashboardAdmin';
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
     element: <AuthLayout />,
     children: [
       { path: '/login', element: <Login /> },
+      { path: '/registro', element: <Registro /> },
     ],
   },
 

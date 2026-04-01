@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import Button from '../../components/Button';
 import './Login.css';
@@ -60,6 +61,14 @@ const Login = () => {
         <Button type="submit" fullWidth loading={loading}>
           Iniciar Sesión
         </Button>
+        
+        {/* 2. Agregamos la sección de Registro */}
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: '#cbd5e1' }}>
+          ¿No tienes una cuenta?{' '}
+          <Link to="/registro" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 'bold' }}>
+            Regístrate aquí
+          </Link>
+        </div>
       </form>
     </div>
   );

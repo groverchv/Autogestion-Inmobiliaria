@@ -1,0 +1,120 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Button from '../../components/Button';
+import api from '../../services/api'; 
+import './Login.css'; 
+
+const Registro = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    telefono: '',
+    ci: '', // Usamos 'ci' para que coincida exactamente con tu Backend
+    fecha_nacimiento: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      await api.post('/usuarios/registro/', formData);
+      setSuccess('¡Registro exitoso! Redirigiendo al login...');
+      
+      // Esperamos 2 segundos y lo mandamos al login
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      
+    } catch (err) {
+      setError('Error al registrar. Verifica los datos o intenta con otro usuario.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login" id="register-page">
+      <form className="login__form" onSubmit={handleSubmit}>
+        <h2 style={{ textAlign: 'center', color: 'white', marginBottom: '1.5rem' }}>Crear Cuenta</h2>
+        
+        {error && <div className="login__error">{error}</div>}
+        {success && <div style={{ background: '#10b981', color: 'white', padding: '10px', borderRadius: '5px', marginBottom: '15px', textAlign: 'center' }}>{success}</div>}
+
+        <div className="login__field">
+          <label htmlFor="username" className="login__label">Usuario</label>
+          <input id="username" type="text" className="login__input" value={formData.username} onChange={handleChange} required />
+        </div>
+
+        <div className="login__field">
+          <label htmlFor="email" className="login__label">Correo Electrónico</label>
+          <input id="email" type="email" className="login__input" value={formData.email} onChange={handleChange} required />
+        </div>
+
+        {/* Fila: Nombre y Apellido */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="login__field" style={{ flex: 1 }}>
+            <label htmlFor="first_name" className="login__label">Nombre</label>
+            <input id="first_name" type="text" className="login__input" value={formData.first_name} onChange={handleChange} required />
+          </div>
+          <div className="login__field" style={{ flex: 1 }}>
+            <label htmlFor="last_name" className="login__label">Apellido</label>
+            <input id="last_name" type="text" className="login__input" value={formData.last_name} onChange={handleChange} required />
+          </div>
+        </div>
+
+        {/* Fila: Teléfono y Cédula */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="login__field" style={{ flex: 1 }}>
+            <label htmlFor="telefono" className="login__label">Teléfono</label>
+            <input id="telefono" type="tel" className="login__input" value={formData.telefono} onChange={handleChange} />
+          </div>
+          <div className="login__field" style={{ flex: 1 }}>
+            <label htmlFor="ci" className="login__label">Cédula</label>
+            <input id="ci" type="text" className="login__input" value={formData.ci} onChange={handleChange} />
+          </div>
+        </div>
+
+        <div className="login__field">
+          <label htmlFor="fecha_nacimiento" className="login__label">Fecha de Nacimiento</label>
+          <input id="fecha_nacimiento" type="date" className="login__input" value={formData.fecha_nacimiento} onChange={handleChange} style={{ colorScheme: 'dark' }} />
+        </div>
+
+        <div className="login__field">
+          <label htmlFor="password" className="login__label">Contraseña</label>
+          <input id="password" type="password" className="login__input" value={formData.password} onChange={handleChange} required minLength="8" />
+        </div>
+
+        <Button type="submit" fullWidth loading={loading} style={{ marginTop: '10px' }}>
+          Registrarse
+        </Button>
+
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: '#cbd5e1' }}>
+          ¿Ya tienes una cuenta?{' '}
+          <Link to="/login" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 'bold' }}>
+            Inicia sesión aquí
+          </Link>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default Registro;

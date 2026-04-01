@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third party
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     # Local apps
     'usuarios',
@@ -68,12 +69,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # ─── Base de Datos ───────────────────────────────────────────────
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3'),
-        'USER': os.getenv('DB_USER', ''),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', ''),
-        'PORT': os.getenv('DB_PORT', ''),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'Inmobiliaria',       # El nombre de la base de datos que creaste
+        'USER': 'postgres',              # Tu usuario de PostgreSQL (suele ser postgres)
+        'PASSWORD': '61333148',     # La contraseña que usas en pgAdmin
+        'HOST': 'localhost',             # Déjalo así si tu base de datos está en tu compu
+        'PORT': '5432',                  # El puerto por defecto de Postgres
     }
 }
 
