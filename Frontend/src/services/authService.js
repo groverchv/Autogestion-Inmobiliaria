@@ -30,6 +30,12 @@ const authService = {
     return data;
   },
 
+  /** Actualizar perfil del usuario autenticado */
+  updateProfile: async (userData) => {
+    const { data } = await api.patch('/usuarios/lista/me/', userData);
+    return data;
+  },
+
   /** Verificar si hay token activo */
   isAuthenticated: () => {
     return !!localStorage.getItem('access_token');

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import useAuth from '../../hooks/useAuth';
+import Navbar from '../../components/Navbar';
+import UserMenu from '../../components/UserMenu';
 import './Propiedades.css';
 
 const Propiedades = () => {
@@ -61,35 +63,11 @@ const Propiedades = () => {
 
   return (
     <div className="propiedades-page">
-      <header className="propiedades-header">
-        <div className="propiedades-header__inner">
-          <Link to="/" className="propiedades-header__brand">Autogestión Inmobiliaria</Link>
-          <nav className="propiedades-header__nav">
-            <Link to="/" className="propiedades-header__link">Inicio</Link>
-            <Link to="/propiedades" className="propiedades-header__link propiedades-header__link--active">Propiedades</Link>
-            {isAuthenticated && (
-              <Link to="/favoritos" className="propiedades-header__link" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#ef4444' }}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                Mis Favoritos
-              </Link>
-            )}
-            {isAuthenticated && user?.rol === 'admin' ? (
-              <Link to="/panel/dashboard" className="propiedades-header__link propiedades-header__btn">
-                Mi Panel
-              </Link>
-            ) : !isAuthenticated ? (
-              <Link to="/login" className="propiedades-header__link propiedades-header__btn">
-                Iniciar Sesión
-              </Link>
-            ) : null}
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
-      <div className="propiedades-hero">
-        <h1>Encuentra tu Propiedad Ideal</h1>
-        <p>Explora nuestra selección de {inmuebles.length} propiedades disponibles en Bolivia</p>
-      </div>
+      {isAuthenticated && user?.rol !== 'admin' && (
+        <UserMenu />
+      )}
 
       <div className="propiedades-content">
         <div className="propiedades-filters">
@@ -167,7 +145,7 @@ const Propiedades = () => {
                     </div>
                     <div className="propiedad-card__footer">
                       <span className="propiedad-card__price">Bs. {parseFloat(inm.precio).toLocaleString()}</span>
-                      <Link to="/login" className="propiedad-card__cta">Contactar</Link>
+                      <Link to={`/propiedades/${inm.id}`} className="propiedad-card__cta">Ver detalles</Link>
                     </div>
                   </div>
                 </div>

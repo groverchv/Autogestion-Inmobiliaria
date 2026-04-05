@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuario, Agenda, Notificacion
+from .models import Usuario, Agenda, Notificacion, Chat, Mensaje
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -49,3 +49,33 @@ class NotificacionSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['id', 'creada']
         extra_kwargs = {'usuario': {'required': False}}
+
+
+class MensajeSerializer(serializers.ModelSerializer):
+    remitente_nombre = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Mensaje
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'remitente']
+
+    def get_remitente_nombre(self, obj):
+        return f'{obj.remitente.first_name} {obj.remitente.last_name}'
+
+
+class ChatSerializer(serializers.ModelSerializer):
+    participante1_nombre = serializers.CharField(source='participante1.get_full_name', read_only=True)
+    participante2_nombre = serializers.CharField(source='participante2.get_full_name', read_only=True)
+    inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+    ultimo_mensaje = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Chat
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'actualizado', 'participante1', 'participante2']
+
+    def get_ultimo_mensaje(self, obj):
+        msg = obj.mensajes.order_by('-creado').first()
+        if msg:
+            return MensajeSerializer(msg).data
+        return None

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -7,11 +7,15 @@ import AdminLayout from './layouts/AdminLayout';
 import AuthLayout from './layouts/AuthLayout';
 
 // Pages - Public
-import Home from './pages/Public/Home';
 import Login from './pages/Public/Login';
 import Registro from './pages/Public/Registro';
 import Propiedades from './pages/Public/Propiedades';
+import PropiedadDetalle from './pages/Public/PropiedadDetalle';
 import MisFavoritos from './pages/Public/MisFavoritos';
+import MisNotificaciones from './pages/Public/MisNotificaciones';
+import MiPerfil from './pages/Public/MiPerfil';
+import MisMensajes from './pages/Public/MisMensajes';
+import MisInmuebles from './pages/Public/MisInmuebles';
 
 // Pages - Admin
 import DashboardAdmin from './pages/Admin/DashboardAdmin';
@@ -35,15 +39,35 @@ const router = createBrowserRouter([
   // ─── Rutas públicas ───────────────────────────────────────
   {
     path: '/',
-    element: <Home />,
+    element: <Navigate to="/propiedades" replace />,
   },
   {
     path: '/propiedades',
     element: <Propiedades />,
   },
   {
+    path: '/propiedades/:id',
+    element: <PropiedadDetalle />,
+  },
+  {
+    path: '/mis-inmuebles',
+    element: <ProtectedRoute><MisInmuebles /></ProtectedRoute>,
+  },
+  {
     path: '/favoritos',
     element: <ProtectedRoute><MisFavoritos /></ProtectedRoute>,
+  },
+  {
+    path: '/notificaciones',
+    element: <ProtectedRoute><MisNotificaciones /></ProtectedRoute>,
+  },
+  {
+    path: '/perfil',
+    element: <ProtectedRoute><MiPerfil /></ProtectedRoute>,
+  },
+  {
+    path: '/mensajes',
+    element: <ProtectedRoute><MisMensajes /></ProtectedRoute>,
   },
 
   // ─── Rutas de autenticación ───────────────────────────────

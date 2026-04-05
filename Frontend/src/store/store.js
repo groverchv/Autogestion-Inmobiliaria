@@ -42,6 +42,18 @@ const useStore = create((set) => ({
     }
   },
 
+  updateUser: async (userData) => {
+    set({ isLoading: true });
+    try {
+      const updatedUser = await authService.updateProfile(userData);
+      set({ user: updatedUser, isLoading: false });
+      return updatedUser;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
   // ─── UI Global ────────────────────────────────────────────
   sidebarOpen: true,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),

@@ -84,3 +84,40 @@ class Notificacion(models.Model):
 
     def __str__(self):
         return f'{self.titulo} → {self.usuario.username}'
+
+class Chat(models.Model):
+    """Conversaciones entre usuarios (ej. inquilino y propietario)."""
+    participante1 = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='chats_iniciados')
+    participante2 = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='chats_recibidos')
+    inmueble = models.ForeignKey('inmuebles.Inmueble', on_delete=models.SET_NULL, null=True, blank=True, related_name='chats')
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Chat'
+        verbose_name_plural = 'Chats'
+        ordering = ['-actualizado']
+        unique_together = ('participante1', 'participante2', 'inmueble')
+
+    def __str__(self):
+        desc = f"Chat: {self.participante1.username} - {self.participante2.username}"
+        if self.inmueble:
+            desc += f" (Inm: {self.inmueble.id})"
+        return desc
+
+
+class Mensaje(models.Model):
+    """Mensaje individual en un chat."""
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='mensajes')
+    remitente = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='mensajes_enviados')
+    contenido = models.TextField()
+    leido = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Mensaje'
+        verbose_name_plural = 'Mensajes'
+        ordering = ['creado']
+
+    def __str__(self):
+        return f'Msg de {self.remitente.username} - {self.creado.strftime("%Y-%m-%d %H:%M")}'
