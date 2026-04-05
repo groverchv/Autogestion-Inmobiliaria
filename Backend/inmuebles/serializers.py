@@ -25,7 +25,7 @@ class InmuebleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Inmueble
         fields = '__all__'
-        read_only_fields = ['id', 'creado', 'actualizado']
+        read_only_fields = ['id', 'propietario', 'creado', 'actualizado']
 
 
 class InmuebleListSerializer(serializers.ModelSerializer):
@@ -43,7 +43,9 @@ class InmuebleListSerializer(serializers.ModelSerializer):
 
     def get_imagen_principal(self, obj):
         img = obj.multimedia.filter(es_principal=True).first()
-        if img:
+        if not img:
+            img = obj.multimedia.first()
+        if img and img.archivo:
             return img.archivo.url
         return None
 

@@ -28,6 +28,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'cloudinary_storage',
+    'cloudinary',
     # Local apps
     'usuarios',
     'inmuebles',
@@ -69,12 +71,8 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # ─── Base de Datos ───────────────────────────────────────────────
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Inmobiliaria',       # El nombre de la base de datos que creaste
-        'USER': 'postgres',              # Tu usuario de PostgreSQL (suele ser postgres)
-        'PASSWORD': '61333148',     # La contraseña que usas en pgAdmin
-        'HOST': 'localhost',             # Déjalo así si tu base de datos está en tu compu
-        'PORT': '5432',                  # El puerto por defecto de Postgres
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -130,3 +128,13 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# ─── Cloudinary (almacenamiento de imágenes) ───────────────────
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', 'dfnseyypi'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY', '558788328342896'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', 'fIaMCkxQRl3XHYVKQByKU68T9OI'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+

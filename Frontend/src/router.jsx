@@ -17,6 +17,8 @@ import ManageUsers from './pages/Admin/ManageUsers';
 // Pages - User
 import UserDashboard from './pages/User/UserDashboard';
 import UserProfile from './pages/User/UserProfile';
+import InmueblesList from './pages/User/InmueblesList';
+import InmuebleForm from './pages/User/InmuebleForm';
 
 /**
  * Componente de protección de rutas.
@@ -79,6 +81,9 @@ const router = createBrowserRouter([
     children: [
       { path: '/user/dashboard', element: <UserDashboard /> },
       { path: '/user/perfil', element: <UserProfile /> },
+      { path: '/user/inmuebles', element: <InmueblesList /> },
+      { path: '/user/inmuebles/nuevo', element: <InmuebleForm /> },
+      { path: '/user/inmuebles/:id/editar', element: <InmuebleForm /> },
     ],
   },
 ]);
