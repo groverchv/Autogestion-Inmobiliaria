@@ -1,7 +1,8 @@
 import api from './api';
 
 /**
- * Servicio para gestión de usuarios
+ * Servicio para gestión de usuarios.
+ * Consume desde la instancia global de api.
  */
 const userService = {
   /** Listar todos los usuarios */
@@ -31,12 +32,6 @@ const userService = {
   /** Eliminar un usuario */
   delete: async (id) => {
     await api.delete(`/usuarios/lista/${id}/`);
-  },
-
-  /** Listar roles */
-  getRoles: async () => {
-    const { data } = await api.get('/usuarios/roles/');
-    return data;
   },
 };
 

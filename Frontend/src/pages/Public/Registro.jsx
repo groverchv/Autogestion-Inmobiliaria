@@ -106,10 +106,17 @@ const Registro = () => {
           Registrarse
         </Button>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: '#cbd5e1' }}>
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
           ¿Ya tienes una cuenta?{' '}
-          <Link to="/login" style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 'bold' }}>
+          <Link to="/login" style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 'bold' }}>
             Inicia sesión aquí
+          </Link>
+        </div>
+
+        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+          <Link to="/" style={{ fontSize: '0.85rem', color: '#cbd5e1', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Volver al Inicio
           </Link>
         </div>
       </form>

@@ -2,28 +2,16 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class Rol(models.Model):
-    """Roles del sistema: admin, propietario, inquilino, agente, etc."""
-    nombre = models.CharField(max_length=50, unique=True)
-    descripcion = models.TextField(blank=True)
-
-    class Meta:
-        verbose_name = 'Rol'
-        verbose_name_plural = 'Roles'
-        ordering = ['nombre']
-
-    def __str__(self):
-        return self.nombre
-
-
 class Usuario(AbstractUser):
     """Modelo de usuario personalizado que extiende AbstractUser."""
-    rol = models.ForeignKey(
-        Rol,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='usuarios',
+    class RolesConfig(models.TextChoices):
+        ADMIN = 'admin', 'Administrador'
+        USUARIO = 'usuario', 'Usuario'
+
+    rol = models.CharField(
+        max_length=20,
+        choices=RolesConfig.choices,
+        default=RolesConfig.USUARIO,
     )
     telefono = models.CharField(max_length=20, blank=True)
     direccion = models.TextField(blank=True)

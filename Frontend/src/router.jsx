@@ -1,52 +1,49 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
+
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
-import UserLayout from './layouts/UserLayout';
 import AuthLayout from './layouts/AuthLayout';
 
 // Pages - Public
 import Home from './pages/Public/Home';
 import Login from './pages/Public/Login';
 import Registro from './pages/Public/Registro';
+import Propiedades from './pages/Public/Propiedades';
+import MisFavoritos from './pages/Public/MisFavoritos';
 
 // Pages - Admin
 import DashboardAdmin from './pages/Admin/DashboardAdmin';
 import ManageUsers from './pages/Admin/ManageUsers';
-
-// Pages - User
-import UserDashboard from './pages/User/UserDashboard';
-import UserProfile from './pages/User/UserProfile';
-import InmueblesList from './pages/User/InmueblesList';
-import InmuebleForm from './pages/User/InmuebleForm';
-
-/**
- * Componente de protección de rutas.
- */
-import useStore from './store/store';
-
-const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user } = useStore();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && user && !allowedRoles.includes(user.rol_nombre)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-};
+import ManageCategorias from './pages/Admin/ManageCategorias';
+import ManageInmuebles from './pages/Admin/ManageInmuebles';
+import ManageContratos from './pages/Admin/ManageContratos';
+import ManagePagos from './pages/Admin/ManagePagos';
+import ManageTipoPagos from './pages/Admin/ManageTipoPagos';
+import ManageHistorialPagos from './pages/Admin/ManageHistorialPagos';
+import ManageAgenda from './pages/Admin/ManageAgenda';
+import ManageNotificaciones from './pages/Admin/ManageNotificaciones';
+import ManageFavoritos from './pages/Admin/ManageFavoritos';
 
 /**
  * Enrutador principal de la aplicación.
+ * SOLO el admin puede acceder al panel (/panel/*).
+ * Los usuarios solo ven las páginas públicas.
  */
 const router = createBrowserRouter([
   // ─── Rutas públicas ───────────────────────────────────────
   {
     path: '/',
     element: <Home />,
+  },
+  {
+    path: '/propiedades',
+    element: <Propiedades />,
+  },
+  {
+    path: '/favoritos',
+    element: <ProtectedRoute><MisFavoritos /></ProtectedRoute>,
   },
 
   // ─── Rutas de autenticación ───────────────────────────────
@@ -58,32 +55,26 @@ const router = createBrowserRouter([
     ],
   },
 
-  // ─── Rutas de administrador ───────────────────────────────
+  // ─── Panel Administrativo (SOLO ADMIN) ────────────────────
   {
+    path: '/panel',
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
         <AdminLayout />
       </ProtectedRoute>
     ),
     children: [
-      { path: '/admin/dashboard', element: <DashboardAdmin /> },
-      { path: '/admin/usuarios', element: <ManageUsers /> },
-    ],
-  },
-
-  // ─── Rutas de usuario ─────────────────────────────────────
-  {
-    element: (
-      <ProtectedRoute>
-        <UserLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { path: '/user/dashboard', element: <UserDashboard /> },
-      { path: '/user/perfil', element: <UserProfile /> },
-      { path: '/user/inmuebles', element: <InmueblesList /> },
-      { path: '/user/inmuebles/nuevo', element: <InmuebleForm /> },
-      { path: '/user/inmuebles/:id/editar', element: <InmuebleForm /> },
+      { path: 'dashboard', element: <DashboardAdmin /> },
+      { path: 'usuarios', element: <ManageUsers /> },
+      { path: 'inmuebles', element: <ManageInmuebles /> },
+      { path: 'categorias', element: <ManageCategorias /> },
+      { path: 'contratos', element: <ManageContratos /> },
+      { path: 'pagos', element: <ManagePagos /> },
+      { path: 'tipo-pagos', element: <ManageTipoPagos /> },
+      { path: 'historial-pagos', element: <ManageHistorialPagos /> },
+      { path: 'agenda', element: <ManageAgenda /> },
+      { path: 'notificaciones', element: <ManageNotificaciones /> },
+      { path: 'favoritos', element: <ManageFavoritos /> },
     ],
   },
 ]);

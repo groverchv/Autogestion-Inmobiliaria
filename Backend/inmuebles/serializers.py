@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision
+from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Favorito
 
 
 class TipoInmuebleSerializer(serializers.ModelSerializer):
@@ -31,6 +31,7 @@ class InmuebleSerializer(serializers.ModelSerializer):
 class InmuebleListSerializer(serializers.ModelSerializer):
     """Serializer ligero para listados."""
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
+    is_favorito = serializers.SerializerMethodField()
     imagen_principal = serializers.SerializerMethodField()
 
     class Meta:
@@ -38,15 +39,29 @@ class InmuebleListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'titulo', 'tipo_nombre', 'ciudad', 'zona',
             'precio', 'estado', 'habitaciones', 'banos',
-            'imagen_principal', 'creado',
+            'imagen_principal', 'creado', 'is_favorito',
         ]
 
+    def get_is_favorito(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        # Verificación directa por ID para evitar problemas de LazyObjects
+        return Favorito.objects.filter(usuario_id=request.user.id, inmueble_id=obj.id).exists()
+
     def get_imagen_principal(self, obj):
-        img = obj.multimedia.filter(es_principal=True).first()
-        if not img:
-            img = obj.multimedia.first()
-        if img and img.archivo:
-            return img.archivo.url
+        try:
+            img = obj.multimedia.filter(es_principal=True).first()
+            if not img:
+                img = obj.multimedia.first()
+            
+            if img and img.archivo:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(img.archivo.url)
+                return img.archivo.url
+        except Exception:
+            pass
         return None
 
 
@@ -76,3 +91,12 @@ class ComisionSerializer(serializers.ModelSerializer):
         model = Comision
         fields = '__all__'
         read_only_fields = ['id', 'fecha']
+
+
+class FavoritoSerializer(serializers.ModelSerializer):
+    inmueble_data = InmuebleListSerializer(source='inmueble', read_only=True)
+
+    class Meta:
+        model = Favorito
+        fields = ['id', 'inmueble', 'inmueble_data', 'creado']
+        read_only_fields = ['id', 'creado']

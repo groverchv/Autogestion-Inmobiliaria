@@ -1,15 +1,9 @@
 from rest_framework import serializers
-from .models import Rol, Usuario, Agenda, Notificacion
-
-
-class RolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rol
-        fields = '__all__'
+from .models import Usuario, Agenda, Notificacion
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
-    rol_nombre = serializers.CharField(source='rol.nombre', read_only=True)
+    rol_nombre = serializers.CharField(source='get_rol_display', read_only=True)
 
     class Meta:
         model = Usuario
@@ -46,6 +40,7 @@ class AgendaSerializer(serializers.ModelSerializer):
         model = Agenda
         fields = '__all__'
         read_only_fields = ['id', 'creado']
+        extra_kwargs = {'usuario': {'required': False}}
 
 
 class NotificacionSerializer(serializers.ModelSerializer):
@@ -53,3 +48,4 @@ class NotificacionSerializer(serializers.ModelSerializer):
         model = Notificacion
         fields = '__all__'
         read_only_fields = ['id', 'creada']
+        extra_kwargs = {'usuario': {'required': False}}

@@ -17,11 +17,12 @@ const useAuth = () => {
 
   const handleLogin = async (username, password) => {
     const user = await login(username, password);
-    // Redirigir según rol
-    if (user.rol_nombre === 'admin') {
-      navigate('/admin/dashboard');
+    const role = user?.rol?.toLowerCase() || '';
+    
+    if (role === 'admin') {
+      navigate('/panel/dashboard');
     } else {
-      navigate('/user/dashboard');
+      navigate('/propiedades');
     }
     return user;
   };

@@ -1,11 +1,8 @@
 from django.contrib import admin
-from .models import Rol, Usuario, Agenda, Notificacion
+from .models import Usuario, Agenda, Notificacion
 
 
-@admin.register(Rol)
-class RolAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'descripcion']
-    search_fields = ['nombre']
+
 
 
 @admin.register(Usuario)

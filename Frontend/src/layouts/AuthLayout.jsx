@@ -10,7 +10,7 @@ const AuthLayout = () => {
       <div className="auth-layout__bg" />
       <div className="auth-layout__card">
         <div className="auth-layout__header">
-          <span className="auth-layout__icon">🏠</span>
+          <span className="auth-layout__icon"></span>
           <h1 className="auth-layout__title">Autogestión Inmobiliaria</h1>
           <p className="auth-layout__subtitle">Plataforma de gestión de propiedades</p>
         </div>

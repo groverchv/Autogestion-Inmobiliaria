@@ -17,6 +17,9 @@ router.register(r'historial', HistorialPagoViewSet)
 router.register(r'tipos-plan', TipoPlanViewSet)
 router.register(r'planes', PlanViewSet)
 
+router.register(r'panel/lista', PagoViewSet, basename='panel-pagos')
+router.register(r'panel/historial', HistorialPagoViewSet, basename='panel-historial')
+
 urlpatterns = [
     path('', include(router.urls)),
 ]

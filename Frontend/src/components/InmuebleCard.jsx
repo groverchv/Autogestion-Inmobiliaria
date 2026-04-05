@@ -43,7 +43,7 @@ const InmuebleCard = ({ inmueble, onEdit, onDelete }) => {
             loading="lazy"
           />
         ) : (
-          <div className="inmueble-card__placeholder">🏠</div>
+          <div className="inmueble-card__placeholder">Imagen No Disponible</div>
         )}
 
         <span className={`inmueble-card__badge inmueble-card__badge--${estado}`}>
@@ -58,11 +58,11 @@ const InmuebleCard = ({ inmueble, onEdit, onDelete }) => {
         )}
         <h3 className="inmueble-card__titulo">{titulo}</h3>
         <p className="inmueble-card__location">
-          📍 {ciudad}{zona ? `, ${zona}` : ''}
+          {ciudad}{zona ? `, ${zona}` : ''}
         </p>
         <div className="inmueble-card__features">
-          <span>🛏 {habitaciones}</span>
-          <span>🚿 {banos}</span>
+          <span>{habitaciones} Hab.</span>
+          <span>{banos} Baños</span>
         </div>
       </div>
 
@@ -73,10 +73,10 @@ const InmuebleCard = ({ inmueble, onEdit, onDelete }) => {
         </span>
         <div className="inmueble-card__actions">
           <Button variant="ghost" size="sm" onClick={() => onEdit(id)}>
-            ✏️ Editar
+            Editar
           </Button>
           <Button variant="danger" size="sm" onClick={() => onDelete(inmueble)}>
-            🗑 Eliminar
+            Eliminar
           </Button>
         </div>
       </div>

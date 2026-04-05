@@ -180,3 +180,27 @@ class Comision(models.Model):
 
     def __str__(self):
         return f'Comisión {self.porcentaje}% — Contrato {self.contrato.id}'
+
+
+class Favorito(models.Model):
+    """Inmuebles marcados como favoritos por los usuarios."""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='favoritos',
+    )
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='favoritos_por_usuarios',
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Favorito'
+        verbose_name_plural = 'Favoritos'
+        unique_together = ('usuario', 'inmueble')
+        ordering = ['-creado']
+
+    def __str__(self):
+        return f'{self.usuario.username} — {self.inmueble.titulo}'

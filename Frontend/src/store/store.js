@@ -37,7 +37,7 @@ const useStore = create((set) => ({
       set({ isLoading: true });
       const user = await authService.getProfile();
       set({ user, isAuthenticated: true, isLoading: false });
-    } catch {
+    } catch (error) {
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },

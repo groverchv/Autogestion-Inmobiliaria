@@ -1,9 +1,8 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Rol, Usuario, Agenda, Notificacion
+from .models import Usuario, Agenda, Notificacion
 from .serializers import (
-    RolSerializer,
     UsuarioSerializer,
     UsuarioCreateSerializer,
     AgendaSerializer,
@@ -11,17 +10,10 @@ from .serializers import (
 )
 
 
-class RolViewSet(viewsets.ModelViewSet):
-    """CRUD para roles del sistema."""
-    queryset = Rol.objects.all()
-    serializer_class = RolSerializer
-    permission_classes = [permissions.IsAdminUser]
-
-
 class UsuarioViewSet(viewsets.ModelViewSet):
     """CRUD para usuarios."""
-    queryset = Usuario.objects.select_related('rol').all()
-    permission_classes = [permissions.IsAdminUser] # <-- SOLO ADMINS
+    queryset = Usuario.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -30,7 +22,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='me', permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
-        """Retorna el perfil del usuario autenticado. (Cualquier usuario logueado)"""
+        """Retorna el perfil del usuario autenticado."""
         serializer = UsuarioSerializer(request.user)
         return Response(serializer.data)
 
@@ -53,20 +45,40 @@ class RegistroView(viewsets.GenericViewSet):
 class AgendaViewSet(viewsets.ModelViewSet):
     """CRUD para eventos de agenda."""
     serializer_class = AgendaSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Agenda.objects.filter(usuario=self.request.user)
+        user = self.request.user
+        # Admin ve todas las agendas
+        if user.is_staff or user.rol == 'admin':
+            return Agenda.objects.all()
+        return Agenda.objects.filter(usuario=user)
 
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+        # Si no manda usuario, asigna el autenticado
+        if 'usuario' not in serializer.validated_data:
+            serializer.save(usuario=self.request.user)
+        else:
+            serializer.save()
 
 
 class NotificacionViewSet(viewsets.ModelViewSet):
     """CRUD para notificaciones."""
     serializer_class = NotificacionSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notificacion.objects.filter(usuario=self.request.user)
+        user = self.request.user
+        # Admin ve todas las notificaciones
+        if user.is_staff or user.rol == 'admin':
+            return Notificacion.objects.all()
+        return Notificacion.objects.filter(usuario=user)
+
+    def perform_create(self, serializer):
+        if 'usuario' not in serializer.validated_data:
+            serializer.save(usuario=self.request.user)
+        else:
+            serializer.save()
 
     @action(detail=False, methods=['post'], url_path='marcar-leidas')
     def marcar_leidas(self, request):

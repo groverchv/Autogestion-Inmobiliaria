@@ -1,135 +1,265 @@
 import os
 import django
 from decimal import Decimal
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from usuarios.models import Rol, Usuario
-from inmuebles.models import TipoInmueble, Inmueble, TipoContrato, Contrato
-from pagos.models import TipoPago, Pago, TipoPlan, Plan
+from usuarios.models import Usuario, Agenda, Notificacion
+from inmuebles.models import TipoInmueble, Inmueble, TipoContrato, Contrato, Multimedia
+from pagos.models import TipoPago, Pago, HistorialPago
 
 def create_seed_data():
-    print("Creando datos semilla...")
+    print("Creando datos semilla completos...")
 
-    # Roles
-    rol_admin, _ = Rol.objects.get_or_create(nombre='Admin', descripcion='Administrador del sistema')
-    rol_prop, _ = Rol.objects.get_or_create(nombre='Propietario', descripcion='Propietario de inmuebles')
-    rol_inq, _ = Rol.objects.get_or_create(nombre='Inquilino', descripcion='Inquilino de inmuebles')
-
-    # Usuarios
+    # ═══════════════════════════════════════════════════════════
+    #  USUARIOS
+    # ═══════════════════════════════════════════════════════════
     if not Usuario.objects.filter(username='admin').exists():
-        admin = Usuario.objects.create_superuser('admin', 'admin@example.com', 'admin123', rol=rol_admin)
-        print("Superuser creado: admin / admin123")
+        admin = Usuario.objects.create_superuser(
+            'admin', 'admin@autogestion.bo', 'admin123',
+            rol='admin', first_name='Carlos', last_name='Mendoza',
+            ci='9876543', telefono='71234567',
+        )
+        print("  Superuser: admin / admin123")
     else:
         admin = Usuario.objects.get(username='admin')
 
-    propietario, created_prop = Usuario.objects.get_or_create(
-        username='propietario1',
-        defaults={
-            'email': 'propietario@example.com',
-            'first_name': 'Juan',
-            'last_name': 'Perez',
-            'rol': rol_prop
-        }
-    )
-    if created_prop:
-        propietario.set_password('usuario123')
-        propietario.save()
-        print("Propietario creado: propietario1 / usuario123")
-
-    inquilino, created_inq = Usuario.objects.get_or_create(
-        username='inquilino1',
-        defaults={
-            'email': 'inquilino@example.com',
-            'first_name': 'Maria',
-            'last_name': 'Gomez',
-            'rol': rol_inq
-        }
-    )
-    if created_inq:
-        inquilino.set_password('usuario123')
-        inquilino.save()
-        print("Inquilino creado: inquilino1 / usuario123")
-
-    # Tipos de Inmueble
-    tipo_casa, _ = TipoInmueble.objects.get_or_create(nombre='Casa')
-    tipo_depa, _ = TipoInmueble.objects.get_or_create(nombre='Departamento')
-
-    # Inmuebles
-    inmueble1, _ = Inmueble.objects.get_or_create(
-        titulo='Hermosa Casa en Zona Sur',
-        defaults={
-            'propietario': propietario,
-            'tipo': tipo_casa,
-            'descripcion': 'Casa amplia con 3 cuartos y piscina.',
-            'direccion': 'Av. Principal 123',
-            'ciudad': 'La Paz',
-            'zona': 'Sur',
-            'precio': Decimal('150000.00'),
-            'superficie': Decimal('250.00'),
-            'habitaciones': 3,
-            'banos': 2,
-            'garaje': True,
-            'estado': 'disponible'
-        }
-    )
-
-    inmueble2, _ = Inmueble.objects.get_or_create(
-        titulo='Departamento Centrico',
-        defaults={
-            'propietario': propietario,
-            'tipo': tipo_depa,
-            'descripcion': 'Lindo departamento tipo estudio.',
-            'direccion': 'San Jorge 456',
-            'ciudad': 'La Paz',
-            'zona': 'Centro',
-            'precio': Decimal('85000.00'),
-            'superficie': Decimal('70.00'),
-            'habitaciones': 1,
-            'banos': 1,
-            'garaje': False,
-            'estado': 'disponible'
-        }
-    )
-
-    # Tipos de contrato y otros
-    tipo_venta, _ = TipoContrato.objects.get_or_create(nombre='Venta')
-    tipo_alq, _ = TipoContrato.objects.get_or_create(nombre='Alquiler')
-    tipo_pago_efectivo, _ = TipoPago.objects.get_or_create(nombre='Efectivo')
-
-    # Contrato (Alquiler para el inquilino1 en inmueble2)
-    contrato1, created_cont = Contrato.objects.get_or_create(
-        inmueble=inmueble2,
-        inquilino=inquilino,
-        defaults={
-            'tipo_contrato': tipo_alq,
-            'fecha_inicio': date.today(),
-            'fecha_fin': date.today() + timedelta(days=365),
-            'monto': Decimal('2500.00'),
-            'deposito': Decimal('2500.00'),
-            'estado': 'activo',
-        }
-    )
-    if created_cont:
-        inmueble2.estado = 'ocupado'
-        inmueble2.save()
-        print("Contrato creado para Departamento Centrico")
-
-    # Pago
-    if created_cont:
-        Pago.objects.create(
-            contrato=contrato1,
-            tipo_pago=tipo_pago_efectivo,
-            usuario=inquilino,
-            monto=Decimal('2500.00'),
-            fecha_pago=date.today(),
-            estado='completado'
+    usuarios_data = [
+        ('jpropietario', 'juan@mail.com', 'Juan', 'Pérez', 'usuario', '1234567', '70011001', date(1985, 3, 15)),
+        ('mpropietaria', 'maria@mail.com', 'María', 'Torres', 'usuario', '2345678', '70022002', date(1990, 7, 22)),
+        ('ragente', 'roberto@mail.com', 'Roberto', 'Flores', 'usuario', '3456789', '70033003', date(1988, 1, 10)),
+        ('ccliente', 'carla@mail.com', 'Carla', 'Gutiérrez', 'usuario', '4567890', '70044004', date(1995, 5, 28)),
+        ('dcliente', 'diego@mail.com', 'Diego', 'Quispe', 'usuario', '5678901', '70055005', date(1992, 11, 3)),
+        ('ainquilino', 'ana@mail.com', 'Ana', 'Morales', 'usuario', '6789012', '70066006', date(1993, 9, 12)),
+        ('linquilino', 'luis@mail.com', 'Luis', 'Choque', 'usuario', '7890123', '70077007', date(1991, 4, 8)),
+        ('emoderador', 'elena@mail.com', 'Elena', 'Vargas', 'usuario', '8901234', '70088008', date(1987, 6, 20)),
+        ('ssoporte', 'sofia@mail.com', 'Sofía', 'Salazar', 'usuario', '9012345', '70099009', date(1994, 2, 14)),
+        ('pagente', 'pedro@mail.com', 'Pedro', 'Mamani', 'usuario', '0123456', '70100010', date(1986, 8, 1)),
+    ]
+    users = {'admin': admin}
+    for uname, email, fn, ln, rol_n, ci, tel, fnac in usuarios_data:
+        user, created = Usuario.objects.get_or_create(
+            username=uname,
+            defaults={
+                'email': email, 'first_name': fn, 'last_name': ln,
+                'rol': rol_n, 'ci': ci, 'telefono': tel,
+                'fecha_nacimiento': fnac,
+            }
         )
-        print("Pago inicial de alquiler registrado.")
+        if created:
+            user.set_password('usuario123')
+            user.save()
+        users[uname] = user
+    print(f"  Usuarios creados: {len(users)}")
 
-    print("✅ Datos semilla creados exitosamente.")
+    # ═══════════════════════════════════════════════════════════
+    #  TIPOS DE INMUEBLE (Categorías)
+    # ═══════════════════════════════════════════════════════════
+    categorias_data = [
+        ('Casa', 'Vivienda unifamiliar independiente.'),
+        ('Departamento', 'Unidad habitacional dentro de un edificio.'),
+        ('Terreno', 'Lote de tierra sin construcción.'),
+        ('Oficina', 'Espacio comercial para actividades empresariales.'),
+        ('Local Comercial', 'Espacio para tiendas, restaurantes o negocios.'),
+        ('Loft', 'Espacio abierto con diseño industrial moderno.'),
+        ('Garzoniere', 'Departamento tipo estudio pequeño.'),
+    ]
+    tipos = {}
+    for nombre, desc in categorias_data:
+        tipo, _ = TipoInmueble.objects.get_or_create(nombre=nombre, defaults={'descripcion': desc})
+        tipos[nombre] = tipo
+    print(f"  Categorías: {len(tipos)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  20 INMUEBLES
+    # ═══════════════════════════════════════════════════════════
+    inmuebles_data = [
+        ('Casa Moderna Zona Sur', 'jpropietario', 'Casa', 'Amplia casa moderna con acabados premium, piscina y jardín.', 'Av. Los Sauces 120, Calacoto', 'La Paz', 'Sur', 285000, 350, 4, 3, True, 'disponible'),
+        ('Depto Miraflores 2 Hab', 'jpropietario', 'Departamento', 'Departamento céntrico con vista a la ciudad, 2 dormitorios.', 'Calle Indaburo 456', 'La Paz', 'Miraflores', 95000, 85, 2, 1, False, 'disponible'),
+        ('Terreno Mallasa 500m²', 'mpropietaria', 'Terreno', 'Terreno plano con acceso a agua y electricidad, ideal para construcción.', 'Camino a Mallasa Km 5', 'La Paz', 'Mallasa', 45000, 500, 0, 0, False, 'disponible'),
+        ('Oficina Prado Centro', 'mpropietaria', 'Oficina', 'Oficina ejecutiva en el corazón del Prado, amoblada.', 'Av. 16 de Julio 1234', 'La Paz', 'Centro', 120000, 60, 0, 1, False, 'disponible'),
+        ('Casa Colonial San Jorge', 'jpropietario', 'Casa', 'Hermosa casa colonial restaurada con patio interno.', 'Calle Rosendo Gutiérrez 789', 'La Paz', 'San Jorge', 350000, 420, 5, 4, True, 'ocupado'),
+        ('Local Comercial Sopocachi', 'mpropietaria', 'Local Comercial', 'Local con vitrina amplia y alto tráfico peatonal.', 'Av. 6 de Agosto 2345', 'La Paz', 'Sopocachi', 180000, 90, 0, 1, False, 'disponible'),
+        ('Garzoniere Estudiantil', 'ragente', 'Garzoniere', 'Departamento pequeño ideal para estudiantes universitarios.', 'Calle Landaeta 567', 'La Paz', 'San Pedro', 38000, 35, 1, 1, False, 'disponible'),
+        ('Loft Industrial El Alto', 'ragente', 'Loft', 'Loft con techos altos y grandes ventanales, estilo industrial.', 'Av. Juan Pablo II 890', 'El Alto', 'Distrito 1', 65000, 110, 1, 1, True, 'disponible'),
+        ('Casa Familiar Achumani', 'jpropietario', 'Casa', 'Casa espaciosa en urbanización cerrada con seguridad 24h.', 'Calle 21 de Achumani 234', 'La Paz', 'Achumani', 220000, 280, 4, 3, True, 'disponible'),
+        ('Depto Penthouse Calacoto', 'mpropietaria', 'Departamento', 'Penthouse de lujo con terraza panorámica y jacuzzi.', 'Av. Ballivián 3456', 'La Paz', 'Calacoto', 450000, 200, 3, 3, True, 'reservado'),
+        ('Terreno Urbanización Norte', 'pagente', 'Terreno', 'Terreno en nueva urbanización con todos los servicios básicos.', 'Urbanización Los Álamos, Lote 15', 'La Paz', 'Norte', 32000, 300, 0, 0, False, 'disponible'),
+        ('Oficina Coworking Centro', 'pagente', 'Oficina', 'Espacio de coworking con internet de alta velocidad y salas de reunión.', 'Calle Comercio 678', 'La Paz', 'Centro', 55000, 45, 0, 1, False, 'disponible'),
+        ('Casa con Jardín Seguencoma', 'jpropietario', 'Casa', 'Casa con amplio jardín trasero, cocina americana y lavandería.', 'Calle 8 de Seguencoma 345', 'La Paz', 'Seguencoma', 195000, 240, 3, 2, True, 'disponible'),
+        ('Depto Nuevo San Miguel', 'mpropietaria', 'Departamento', 'Departamento a estrenar en edificio con ascensor y parqueo.', 'Av. Montenegro 1234', 'La Paz', 'San Miguel', 130000, 95, 2, 2, True, 'disponible'),
+        ('Local Gastronómico El Prado', 'ragente', 'Local Comercial', 'Local con cocina industrial instalada, perfecto para restaurante.', 'Av. Mariscal Santa Cruz 456', 'La Paz', 'Centro', 200000, 120, 0, 2, False, 'disponible'),
+        ('Casa Minimalista Obrajes', 'pagente', 'Casa', 'Casa de diseño minimalista con eficiencia energética solar.', 'Calle 14 de Obrajes 567', 'La Paz', 'Obrajes', 310000, 300, 3, 2, True, 'disponible'),
+        ('Terreno Esquina Comercial', 'mpropietaria', 'Terreno', 'Terreno en esquina, ideal para proyecto comercial o multifamiliar.', 'Av. Panorámica Km 3', 'El Alto', 'Distrito 4', 78000, 800, 0, 0, False, 'disponible'),
+        ('Garzoniere Premium Centro', 'ragente', 'Garzoniere', 'Garzoniere totalmente amoblada con vista al Illimani.', 'Calle Mercado 890', 'La Paz', 'Centro', 52000, 40, 1, 1, False, 'ocupado'),
+        ('Depto Familiar Irpavi', 'jpropietario', 'Departamento', 'Departamento familiar cerca de colegios y supermercados.', 'Calle 3 de Irpavi 123', 'La Paz', 'Irpavi', 115000, 110, 3, 2, True, 'disponible'),
+        ('Loft Artístico Sopocachi', 'pagente', 'Loft', 'Loft de estilo artístico con galería incorporada.', 'Calle Guachalla 456', 'La Paz', 'Sopocachi', 88000, 95, 2, 1, False, 'disponible'),
+    ]
+    inmuebles = {}
+    for titulo, prop, tipo_n, desc, dir_, ciudad, zona, precio, sup, hab, banos, garaje, estado in inmuebles_data:
+        inm, _ = Inmueble.objects.get_or_create(
+            titulo=titulo,
+            defaults={
+                'propietario': users[prop], 'tipo': tipos[tipo_n],
+                'descripcion': desc, 'direccion': dir_, 'ciudad': ciudad,
+                'zona': zona, 'precio': Decimal(str(precio)),
+                'superficie': Decimal(str(sup)), 'habitaciones': hab,
+                'banos': banos, 'garaje': garaje, 'estado': estado,
+            }
+        )
+        inmuebles[titulo] = inm
+    print(f"  Inmuebles: {len(inmuebles)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  TIPOS DE CONTRATO
+    # ═══════════════════════════════════════════════════════════
+    tipos_contrato_data = [
+        ('Alquiler', 'Contrato de arrendamiento mensual o anual.'),
+        ('Venta', 'Contrato de compraventa de inmueble.'),
+        ('Anticrético', 'Contrato de anticresis con depósito como garantía.'),
+        ('Contrato Mixto', 'Combinación de alquiler con opción de compra.'),
+    ]
+    t_contratos = {}
+    for nombre, desc in tipos_contrato_data:
+        tc, _ = TipoContrato.objects.get_or_create(nombre=nombre, defaults={'descripcion': desc})
+        t_contratos[nombre] = tc
+    print(f"  Tipos de Contrato: {len(t_contratos)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  CONTRATOS
+    # ═══════════════════════════════════════════════════════════
+    contratos_data = [
+        ('Casa Colonial San Jorge', 'ainquilino', 'Alquiler', 0, 365, 3500, 7000, 'activo'),
+        ('Garzoniere Premium Centro', 'linquilino', 'Alquiler', -30, 335, 1800, 3600, 'activo'),
+        ('Depto Miraflores 2 Hab', 'ccliente', 'Anticrético', -60, 305, 0, 25000, 'activo'),
+        ('Casa Moderna Zona Sur', 'dcliente', 'Venta', -90, 0, 285000, 0, 'pendiente'),
+        ('Depto Penthouse Calacoto', 'ainquilino', 'Contrato Mixto', -15, 350, 5000, 15000, 'activo'),
+    ]
+    contratos = {}
+    for inm_titulo, inq_uname, tipo_c, offset_ini, dur, monto, dep, estado in contratos_data:
+        c, created = Contrato.objects.get_or_create(
+            inmueble=inmuebles[inm_titulo], inquilino=users[inq_uname],
+            defaults={
+                'tipo_contrato': t_contratos[tipo_c],
+                'fecha_inicio': date.today() + timedelta(days=offset_ini),
+                'fecha_fin': date.today() + timedelta(days=offset_ini + dur) if dur > 0 else None,
+                'monto': Decimal(str(monto)), 'deposito': Decimal(str(dep)),
+                'estado': estado,
+            }
+        )
+        contratos[inm_titulo] = c
+    print(f"  Contratos: {len(contratos)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  TIPOS DE PAGO
+    # ═══════════════════════════════════════════════════════════
+    tipos_pago_data = [
+        ('Efectivo', 'Pago en efectivo en oficina.', True),
+        ('Transferencia Bancaria', 'Transferencia a cuenta del propietario.', True),
+        ('QR', 'Pago mediante código QR.', True),
+        ('Tarjeta de Crédito', 'Pago con tarjeta de crédito o débito.', True),
+        ('Cheque', 'Pago mediante cheque bancario.', False),
+    ]
+    t_pagos = {}
+    for nombre, desc, activo in tipos_pago_data:
+        tp, _ = TipoPago.objects.get_or_create(nombre=nombre, defaults={'descripcion': desc, 'activo': activo})
+        t_pagos[nombre] = tp
+    print(f"  Tipos de Pago: {len(t_pagos)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  PAGOS
+    # ═══════════════════════════════════════════════════════════
+    pagos_data = [
+        ('Casa Colonial San Jorge', 'ainquilino', 'Efectivo', 3500, 0, 'completado', 'Pago mes 1'),
+        ('Casa Colonial San Jorge', 'ainquilino', 'Transferencia Bancaria', 3500, -30, 'completado', 'Pago mes 2'),
+        ('Casa Colonial San Jorge', 'ainquilino', 'QR', 3500, -60, 'completado', 'Pago mes 3'),
+        ('Garzoniere Premium Centro', 'linquilino', 'Efectivo', 1800, 0, 'completado', 'Primer mes'),
+        ('Garzoniere Premium Centro', 'linquilino', 'Transferencia Bancaria', 1800, -30, 'pendiente', 'Segundo mes'),
+        ('Depto Penthouse Calacoto', 'ainquilino', 'Tarjeta de Crédito', 5000, -5, 'completado', 'Cuota mensual'),
+        ('Depto Penthouse Calacoto', 'ainquilino', 'QR', 5000, -35, 'completado', 'Cuota anterior'),
+        ('Casa Moderna Zona Sur', 'dcliente', 'Transferencia Bancaria', 50000, -10, 'completado', 'Adelanto venta'),
+    ]
+    pagos = []
+    for inm_titulo, usr, tp_nombre, monto, offset, estado, obs in pagos_data:
+        if inm_titulo in contratos:
+            pago, created = Pago.objects.get_or_create(
+                contrato=contratos[inm_titulo],
+                usuario=users[usr],
+                fecha_pago=date.today() + timedelta(days=offset),
+                monto=Decimal(str(monto)),
+                defaults={
+                    'tipo_pago': t_pagos[tp_nombre], 'estado': estado,
+                    'observaciones': obs,
+                }
+            )
+            pagos.append(pago)
+    print(f"  Pagos: {len(pagos)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  HISTORIAL DE PAGOS
+    # ═══════════════════════════════════════════════════════════
+    for pago in pagos[:4]:
+        HistorialPago.objects.get_or_create(
+            pago=pago, estado_anterior='pendiente', estado_nuevo='completado',
+            defaults={'comentario': 'Pago verificado y aprobado.', 'usuario': admin}
+        )
+    print("  Historial de pagos generado.")
+
+    # ═══════════════════════════════════════════════════════════
+    #  AGENDA
+    # ═══════════════════════════════════════════════════════════
+    agenda_data = [
+        ('admin', 'Reunión con propietarios', 'Reunión mensual de revisión de propiedades.', 1, 2, 'Oficina Central', False),
+        ('admin', 'Inspección casa Achumani', 'Verificar estado del inmueble antes de publicar.', 3, 4, 'Achumani, La Paz', False),
+        ('ragente', 'Visita con cliente a Depto Miraflores', 'Carla Gutiérrez quiere ver el departamento.', 2, 3, 'Calle Indaburo 456, Miraflores', False),
+        ('jpropietario', 'Firmar contrato alquiler', 'Firma de contrato con nuevo inquilino para casa colonial.', 5, 6, 'Notaría San Jorge', False),
+        ('ainquilino', 'Pago alquiler mensual', 'Recordatorio de pago del alquiler.', 0, 0, 'Banco Unión', False),
+        ('pagente', 'Sesión fotográfica Loft', 'Tomar fotos profesionales del loft en Sopocachi.', 4, 5, 'Calle Guachalla 456', False),
+        ('emoderador', 'Revisión publicaciones pendientes', 'Revisar 5 inmuebles nuevos por aprobar.', 1, 2, 'Remoto', False),
+        ('admin', 'Capacitación nuevo agente', 'Capacitar a nuevo agente en el uso del sistema.', 7, 9, 'Oficina Central', False),
+    ]
+    for usr, titulo, desc, di, df, ubic, comp in agenda_data:
+        Agenda.objects.get_or_create(
+            usuario=users[usr], titulo=titulo,
+            defaults={
+                'descripcion': desc,
+                'fecha_inicio': datetime.now() + timedelta(days=di, hours=9),
+                'fecha_fin': datetime.now() + timedelta(days=df, hours=11),
+                'ubicacion': ubic, 'completado': comp,
+            }
+        )
+    print(f"  Eventos de agenda: {len(agenda_data)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  NOTIFICACIONES
+    # ═══════════════════════════════════════════════════════════
+    notif_data = [
+        ('ainquilino', 'pago', 'Pago de alquiler pendiente', 'Tu pago de alquiler de Bs. 3,500 vence en 3 días.'),
+        ('linquilino', 'recordatorio', 'Vence tu contrato', 'Tu contrato de alquiler vence el próximo mes. Contacta al propietario.'),
+        ('jpropietario', 'info', 'Nueva solicitud de visita', 'Carla Gutiérrez solicita visitar tu propiedad en Miraflores.'),
+        ('mpropietaria', 'info', 'Inmueble destacado', 'Tu Depto Penthouse Calacoto fue destacado en el portal esta semana.'),
+        ('ccliente', 'alerta', 'Precio actualizado', 'El inmueble Casa Moderna Zona Sur actualizó su precio.'),
+        ('dcliente', 'info', 'Documentación pendiente', 'Necesitas subir tu CI y comprobante de ingresos para completar la compra.'),
+        ('ragente', 'recordatorio', 'Visita programada mañana', 'Tienes una visita programada con Carla al Depto Miraflores.'),
+        ('admin', 'alerta', 'Nuevo usuario registrado', 'Se registró un nuevo usuario: Pedro Mamani (pagente).'),
+        ('emoderador', 'info', 'Publicaciones por revisar', 'Hay 3 nuevos inmuebles pendientes de aprobación.'),
+        ('ssoporte', 'alerta', 'Ticket de soporte', 'Luis Choque reportó un problema al subir imágenes.'),
+    ]
+    for usr, tipo, titulo, mensaje in notif_data:
+        Notificacion.objects.get_or_create(
+            usuario=users[usr], titulo=titulo,
+            defaults={'tipo': tipo, 'mensaje': mensaje, 'leida': False}
+        )
+    print(f"  Notificaciones: {len(notif_data)}")
+
+    print("\n  Datos semilla creados exitosamente.")
+    print("  ──────────────────────────────────────────────")
+    print("  Acceso Admin:  admin / admin123")
+    print("  Otros usuarios: usuario123")
+    print("  ──────────────────────────────────────────────")
+
 
 if __name__ == '__main__':
     create_seed_data()
