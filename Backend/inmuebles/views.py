@@ -46,7 +46,9 @@ class InmuebleViewSet(viewsets.ModelViewSet):
                     return qs.all()
                 return qs.filter(propietario=user)
             return qs.none()
-        return qs.all()
+            
+        # Para catálogo público, no mostrar ocultos
+        return qs.exclude(estado='oculto')
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -62,6 +64,45 @@ class MultimediaViewSet(viewsets.ModelViewSet):
     queryset = Multimedia.objects.all()
     serializer_class = MultimediaSerializer
     parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        import cloudinary
+        import cloudinary.uploader
+        from django.conf import settings
+        import os
+
+        # Explicit configuration
+        cloudinary.config(
+            cloud_name=settings.CLOUDINARY_STORAGE['CLOUD_NAME'],
+            api_key=settings.CLOUDINARY_STORAGE['API_KEY'],
+            api_secret=settings.CLOUDINARY_STORAGE['API_SECRET']
+        )
+        
+        file_obj = request.FILES.get('archivo')
+        inmueble_id = request.data.get('inmueble')
+        es_principal = request.data.get('es_principal') == 'true'
+        tipo = request.data.get('tipo', 'imagen')
+
+        if not file_obj or not inmueble_id:
+            return Response({'error': 'Archivo e inmueble requeridos'}, status=400)
+
+        # Subir el archivo a Cloudinary
+        upload_data = cloudinary.uploader.upload(
+            file_obj, 
+            resource_type='auto' if tipo == 'video' else 'image'
+        )
+        url = upload_data.get('secure_url')
+
+        # Crear el registro en base de datos con la URL absoluta
+        media = Multimedia.objects.create(
+            inmueble_id=inmueble_id,
+            tipo=tipo,
+            es_principal=es_principal,
+            archivo=url
+        )
+        
+        serializer = self.get_serializer(media)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class TipoContratoViewSet(viewsets.ModelViewSet):

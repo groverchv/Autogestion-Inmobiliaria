@@ -16,6 +16,7 @@ import MisNotificaciones from './pages/Public/MisNotificaciones';
 import MiPerfil from './pages/Public/MiPerfil';
 import MisMensajes from './pages/Public/MisMensajes';
 import MisInmuebles from './pages/Public/MisInmuebles';
+import MiAgenda from './pages/Public/MiAgenda';
 
 // Pages - Admin
 import DashboardAdmin from './pages/Admin/DashboardAdmin';
@@ -52,6 +53,10 @@ const router = createBrowserRouter([
   {
     path: '/mis-inmuebles',
     element: <ProtectedRoute><MisInmuebles /></ProtectedRoute>,
+  },
+  {
+    path: '/mi-agenda',
+    element: <ProtectedRoute><MiAgenda /></ProtectedRoute>,
   },
   {
     path: '/favoritos',

@@ -56,10 +56,7 @@ class InmuebleListSerializer(serializers.ModelSerializer):
                 img = obj.multimedia.first()
             
             if img and img.archivo:
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(img.archivo.url)
-                return img.archivo.url
+                return img.archivo
         except Exception:
             pass
         return None

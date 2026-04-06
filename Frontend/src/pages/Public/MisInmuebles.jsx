@@ -1,10 +1,33 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Configurar marker por defecto de Leaflet
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
+
+const LocationPicker = ({ position, setPosition }) => {
+  useMapEvents({
+    click(e) {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+  return position ? <Marker position={position} /> : null;
+};
 
 const MisInmuebles = () => {
   const { isAuthenticated } = useAuth();
@@ -13,6 +36,11 @@ const MisInmuebles = () => {
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [archivos, setArchivos] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [existingMedia, setExistingMedia] = useState([]);
+  const [mediaToDelete, setMediaToDelete] = useState([]);
   
   const [formData, setFormData] = useState({
     titulo: '',
@@ -26,7 +54,8 @@ const MisInmuebles = () => {
     habitaciones: 0,
     banos: 0,
     garaje: false,
-    estado: 'disponible'
+    estado: 'disponible',
+    gps: ''
   });
 
   const [saving, setSaving] = useState(false);
@@ -60,6 +89,61 @@ const MisInmuebles = () => {
     }));
   };
 
+  const handleFileChange = (e) => {
+    const newFiles = Array.from(e.target.files);
+    
+    // Acumulamos archivos para permitir múltiples selecciones sucesivas
+    setArchivos(prev => [...prev, ...newFiles]);
+    
+    // Crear URLs de preview
+    const newPreviews = newFiles.map(f => ({
+      url: URL.createObjectURL(f),
+      type: f.type,
+      name: f.name
+    }));
+    setPreviewUrls(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeFile = (indexToRemove) => {
+    setArchivos(prev => prev.filter((_, i) => i !== indexToRemove));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== indexToRemove));
+  };
+
+  const handleEdit = async (inm) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/inmuebles/lista/${inm.id}/`);
+      const detailedInm = res.data;
+
+      setEditingId(detailedInm.id);
+      setFormData({
+        titulo: detailedInm.titulo || '',
+        descripcion: detailedInm.descripcion || '',
+        tipo: detailedInm.tipo || (tipos.length > 0 ? tipos[0].id : ''),
+        direccion: detailedInm.direccion || '',
+        ciudad: detailedInm.ciudad || '',
+        zona: detailedInm.zona || '',
+        precio: detailedInm.precio || '',
+        superficie: detailedInm.superficie || '',
+        habitaciones: detailedInm.habitaciones || 0,
+        banos: detailedInm.banos || 0,
+        garaje: detailedInm.garaje || false,
+        estado: detailedInm.estado || 'disponible',
+        gps: detailedInm.gps || ''
+      });
+      setArchivos([]);
+      setPreviewUrls([]);
+      setExistingMedia(detailedInm.multimedia || []);
+      setMediaToDelete([]);
+      setShowModal(true);
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching inmueble details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -67,13 +151,51 @@ const MisInmuebles = () => {
       const payload = { ...formData };
       if (!payload.superficie) payload.superficie = null; // manejar nulls recomendados
       
-      await api.post('/inmuebles/panel/lista/', payload);
+      let nuevoInmuebleId;
+      if (editingId) {
+        await api.put(`/inmuebles/panel/lista/${editingId}/`, payload);
+        nuevoInmuebleId = editingId;
+
+        if (mediaToDelete.length > 0) {
+          const deletePromises = mediaToDelete.map(mediaId => 
+             api.delete(`/inmuebles/multimedia/${mediaId}/`)
+          );
+          await Promise.all(deletePromises);
+        }
+      } else {
+        const res = await api.post('/inmuebles/panel/lista/', payload);
+        nuevoInmuebleId = res.data.id;
+      }
+
+      // Subir imágenes/videos a Cloudinary vía el backend
+      if (archivos.length > 0) {
+        const currentPrincipalExists = existingMedia.some(m => m.es_principal);
+        const uploadPromises = archivos.map(async (file, i) => {
+          const mediaForm = new FormData();
+          mediaForm.append('inmueble', nuevoInmuebleId);
+          mediaForm.append('archivo', file);
+          mediaForm.append('es_principal', (!currentPrincipalExists && i === 0) ? 'true' : 'false');
+          mediaForm.append('tipo', file.type.startsWith('video/') ? 'video' : 'imagen');
+          
+          return api.post('/inmuebles/multimedia/', mediaForm, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        });
+        await Promise.all(uploadPromises);
+      }
+
       setShowModal(false);
+      setEditingId(null);
+      setExistingMedia([]);
+      setMediaToDelete([]);
       setFormData({
         titulo: '', descripcion: '', tipo: tipos.length > 0 ? tipos[0].id : '', 
         direccion: '', ciudad: '', zona: '', precio: '', superficie: '', 
-        habitaciones: 0, banos: 0, garaje: false, estado: 'disponible'
+        habitaciones: 0, banos: 0, garaje: false, estado: 'disponible',
+        latitud: null, longitud: null
       });
+      setArchivos([]);
+      setPreviewUrls([]);
       fetchData(); // Recargar
     } catch (err) {
       console.error(err);
@@ -83,11 +205,34 @@ const MisInmuebles = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Seguro que deseas eliminar el inmueble?')) return;
+    try {
+      await api.delete(`/inmuebles/panel/lista/${id}/`);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Error eliminando inmueble');
+    }
+  };
+
+  const handleToggleVisibilidad = async (inm) => {
+    try {
+      const nuevoEstado = inm.estado === 'oculto' ? 'disponible' : 'oculto';
+      await api.patch(`/inmuebles/panel/lista/${inm.id}/`, { estado: nuevoEstado });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Error cambiando estado');
+    }
+  };
+
   const estadoColors = {
     disponible: { bg: '#dcfce7', color: '#15803d' },
     ocupado: { bg: '#fee2e2', color: '#dc2626' },
     mantenimiento: { bg: '#fef3c7', color: '#d97706' },
     reservado: { bg: '#dbeafe', color: '#2563eb' },
+    oculto: { bg: '#f3f4f6', color: '#6b7280' },
   };
 
   return (
@@ -102,7 +247,17 @@ const MisInmuebles = () => {
             <h1 style={{ fontSize: '1.8rem', color: 'var(--color-text)', margin: 0 }}>Mis Inmuebles</h1>
             <button 
               onClick={() => {
-                if(tipos.length > 0 && !formData.tipo) setFormData(p => ({...p, tipo: tipos[0].id}));
+                setEditingId(null);
+                setFormData({
+                  titulo: '', descripcion: '', tipo: tipos.length > 0 ? tipos[0].id : '', 
+                  direccion: '', ciudad: '', zona: '', precio: '', superficie: '', 
+                  habitaciones: 0, banos: 0, garaje: false, estado: 'disponible',
+                  gps: ''
+                });
+                setArchivos([]);
+                setPreviewUrls([]);
+                setExistingMedia([]);
+                setMediaToDelete([]);
                 setShowModal(true);
               }}
               style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
@@ -156,7 +311,34 @@ const MisInmuebles = () => {
                       
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
                         <span className="propiedad-card__price">Bs. {parseFloat(inm.precio).toLocaleString()}</span>
-                        <Link to={`/propiedades/${inm.id}`} style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Ver públicamente</Link>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            onClick={() => handleEdit(inm)}
+                            style={{ background: 'transparent', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--color-text-secondary)' }}
+                            title="Editar Inmueble"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          </button>
+                          <button 
+                            onClick={() => handleToggleVisibilidad(inm)}
+                            style={{ background: 'transparent', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: inm.estado === 'oculto' ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
+                            title={inm.estado === 'oculto' ? 'Mostrar al público' : 'Ocultar al público'}
+                          >
+                            {inm.estado === 'oculto' ? (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            ) : (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                            )}
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(inm.id)}
+                            style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#ef4444' }}
+                            title="Eliminar"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                          <Link to={`/propiedades/${inm.id}`} style={{ background: 'var(--color-bg)', padding: '6px 12px', borderRadius: '6px', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem', border: '1px solid var(--color-border)' }}>Ver</Link>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -179,7 +361,7 @@ const MisInmuebles = () => {
             maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden'
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Registrar Inmueble</h2>
+              <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{editingId ? 'Editar Inmueble' : 'Registrar Inmueble'}</h2>
               <button 
                 onClick={() => setShowModal(false)}
                 style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
@@ -250,6 +432,131 @@ const MisInmuebles = () => {
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Descripción</label>
                   <textarea name="descripcion" value={formData.descripcion} onChange={handleChange} rows="4" className="propiedades-filter__input" style={{ width: '100%', resize: 'vertical' }}></textarea>
                 </div>
+
+                <div style={{ background: 'var(--color-bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                    Ubicación GPS
+                  </label>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>
+                    Haz clic en el mapa para marcar la ubicación, o usa tu ubicación actual.
+                  </p>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => setFormData(prev => ({...prev, gps: `${pos.coords.latitude}, ${pos.coords.longitude}`})),
+                          () => alert('Error obteniendo ubicación. Verifica los permisos de tu navegador.')
+                        );
+                      }
+                    }}
+                    style={{ marginBottom: '16px', background: 'var(--color-secondary, #475569)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    📍 Usar mi ubicación actual
+                  </button>
+
+                  <div style={{ height: '300px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                    {(() => {
+                      let lat = -17.7833;
+                      let lng = -63.1821;
+                      if (formData.gps) {
+                        const parts = formData.gps.split(',');
+                        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                          lat = parseFloat(parts[0]);
+                          lng = parseFloat(parts[1]);
+                        }
+                      }
+                      const position = formData.gps ? [lat, lng] : null;
+
+                      return (
+                        <MapContainer center={[lat, lng]} zoom={formData.gps ? 15 : 12} style={{ height: '100%', width: '100%', zIndex: 1 }}>
+                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          <LocationPicker 
+                            position={position} 
+                            setPosition={(p) => setFormData(prev => ({...prev, gps: `${p[0]}, ${p[1]}`}))} 
+                          />
+                        </MapContainer>
+                      );
+                    })()}
+                  </div>
+                  {formData.gps && (
+                    <div style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--color-success, #10b981)', fontWeight: 600 }}>
+                      ✓ Ubicación registrada ({formData.gps})
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ background: 'var(--color-bg)', padding: '16px', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                    Imágenes y Videos
+                  </label>
+
+                  {existingMedia.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Archivos actuales:</p>
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        {existingMedia.map((media, i) => (
+                          <div key={media.id} style={{ width: '100px', position: 'relative' }}>
+                            {media.tipo === 'video' ? (
+                              <video src={media.archivo} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--color-border)' }} />
+                            ) : (
+                              <img src={media.archivo} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--color-border)' }} alt={`existing-${i}`} />
+                            )}
+                            {media.es_principal && (
+                              <span style={{ position: 'absolute', bottom: '4px', left: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.65rem', textAlign: 'center', padding: '2px', borderRadius: '4px' }}>Principal</span>
+                            )}
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setMediaToDelete(prev => [...prev, media.id]);
+                                setExistingMedia(prev => prev.filter(m => m.id !== media.id));
+                              }}
+                              style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--color-danger, #ef4444)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+                              title="Eliminar archivo existente"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>
+                    Sube {existingMedia.length > 0 ? 'más ' : ''}fotografías o videos de tu inmueble. La primera imagen será usada como la principal. Serán subidos a Cloudinary.
+                  </p>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*,video/*"
+                    onChange={handleFileChange}
+                    style={{ display: 'block', width: '100%', padding: '8px' }}
+                  />
+                  {previewUrls.length > 0 && (
+                    <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      {previewUrls.map((preview, i) => (
+                        <div key={i} style={{ width: '100px', position: 'relative' }}>
+                          {preview.type.startsWith('video/') ? (
+                            <video src={preview.url} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--color-border)' }} />
+                          ) : (
+                            <img src={preview.url} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--color-border)' }} alt={`prev-${i}`} />
+                          )}
+                          {i === 0 && (
+                            <span style={{ position: 'absolute', bottom: '4px', left: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.65rem', textAlign: 'center', padding: '2px', borderRadius: '4px' }}>Principal</span>
+                          )}
+                          <button 
+                            type="button"
+                            onClick={() => removeFile(i)}
+                            style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--color-danger, #ef4444)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </form>
             </div>
             
@@ -266,7 +573,7 @@ const MisInmuebles = () => {
                 disabled={saving}
                 style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
               >
-                {saving ? 'Guardando...' : 'Publicar Inmueble'}
+                {saving ? 'Guardando...' : (editingId ? 'Actualizar Inmueble' : 'Publicar Inmueble')}
               </button>
             </div>
           </div>

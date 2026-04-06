@@ -24,6 +24,7 @@ class Inmueble(models.Model):
         OCUPADO = 'ocupado', 'Ocupado'
         EN_MANTENIMIENTO = 'mantenimiento', 'En Mantenimiento'
         RESERVADO = 'reservado', 'Reservado'
+        OCULTO = 'oculto', 'Oculto'
 
     propietario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -55,8 +56,8 @@ class Inmueble(models.Model):
         choices=EstadoInmueble.choices,
         default=EstadoInmueble.DISPONIBLE,
     )
-    latitud = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
-    longitud = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    # Coordenadas GPS
+    gps = models.CharField(max_length=100, null=True, blank=True, help_text="Coordenadas GPS (ej. -17.7898, -63.1939)")
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
@@ -86,7 +87,7 @@ class Multimedia(models.Model):
         choices=TipoArchivo.choices,
         default=TipoArchivo.IMAGEN,
     )
-    archivo = models.FileField(upload_to='inmuebles/multimedia/')
+    archivo = models.CharField(max_length=500, help_text='URL de Cloudinary o ruta')
     descripcion = models.CharField(max_length=200, blank=True)
     es_principal = models.BooleanField(default=False)
     subido = models.DateTimeField(auto_now_add=True)
