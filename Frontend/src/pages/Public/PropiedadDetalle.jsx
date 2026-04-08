@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+  Heart, Share2, MapPin, Bed, Bath, Maximize2, X, ChevronLeft, ChevronRight, Home, Video
+} from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import ResenaSection from '../../components/ResenaSection';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -247,6 +251,10 @@ const PropiedadDetalle = () => {
                 Contactar al Agente
               </button>
             </div>
+
+            {/* ═══ RESEÑAS Y CALIFICACIONES ═══ */}
+            <ResenaSection inmuebleId={id} isAuthenticated={isAuthenticated} userId={user?.id} />
+
           </div>
         </div>
       </div>

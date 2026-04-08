@@ -6,8 +6,8 @@ from datetime import date, timedelta, datetime
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from usuarios.models import Usuario, Agenda, Notificacion
-from inmuebles.models import TipoInmueble, Inmueble, TipoContrato, Contrato, Multimedia
+from usuarios.models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
+from inmuebles.models import TipoInmueble, Inmueble, TipoContrato, Contrato, Multimedia, Direccion
 from pagos.models import TipoPago, Pago, HistorialPago
 
 def create_seed_data():
@@ -76,37 +76,45 @@ def create_seed_data():
     #  20 INMUEBLES
     # ═══════════════════════════════════════════════════════════
     inmuebles_data = [
-        ('Casa Moderna Zona Sur', 'jpropietario', 'Casa', 'Amplia casa moderna con acabados premium, piscina y jardín.', 'Av. Los Sauces 120, Calacoto', 'La Paz', 'Sur', 285000, 350, 4, 3, True, 'disponible'),
-        ('Depto Miraflores 2 Hab', 'jpropietario', 'Departamento', 'Departamento céntrico con vista a la ciudad, 2 dormitorios.', 'Calle Indaburo 456', 'La Paz', 'Miraflores', 95000, 85, 2, 1, False, 'disponible'),
-        ('Terreno Mallasa 500m²', 'mpropietaria', 'Terreno', 'Terreno plano con acceso a agua y electricidad, ideal para construcción.', 'Camino a Mallasa Km 5', 'La Paz', 'Mallasa', 45000, 500, 0, 0, False, 'disponible'),
-        ('Oficina Prado Centro', 'mpropietaria', 'Oficina', 'Oficina ejecutiva en el corazón del Prado, amoblada.', 'Av. 16 de Julio 1234', 'La Paz', 'Centro', 120000, 60, 0, 1, False, 'disponible'),
-        ('Casa Colonial San Jorge', 'jpropietario', 'Casa', 'Hermosa casa colonial restaurada con patio interno.', 'Calle Rosendo Gutiérrez 789', 'La Paz', 'San Jorge', 350000, 420, 5, 4, True, 'ocupado'),
-        ('Local Comercial Sopocachi', 'mpropietaria', 'Local Comercial', 'Local con vitrina amplia y alto tráfico peatonal.', 'Av. 6 de Agosto 2345', 'La Paz', 'Sopocachi', 180000, 90, 0, 1, False, 'disponible'),
-        ('Garzoniere Estudiantil', 'ragente', 'Garzoniere', 'Departamento pequeño ideal para estudiantes universitarios.', 'Calle Landaeta 567', 'La Paz', 'San Pedro', 38000, 35, 1, 1, False, 'disponible'),
-        ('Loft Industrial El Alto', 'ragente', 'Loft', 'Loft con techos altos y grandes ventanales, estilo industrial.', 'Av. Juan Pablo II 890', 'El Alto', 'Distrito 1', 65000, 110, 1, 1, True, 'disponible'),
-        ('Casa Familiar Achumani', 'jpropietario', 'Casa', 'Casa espaciosa en urbanización cerrada con seguridad 24h.', 'Calle 21 de Achumani 234', 'La Paz', 'Achumani', 220000, 280, 4, 3, True, 'disponible'),
-        ('Depto Penthouse Calacoto', 'mpropietaria', 'Departamento', 'Penthouse de lujo con terraza panorámica y jacuzzi.', 'Av. Ballivián 3456', 'La Paz', 'Calacoto', 450000, 200, 3, 3, True, 'reservado'),
-        ('Terreno Urbanización Norte', 'pagente', 'Terreno', 'Terreno en nueva urbanización con todos los servicios básicos.', 'Urbanización Los Álamos, Lote 15', 'La Paz', 'Norte', 32000, 300, 0, 0, False, 'disponible'),
-        ('Oficina Coworking Centro', 'pagente', 'Oficina', 'Espacio de coworking con internet de alta velocidad y salas de reunión.', 'Calle Comercio 678', 'La Paz', 'Centro', 55000, 45, 0, 1, False, 'disponible'),
-        ('Casa con Jardín Seguencoma', 'jpropietario', 'Casa', 'Casa con amplio jardín trasero, cocina americana y lavandería.', 'Calle 8 de Seguencoma 345', 'La Paz', 'Seguencoma', 195000, 240, 3, 2, True, 'disponible'),
-        ('Depto Nuevo San Miguel', 'mpropietaria', 'Departamento', 'Departamento a estrenar en edificio con ascensor y parqueo.', 'Av. Montenegro 1234', 'La Paz', 'San Miguel', 130000, 95, 2, 2, True, 'disponible'),
-        ('Local Gastronómico El Prado', 'ragente', 'Local Comercial', 'Local con cocina industrial instalada, perfecto para restaurante.', 'Av. Mariscal Santa Cruz 456', 'La Paz', 'Centro', 200000, 120, 0, 2, False, 'disponible'),
-        ('Casa Minimalista Obrajes', 'pagente', 'Casa', 'Casa de diseño minimalista con eficiencia energética solar.', 'Calle 14 de Obrajes 567', 'La Paz', 'Obrajes', 310000, 300, 3, 2, True, 'disponible'),
-        ('Terreno Esquina Comercial', 'mpropietaria', 'Terreno', 'Terreno en esquina, ideal para proyecto comercial o multifamiliar.', 'Av. Panorámica Km 3', 'El Alto', 'Distrito 4', 78000, 800, 0, 0, False, 'disponible'),
-        ('Garzoniere Premium Centro', 'ragente', 'Garzoniere', 'Garzoniere totalmente amoblada con vista al Illimani.', 'Calle Mercado 890', 'La Paz', 'Centro', 52000, 40, 1, 1, False, 'ocupado'),
-        ('Depto Familiar Irpavi', 'jpropietario', 'Departamento', 'Departamento familiar cerca de colegios y supermercados.', 'Calle 3 de Irpavi 123', 'La Paz', 'Irpavi', 115000, 110, 3, 2, True, 'disponible'),
-        ('Loft Artístico Sopocachi', 'pagente', 'Loft', 'Loft de estilo artístico con galería incorporada.', 'Calle Guachalla 456', 'La Paz', 'Sopocachi', 88000, 95, 2, 1, False, 'disponible'),
+        ('Casa Moderna Zona Sur', 'jpropietario', 'Casa', 'Amplia casa moderna con acabados premium, piscina y jardín.', 'Av. Los Sauces 120, Calacoto', 'La Paz', 'Sur', 285000, 350, 4, 3, True, 'disponible', '-16.5300, -68.0800'),
+        ('Depto Miraflores 2 Hab', 'jpropietario', 'Departamento', 'Departamento céntrico con vista a la ciudad, 2 dormitorios.', 'Calle Indaburo 456', 'La Paz', 'Miraflores', 95000, 85, 2, 1, False, 'disponible', '-16.5020, -68.1280'),
+        ('Terreno Mallasa 500m²', 'mpropietaria', 'Terreno', 'Terreno plano con acceso a agua y electricidad, ideal para construcción.', 'Camino a Mallasa Km 5', 'La Paz', 'Mallasa', 45000, 500, 0, 0, False, 'disponible', '-16.5500, -68.0900'),
+        ('Oficina Prado Centro', 'mpropietaria', 'Oficina', 'Oficina ejecutiva en el corazón del Prado, amoblada.', 'Av. 16 de Julio 1234', 'La Paz', 'Centro', 120000, 60, 0, 1, False, 'disponible', '-16.4978, -68.1340'),
+        ('Casa Colonial San Jorge', 'jpropietario', 'Casa', 'Hermosa casa colonial restaurada con patio interno.', 'Calle Rosendo Gutiérrez 789', 'La Paz', 'San Jorge', 350000, 420, 5, 4, True, 'ocupado', '-16.5035, -68.1290'),
+        ('Local Comercial Sopocachi', 'mpropietaria', 'Local Comercial', 'Local con vitrina amplia y alto tráfico peatonal.', 'Av. 6 de Agosto 2345', 'La Paz', 'Sopocachi', 180000, 90, 0, 1, False, 'disponible', '-16.5080, -68.1250'),
+        ('Garzoniere Estudiantil', 'ragente', 'Garzoniere', 'Departamento pequeño ideal para estudiantes universitarios.', 'Calle Landaeta 567', 'La Paz', 'San Pedro', 38000, 35, 1, 1, False, 'disponible', '-16.4980, -68.1380'),
+        ('Loft Industrial El Alto', 'ragente', 'Loft', 'Loft con techos altos y grandes ventanales, estilo industrial.', 'Av. Juan Pablo II 890', 'El Alto', 'Distrito 1', 65000, 110, 1, 1, True, 'disponible', '-16.5100, -68.1600'),
+        ('Casa Familiar Achumani', 'jpropietario', 'Casa', 'Casa espaciosa en urbanización cerrada con seguridad 24h.', 'Calle 21 de Achumani 234', 'La Paz', 'Achumani', 220000, 280, 4, 3, True, 'disponible', '-16.5350, -68.0650'),
+        ('Depto Penthouse Calacoto', 'mpropietaria', 'Departamento', 'Penthouse de lujo con terraza panorámica y jacuzzi.', 'Av. Ballivián 3456', 'La Paz', 'Calacoto', 450000, 200, 3, 3, True, 'reservado', '-16.5280, -68.0780'),
+        ('Terreno Urbanización Norte', 'pagente', 'Terreno', 'Terreno en nueva urbanización con todos los servicios básicos.', 'Urbanización Los Álamos, Lote 15', 'La Paz', 'Norte', 32000, 300, 0, 0, False, 'disponible', '-16.4800, -68.1400'),
+        ('Oficina Coworking Centro', 'pagente', 'Oficina', 'Espacio de coworking con internet de alta velocidad y salas de reunión.', 'Calle Comercio 678', 'La Paz', 'Centro', 55000, 45, 0, 1, False, 'disponible', '-16.4960, -68.1350'),
+        ('Casa con Jardín Seguencoma', 'jpropietario', 'Casa', 'Casa con amplio jardín trasero, cocina americana y lavandería.', 'Calle 8 de Seguencoma 345', 'La Paz', 'Seguencoma', 195000, 240, 3, 2, True, 'disponible', '-16.5250, -68.0850'),
+        ('Depto Nuevo San Miguel', 'mpropietaria', 'Departamento', 'Departamento a estrenar en edificio con ascensor y parqueo.', 'Av. Montenegro 1234', 'La Paz', 'San Miguel', 130000, 95, 2, 2, True, 'disponible', '-16.5200, -68.0750'),
+        ('Local Gastronómico El Prado', 'ragente', 'Local Comercial', 'Local con cocina industrial instalada, perfecto para restaurante.', 'Av. Mariscal Santa Cruz 456', 'La Paz', 'Centro', 200000, 120, 0, 2, False, 'disponible', '-16.4970, -68.1330'),
+        ('Casa Minimalista Obrajes', 'pagente', 'Casa', 'Casa de diseño minimalista con eficiencia energética solar.', 'Calle 14 de Obrajes 567', 'La Paz', 'Obrajes', 310000, 300, 3, 2, True, 'disponible', '-16.5180, -68.1100'),
+        ('Terreno Esquina Comercial', 'mpropietaria', 'Terreno', 'Terreno en esquina, ideal para proyecto comercial o multifamiliar.', 'Av. Panorámica Km 3', 'El Alto', 'Distrito 4', 78000, 800, 0, 0, False, 'disponible', '-16.5150, -68.1650'),
+        ('Garzoniere Premium Centro', 'ragente', 'Garzoniere', 'Garzoniere totalmente amoblada con vista al Illimani.', 'Calle Mercado 890', 'La Paz', 'Centro', 52000, 40, 1, 1, False, 'ocupado', '-16.4990, -68.1320'),
+        ('Depto Familiar Irpavi', 'jpropietario', 'Departamento', 'Departamento familiar cerca de colegios y supermercados.', 'Calle 3 de Irpavi 123', 'La Paz', 'Irpavi', 115000, 110, 3, 2, True, 'disponible', '-16.5380, -68.0600'),
+        ('Loft Artístico Sopocachi', 'pagente', 'Loft', 'Loft de estilo artístico con galería incorporada.', 'Calle Guachalla 456', 'La Paz', 'Sopocachi', 88000, 95, 2, 1, False, 'disponible', '-16.5090, -68.1240'),
     ]
     inmuebles = {}
-    for titulo, prop, tipo_n, desc, dir_, ciudad, zona, precio, sup, hab, banos, garaje, estado in inmuebles_data:
+    for titulo, prop, tipo_n, desc, dir_, ciudad, zona, precio, sup, hab, banos, garaje, estado, gps in inmuebles_data:
+        direccion_obj = Direccion.objects.create(
+            ciudad=ciudad,
+            zona=zona,
+            calle=dir_
+        )
+
         inm, _ = Inmueble.objects.get_or_create(
             titulo=titulo,
             defaults={
                 'propietario': users[prop], 'tipo': tipos[tipo_n],
-                'descripcion': desc, 'direccion': dir_, 'ciudad': ciudad,
-                'zona': zona, 'precio': Decimal(str(precio)),
+                'descripcion': desc,
+                'direccion_fk': direccion_obj,
+                'precio': Decimal(str(precio)),
                 'superficie': Decimal(str(sup)), 'habitaciones': hab,
                 'banos': banos, 'garaje': garaje, 'estado': estado,
+                'gps': gps
             }
         )
         inmuebles[titulo] = inm
@@ -210,6 +218,7 @@ def create_seed_data():
     # ═══════════════════════════════════════════════════════════
     #  AGENDA
     # ═══════════════════════════════════════════════════════════
+    from django.utils import timezone
     agenda_data = [
         ('admin', 'Reunión con propietarios', 'Reunión mensual de revisión de propiedades.', 1, 2, 'Oficina Central', False),
         ('admin', 'Inspección casa Achumani', 'Verificar estado del inmueble antes de publicar.', 3, 4, 'Achumani, La Paz', False),
@@ -225,8 +234,8 @@ def create_seed_data():
             usuario=users[usr], titulo=titulo,
             defaults={
                 'descripcion': desc,
-                'fecha_inicio': datetime.now() + timedelta(days=di, hours=9),
-                'fecha_fin': datetime.now() + timedelta(days=df, hours=11),
+                'fecha_inicio': timezone.now() + timedelta(days=di, hours=9),
+                'fecha_fin': timezone.now() + timedelta(days=df, hours=11),
                 'ubicacion': ubic, 'completado': comp,
             }
         )
@@ -253,6 +262,87 @@ def create_seed_data():
             defaults={'tipo': tipo, 'mensaje': mensaje, 'leida': False}
         )
     print(f"  Notificaciones: {len(notif_data)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  CHATS Y MENSAJES
+    # ═══════════════════════════════════════════════════════════
+    chats_data = [
+        ('ccliente', 'jpropietario', 'Casa Moderna Zona Sur', [
+            ('ccliente', 'texto', 'Hola, me interesa la casa en Zona Sur. ¿Está disponible para visita?', ''),
+            ('jpropietario', 'texto', '¡Hola Carla! Sí, la casa está disponible. ¿Cuándo te gustaría visitarla?', ''),
+            ('ccliente', 'texto', '¿Puede ser este sábado por la mañana?', ''),
+            ('jpropietario', 'texto', 'Perfecto, te espero a las 10:00 AM. Te comparto la ubicación:', ''),
+            ('jpropietario', 'ubicacion', 'Ubicación de la propiedad', '-16.5300, -68.0800'),
+            ('ccliente', 'emoji', '👍 ¡Genial, ahí estaré!', ''),
+        ]),
+        ('ainquilino', 'jpropietario', 'Casa Colonial San Jorge', [
+            ('ainquilino', 'texto', 'Buenas tardes, quería consultar sobre el pago del próximo mes.', ''),
+            ('jpropietario', 'texto', 'Buenas Ana, sí. El pago vence el día 15. ¿Hay algún inconveniente?', ''),
+            ('ainquilino', 'texto', 'No, solo quería confirmar la fecha. ¿Puedo pagar por QR?', ''),
+            ('jpropietario', 'texto', 'Claro, te envío el código QR por WhatsApp. Sin problema.', ''),
+        ]),
+        ('dcliente', 'mpropietaria', 'Depto Penthouse Calacoto', [
+            ('dcliente', 'texto', 'Hola María, vi el penthouse en Calacoto y es espectacular.', ''),
+            ('mpropietaria', 'texto', 'Gracias Diego, es una de nuestras mejores propiedades. ¿Te interesa agendar una visita?', ''),
+            ('dcliente', 'texto', '¡Sí! ¿Tienen disponibilidad esta semana?', ''),
+        ]),
+        ('linquilino', 'ragente', 'Garzoniere Premium Centro', [
+            ('linquilino', 'texto', 'Hola Roberto, tengo un problema con la cerradura de la puerta.', ''),
+            ('ragente', 'texto', 'Hola Luis, lamento eso. Enviaré un cerrajero mañana temprano.', ''),
+            ('linquilino', 'texto', 'Gracias, estaré en la garzoniere hasta las 12:00.', ''),
+            ('ragente', 'texto', '👌 Perfecto, el cerrajero llegará entre 9 y 10 AM.', ''),
+        ]),
+    ]
+    for p1_uname, p2_uname, inm_titulo, msgs in chats_data:
+        inm = inmuebles.get(inm_titulo)
+        chat, _ = Chat.objects.get_or_create(
+            participante1=users[p1_uname],
+            participante2=users[p2_uname],
+            defaults={'inmueble': inm}
+        )
+        for rem_uname, tipo_msg, contenido, ubicacion in msgs:
+            Mensaje.objects.get_or_create(
+                chat=chat,
+                remitente=users[rem_uname],
+                contenido=contenido,
+                defaults={
+                    'tipo_mensaje': tipo_msg,
+                    'ubicacion_gps': ubicacion,
+                }
+            )
+    print(f"  Chats: {len(chats_data)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  RESEÑAS
+    # ═══════════════════════════════════════════════════════════
+    resenas_data = [
+        ('ccliente', 'Casa Moderna Zona Sur', 5, 'Increíble propiedad, muy bien mantenida y con excelente ubicación.'),
+        ('dcliente', 'Casa Moderna Zona Sur', 4, 'Muy buena casa, pero el acceso es un poco complicado en hora pico.'),
+        ('ainquilino', 'Casa Colonial San Jorge', 5, 'Hermosa casa colonial, perfecta para vivir. Los techos altos le dan mucho carácter.'),
+        ('linquilino', 'Garzoniere Premium Centro', 4, 'Buena ubicación y departamento cómodo. Solo le falta un poco de luz natural.'),
+        ('ccliente', 'Depto Penthouse Calacoto', 5, 'El penthouse es increíble, la vista panorámica no tiene comparación.'),
+        ('dcliente', 'Depto Miraflores 2 Hab', 3, 'Departamento funcional pero un poco pequeño. La ubicación es buena.'),
+        ('ainquilino', 'Loft Artístico Sopocachi', 4, 'Un espacio muy creativo y bien diseñado. Me encantó la galería.'),
+        ('emoderador', 'Casa Familiar Achumani', 5, 'Excelente zona residencial, muy tranquila y segura. La casa es perfecta.'),
+        ('ssoporte', 'Oficina Prado Centro', 4, 'Oficina bien ubicada, ideal para negocios. Tiene buen mobiliario.'),
+        ('pagente', 'Depto Nuevo San Miguel', 5, 'Departamento nuevo y moderno. El edificio tiene muy buenas áreas comunes.'),
+    ]
+    for usr, inm_titulo, calif, com in resenas_data:
+        Resena.objects.get_or_create(
+            usuario=users[usr],
+            inmueble=inmuebles[inm_titulo],
+            defaults={'calificacion': calif, 'comentario': com}
+        )
+    print(f"  Reseñas: {len(resenas_data)}")
+
+    # ═══════════════════════════════════════════════════════════
+    #  BLOQUEOS (ejemplo)
+    # ═══════════════════════════════════════════════════════════
+    Bloqueo.objects.get_or_create(
+        bloqueador=users['ssoporte'],
+        bloqueado=users['emoderador']
+    )
+    print("  Bloqueos de ejemplo: 1")
 
     print("\n  Datos semilla creados exitosamente.")
     print("  ──────────────────────────────────────────────")

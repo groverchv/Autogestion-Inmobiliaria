@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuario, Agenda, Notificacion, Chat, Mensaje
+from .models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -66,16 +66,48 @@ class MensajeSerializer(serializers.ModelSerializer):
 class ChatSerializer(serializers.ModelSerializer):
     participante1_nombre = serializers.CharField(source='participante1.get_full_name', read_only=True)
     participante2_nombre = serializers.CharField(source='participante2.get_full_name', read_only=True)
-    inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+    participante1_username = serializers.CharField(source='participante1.username', read_only=True)
+    participante2_username = serializers.CharField(source='participante2.username', read_only=True)
+    inmueble_titulo = serializers.SerializerMethodField(read_only=True)
     ultimo_mensaje = serializers.SerializerMethodField(read_only=True)
+    no_leidos = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Chat
         fields = '__all__'
-        read_only_fields = ['id', 'creado', 'actualizado', 'participante1', 'participante2']
+        read_only_fields = ['id', 'creado', 'actualizado']
+
+    def get_inmueble_titulo(self, obj):
+        return obj.inmueble.titulo if obj.inmueble else None
 
     def get_ultimo_mensaje(self, obj):
         msg = obj.mensajes.order_by('-creado').first()
         if msg:
             return MensajeSerializer(msg).data
         return None
+
+    def get_no_leidos(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.mensajes.exclude(remitente=request.user).filter(leido=False).count()
+        return 0
+
+
+class BloqueoSerializer(serializers.ModelSerializer):
+    bloqueado_nombre = serializers.CharField(source='bloqueado.get_full_name', read_only=True)
+    bloqueado_username = serializers.CharField(source='bloqueado.username', read_only=True)
+
+    class Meta:
+        model = Bloqueo
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'bloqueador']
+
+
+class ResenaSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
+    usuario_username = serializers.CharField(source='usuario.username', read_only=True)
+
+    class Meta:
+        model = Resena
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'actualizado', 'usuario']

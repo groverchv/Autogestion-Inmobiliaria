@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Usuario(AbstractUser):
@@ -85,8 +86,24 @@ class Notificacion(models.Model):
     def __str__(self):
         return f'{self.titulo} → {self.usuario.username}'
 
+
+class Bloqueo(models.Model):
+    """Un usuario bloquea a otro."""
+    bloqueador = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='bloqueos_hechos')
+    bloqueado = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='bloqueos_recibidos')
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('bloqueador', 'bloqueado')
+        verbose_name = 'Bloqueo'
+        verbose_name_plural = 'Bloqueos'
+
+    def __str__(self):
+        return f'{self.bloqueador.username} bloqueó a {self.bloqueado.username}'
+
+
 class Chat(models.Model):
-    """Conversaciones entre usuarios (ej. inquilino y propietario)."""
+    """Conversaciones entre usuarios."""
     participante1 = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='chats_iniciados')
     participante2 = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='chats_recibidos')
     inmueble = models.ForeignKey('inmuebles.Inmueble', on_delete=models.SET_NULL, null=True, blank=True, related_name='chats')
@@ -97,7 +114,6 @@ class Chat(models.Model):
         verbose_name = 'Chat'
         verbose_name_plural = 'Chats'
         ordering = ['-actualizado']
-        unique_together = ('participante1', 'participante2', 'inmueble')
 
     def __str__(self):
         desc = f"Chat: {self.participante1.username} - {self.participante2.username}"
@@ -108,9 +124,24 @@ class Chat(models.Model):
 
 class Mensaje(models.Model):
     """Mensaje individual en un chat."""
+
+    class TipoMensaje(models.TextChoices):
+        TEXTO = 'texto', 'Texto'
+        IMAGEN = 'imagen', 'Imagen'
+        VIDEO = 'video', 'Video'
+        UBICACION = 'ubicacion', 'Ubicación'
+        EMOJI = 'emoji', 'Emoji'
+
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='mensajes')
     remitente = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='mensajes_enviados')
-    contenido = models.TextField()
+    tipo_mensaje = models.CharField(
+        max_length=20,
+        choices=TipoMensaje.choices,
+        default=TipoMensaje.TEXTO,
+    )
+    contenido = models.TextField(blank=True)
+    archivo_url = models.CharField(max_length=500, blank=True, help_text='URL de imagen/video en Cloudinary')
+    ubicacion_gps = models.CharField(max_length=100, blank=True, help_text='lat, lng para mensajes de ubicación')
     leido = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)
 
@@ -121,3 +152,50 @@ class Mensaje(models.Model):
 
     def __str__(self):
         return f'Msg de {self.remitente.username} - {self.creado.strftime("%Y-%m-%d %H:%M")}'
+
+
+class Resena(models.Model):
+    """Reseña/opinión de un usuario sobre un inmueble."""
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='resenas')
+    inmueble = models.ForeignKey('inmuebles.Inmueble', on_delete=models.CASCADE, related_name='resenas')
+    calificacion = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text='Calificación de 1 a 5 estrellas'
+    )
+    comentario = models.TextField(blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Reseña'
+        verbose_name_plural = 'Reseñas'
+        unique_together = ('usuario', 'inmueble')
+        ordering = ['-creado']
+
+    def __str__(self):
+        return f'{self.usuario.username} → {self.inmueble.titulo} ({self.calificacion}★)'
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from asgiref.sync import async_to_sync
+import channels.layers
+
+@receiver(post_save, sender=Mensaje)
+def notificar_nuevo_mensaje(sender, instance, created, **kwargs):
+    if created:
+        channel_layer = channels.layers.get_channel_layer()
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{instance.chat.id}',
+                {
+                    'type': 'chat_message',
+                    'action': 'new_message',
+                }
+            )
+            event = {
+                'type': 'user_event',
+                'action': 'new_message',
+                'chat_id': instance.chat.id
+            }
+            async_to_sync(channel_layer.group_send)(f'user_{instance.chat.participante1.id}', event)
+            async_to_sync(channel_layer.group_send)(f'user_{instance.chat.participante2.id}', event)

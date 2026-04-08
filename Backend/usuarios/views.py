@@ -1,7 +1,10 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Usuario, Agenda, Notificacion, Chat, Mensaje
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.db.models import Q, Count
+
+from .models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
 from .serializers import (
     UsuarioSerializer,
     UsuarioCreateSerializer,
@@ -9,6 +12,8 @@ from .serializers import (
     NotificacionSerializer,
     ChatSerializer,
     MensajeSerializer,
+    BloqueoSerializer,
+    ResenaSerializer,
 )
 
 
@@ -34,6 +39,24 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         serializer = UsuarioSerializer(request.user)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'], url_path='badges')
+    def badges(self, request):
+        """Contadores de cosas no leídas para el navbar."""
+        user = request.user
+        notif_count = Notificacion.objects.filter(usuario=user, leida=False).count()
+        
+        # Mensajes no leídos en todos los chats del usuario
+        chats = Chat.objects.filter(Q(participante1=user) | Q(participante2=user))
+        msg_count = Mensaje.objects.filter(
+            chat__in=chats,
+            leido=False
+        ).exclude(remitente=user).count()
+        
+        return Response({
+            'notificaciones': notif_count,
+            'mensajes': msg_count,
+        })
+
 
 class RegistroView(viewsets.GenericViewSet):
     """Endpoint público para registro de usuarios."""
@@ -57,13 +80,11 @@ class AgendaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Admin ve todas las agendas
         if user.is_staff or user.rol == 'admin':
             return Agenda.objects.all()
         return Agenda.objects.filter(usuario=user)
 
     def perform_create(self, serializer):
-        # Si no manda usuario, asigna el autenticado
         if 'usuario' not in serializer.validated_data:
             serializer.save(usuario=self.request.user)
         else:
@@ -77,7 +98,6 @@ class NotificacionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Admin ve todas las notificaciones
         if user.is_staff or user.rol == 'admin':
             return Notificacion.objects.all()
         return Notificacion.objects.filter(usuario=user)
@@ -94,33 +114,55 @@ class NotificacionViewSet(viewsets.ModelViewSet):
         self.get_queryset().filter(leida=False).update(leida=True)
         return Response({'status': 'Notificaciones marcadas como leídas'})
 
-from django.db.models import Q
 
 class ChatViewSet(viewsets.ModelViewSet):
     """CRUD para Chats."""
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_queryset(self):
         user = self.request.user
-        return Chat.objects.filter(Q(participante1=user) | Q(participante2=user)).distinct()
+        qs = Chat.objects.filter(Q(participante1=user) | Q(participante2=user)).distinct()
+        return qs
 
     def create(self, request, *args, **kwargs):
-        part1 = request.data.get('participante1')
+        part1 = request.data.get('participante1') or request.user.id
         part2 = request.data.get('participante2')
         inm = request.data.get('inmueble')
-        
-        # Buscar si ya existe el chat en cualquier dirección
+
+        if not part2:
+            return Response({'error': 'participante2 es requerido'}, status=400)
+
+        # Verificar bloqueos
+        if Bloqueo.objects.filter(
+            Q(bloqueador_id=part1, bloqueado_id=part2) | 
+            Q(bloqueador_id=part2, bloqueado_id=part1)
+        ).exists():
+            return Response({'error': 'No puedes chatear con este usuario'}, status=403)
+
+        # Buscar chat existente en cualquier dirección
         chat = Chat.objects.filter(
-            (Q(participante1_id=part1) & Q(participante2_id=part2) & Q(inmueble_id=inm)) |
-            (Q(participante1_id=part2) & Q(participante2_id=part1) & Q(inmueble_id=inm))
+            (Q(participante1_id=part1) & Q(participante2_id=part2)) |
+            (Q(participante1_id=part2) & Q(participante2_id=part1))
         ).first()
 
         if chat:
             serializer = self.get_serializer(chat)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        return super().create(request, *args, **kwargs)
+        # Crear nuevo chat
+        chat = Chat.objects.create(
+            participante1_id=part1,
+            participante2_id=part2,
+            inmueble_id=inm
+        )
+        serializer = self.get_serializer(chat)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['get'], url_path='mensajes')
     def listar_mensajes(self, request, pk=None):
@@ -133,13 +175,131 @@ class ChatViewSet(viewsets.ModelViewSet):
 
 
 class MensajeViewSet(viewsets.ModelViewSet):
-    """CRUD para Mensajes."""
+    """CRUD para Mensajes con soporte de archivos."""
     serializer_class = MensajeSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         user = self.request.user
         return Mensaje.objects.filter(Q(chat__participante1=user) | Q(chat__participante2=user)).distinct()
 
+    def create(self, request, *args, **kwargs):
+        tipo = request.data.get('tipo_mensaje', 'texto')
+        chat_id = request.data.get('chat')
+        contenido = request.data.get('contenido', '')
+        archivo = request.FILES.get('archivo')
+        ubicacion = request.data.get('ubicacion_gps', '')
+        
+        # Verificar bloqueos
+        try:
+            chat = Chat.objects.get(id=chat_id)
+        except Chat.DoesNotExist:
+            return Response({'error': 'Chat no encontrado'}, status=404)
+        
+        other_user = chat.participante2 if chat.participante1 == request.user else chat.participante1
+        if Bloqueo.objects.filter(
+            Q(bloqueador=request.user, bloqueado=other_user) |
+            Q(bloqueador=other_user, bloqueado=request.user)
+        ).exists():
+            return Response({'error': 'Bloqueado: no puedes enviar mensajes'}, status=403)
+
+        archivo_url = ''
+        if archivo and tipo in ['imagen', 'video']:
+            import cloudinary
+            import cloudinary.uploader
+            from django.conf import settings
+            
+            cloudinary.config(
+                cloud_name=settings.CLOUDINARY_STORAGE['CLOUD_NAME'],
+                api_key=settings.CLOUDINARY_STORAGE['API_KEY'],
+                api_secret=settings.CLOUDINARY_STORAGE['API_SECRET']
+            )
+            upload_data = cloudinary.uploader.upload(
+                archivo,
+                resource_type='auto' if tipo == 'video' else 'image'
+            )
+            archivo_url = upload_data.get('secure_url', '')
+
+        msg = Mensaje.objects.create(
+            chat_id=chat_id,
+            remitente=request.user,
+            tipo_mensaje=tipo,
+            contenido=contenido,
+            archivo_url=archivo_url,
+            ubicacion_gps=ubicacion,
+        )
+        
+        # Actualizar timestamp del chat
+        chat.save()  # triggers auto_now on actualizado
+
+        serializer = MensajeSerializer(msg)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BloqueoViewSet(viewsets.ModelViewSet):
+    """Gestión de bloqueos entre usuarios."""
+    serializer_class = BloqueoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Bloqueo.objects.filter(bloqueador=self.request.user)
+
     def perform_create(self, serializer):
-        serializer.save(remitente=self.request.user)
+        serializer.save(bloqueador=self.request.user)
+
+    @action(detail=False, methods=['post'], url_path='toggle')
+    def toggle(self, request):
+        """Bloquear/Desbloquear un usuario."""
+        bloqueado_id = request.data.get('bloqueado')
+        if not bloqueado_id:
+            return Response({'error': 'Falta el ID del usuario'}, status=400)
+        
+        bloqueo = Bloqueo.objects.filter(bloqueador=request.user, bloqueado_id=bloqueado_id).first()
+        if bloqueo:
+            bloqueo.delete()
+            return Response({'bloqueado': False, 'status': 'Usuario desbloqueado'})
+        
+        Bloqueo.objects.create(bloqueador=request.user, bloqueado_id=bloqueado_id)
+        return Response({'bloqueado': True, 'status': 'Usuario bloqueado'})
+    
+    @action(detail=False, methods=['get'], url_path='check/(?P<user_id>[^/.]+)')
+    def check(self, request, user_id=None):
+        """Verificar si un usuario está bloqueado."""
+        is_blocked = Bloqueo.objects.filter(bloqueador=request.user, bloqueado_id=user_id).exists()
+        blocked_me = Bloqueo.objects.filter(bloqueador_id=user_id, bloqueado=request.user).exists()
+        return Response({'bloqueado_por_mi': is_blocked, 'me_bloqueo': blocked_me})
+
+
+class ResenaViewSet(viewsets.ModelViewSet):
+    """CRUD para reseñas de inmuebles."""
+    serializer_class = ResenaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        inmueble_id = self.request.query_params.get('inmueble')
+        qs = Resena.objects.select_related('usuario', 'inmueble')
+        if inmueble_id:
+            qs = qs.filter(inmueble_id=inmueble_id)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='promedio/(?P<inmueble_id>[^/.]+)')
+    def promedio(self, request, inmueble_id=None):
+        """Obtener promedio de calificación de un inmueble."""
+        from django.db.models import Avg
+        result = Resena.objects.filter(inmueble_id=inmueble_id).aggregate(
+            promedio=Avg('calificacion'),
+            total=Count('id')
+        )
+        return Response({
+            'promedio': round(result['promedio'] or 0, 1),
+            'total': result['total']
+        })

@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
 from .views import (
     UsuarioViewSet, RegistroView, AgendaViewSet,
-    NotificacionViewSet, ChatViewSet, MensajeViewSet
+    NotificacionViewSet, ChatViewSet, MensajeViewSet,
+    BloqueoViewSet, ResenaViewSet
 )
 
 router = DefaultRouter()
@@ -13,6 +14,8 @@ router.register(r'agenda', AgendaViewSet, basename='agenda')
 router.register(r'notificaciones', NotificacionViewSet, basename='notificacion')
 router.register(r'chats', ChatViewSet, basename='chat')
 router.register(r'mensajes', MensajeViewSet, basename='mensaje')
+router.register(r'bloqueos', BloqueoViewSet, basename='bloqueo')
+router.register(r'resenas', ResenaViewSet, basename='resena')
 
 router.register(r'panel/lista', UsuarioViewSet, basename='panel-usuarios')
 router.register(r'panel/agenda', AgendaViewSet, basename='panel-agenda')
