@@ -141,7 +141,7 @@ const PropiedadDetalle = () => {
               <div>
                 <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>{inmueble.titulo}</h1>
                 <p style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)' }}>
-                  {inmueble.direccion} - {inmueble.zona && `${inmueble.zona}, `}{inmueble.ciudad}
+                  {inmueble.direccion_fk?.calle} - {inmueble.direccion_fk?.zona && `${inmueble.direccion_fk.zona}, `}{inmueble.direccion_fk?.ciudad}
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -168,6 +168,11 @@ const PropiedadDetalle = () => {
                 <div>
                   <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '4px' }}>Superficie (m²)</strong>
                   <span style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.superficie}</span>
+                  {(inmueble.largo && inmueble.ancho) && (
+                     <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                       Dimensiones: {inmueble.largo}m x {inmueble.ancho}m
+                     </span>
+                  )}
                 </div>
               )}
             </div>

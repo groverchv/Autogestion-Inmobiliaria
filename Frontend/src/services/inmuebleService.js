@@ -9,8 +9,8 @@ const inmuebleService = {
    * Obtiene la lista de inmuebles del usuario autenticado.
    * @returns {Promise<Array>} Lista de inmuebles
    */
-  getAll: async () => {
-    const { data } = await api.get('/inmuebles/lista/');
+  getAll: async (filters = {}) => {
+    const { data } = await api.get('/inmuebles/lista/', { params: filters });
     return data;
   },
 

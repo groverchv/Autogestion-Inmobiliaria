@@ -20,8 +20,8 @@ const ManageInmuebles = () => {
         {item.tipo_nombre || 'N/A'}
       </span>
     )},
-    { key: 'ciudad', label: 'Ciudad' },
-    { key: 'zona', label: 'Zona' },
+    { key: 'ciudad', label: 'Ciudad', render: (item) => item.direccion_fk?.ciudad || 'N/A' },
+    { key: 'zona', label: 'Zona', render: (item) => item.direccion_fk?.zona || 'N/A' },
     { key: 'precio', label: 'Precio (Bs)', render: (item) => `Bs. ${parseFloat(item.precio || 0).toLocaleString()}` },
     { key: 'habitaciones', label: 'Hab.' },
     { key: 'banos', label: 'Baños' },
@@ -31,15 +31,51 @@ const ManageInmuebles = () => {
     }},
   ];
 
+  const transformPayload = (data) => {
+    const payload = { ...data };
+    payload.direccion_fk = {
+      ciudad: data.ciudad || '',
+      zona: data.zona || '',
+      calle: data.calle || '',
+      referencia: data.referencia || '',
+    };
+    delete payload.ciudad;
+    delete payload.zona;
+    delete payload.calle;
+    delete payload.referencia;
+    delete payload.direccion;
+
+    if (payload.largo === '') payload.largo = null;
+    if (payload.ancho === '') payload.ancho = null;
+    if (payload.superficie === '') payload.superficie = null;
+    if (payload.precio === '') payload.precio = null;
+
+    return payload;
+  };
+
+  const transformEditItem = (item) => {
+    const processed = { ...item };
+    if (item.direccion_fk) {
+      processed.ciudad = item.direccion_fk.ciudad;
+      processed.zona = item.direccion_fk.zona;
+      processed.calle = item.direccion_fk.calle;
+      processed.referencia = item.direccion_fk.referencia;
+    }
+    return processed;
+  };
+
   const formFields = [
     { key: 'titulo', label: 'Título', type: 'text', placeholder: 'ej: Casa en Zona Sur' },
     { key: 'descripcion', label: 'Descripción', type: 'textarea', placeholder: 'Descripción del inmueble...', required: false },
     { key: 'tipo', label: 'Categoría', type: 'select', options: tipos },
-    { key: 'direccion', label: 'Dirección', type: 'text', placeholder: 'ej: Av. Principal 123' },
     { key: 'ciudad', label: 'Ciudad', type: 'text', placeholder: 'ej: La Paz' },
-    { key: 'zona', label: 'Zona', type: 'text', placeholder: 'ej: Sur', required: false },
+    { key: 'zona', label: 'Zona', type: 'text', placeholder: 'ej: Sur' },
+    { key: 'calle', label: 'Calle', type: 'text', placeholder: 'ej: Av. Principal 123' },
+    { key: 'referencia', label: 'Referencia', type: 'text', required: false },
     { key: 'precio', label: 'Precio (Bs)', type: 'number', placeholder: '0.00' },
-    { key: 'superficie', label: 'Superficie (m²)', type: 'number', placeholder: '0.00', required: false },
+    { key: 'largo', label: 'Largo (m)', type: 'number', placeholder: '0.00' },
+    { key: 'ancho', label: 'Ancho (m)', type: 'number', placeholder: '0.00' },
+    { key: 'superficie', label: 'Superficie (m²)', type: 'number', placeholder: 'Calculado auto.', required: false },
     { key: 'habitaciones', label: 'Habitaciones', type: 'number', placeholder: '0', defaultValue: 0 },
     { key: 'banos', label: 'Baños', type: 'number', placeholder: '0', defaultValue: 0 },
     { key: 'garaje', label: 'Garaje', type: 'boolean', defaultValue: false, required: false },
@@ -58,6 +94,8 @@ const ManageInmuebles = () => {
       endpoint="/inmuebles/panel/lista/"
       columns={columns}
       formFields={formFields}
+      transformPayload={transformPayload}
+      transformEditItem={transformEditItem}
     />
   );
 };

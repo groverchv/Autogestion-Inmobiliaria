@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Favorito
+from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion
 
 
 class TipoInmuebleSerializer(serializers.ModelSerializer):
@@ -15,17 +15,41 @@ class MultimediaSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'subido']
 
 
+class DireccionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Direccion
+        fields = '__all__'
+
+
 class InmuebleSerializer(serializers.ModelSerializer):
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
     propietario_nombre = serializers.CharField(
         source='propietario.get_full_name', read_only=True
     )
     multimedia = MultimediaSerializer(many=True, read_only=True)
+    direccion_fk = DireccionSerializer()
 
     class Meta:
         model = Inmueble
         fields = '__all__'
-        read_only_fields = ['id', 'propietario', 'creado', 'actualizado']
+        read_only_fields = ['id', 'propietario', 'creado', 'actualizado', 'superficie']
+
+    def create(self, validated_data):
+        direccion_data = validated_data.pop('direccion_fk', None)
+        direccion = Direccion.objects.create(**direccion_data) if direccion_data else None
+        return Inmueble.objects.create(direccion_fk=direccion, **validated_data)
+
+    def update(self, instance, validated_data):
+        direccion_data = validated_data.pop('direccion_fk', None)
+        if direccion_data:
+            if instance.direccion_fk:
+                for attr, value in direccion_data.items():
+                    setattr(instance.direccion_fk, attr, value)
+                instance.direccion_fk.save()
+            else:
+                direccion = Direccion.objects.create(**direccion_data)
+                instance.direccion_fk = direccion
+        return super().update(instance, validated_data)
 
 
 class InmuebleListSerializer(serializers.ModelSerializer):
@@ -33,13 +57,15 @@ class InmuebleListSerializer(serializers.ModelSerializer):
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
     is_favorito = serializers.SerializerMethodField()
     imagen_principal = serializers.SerializerMethodField()
+    direccion_fk = DireccionSerializer(read_only=True)
 
     class Meta:
         model = Inmueble
         fields = [
-            'id', 'titulo', 'tipo_nombre', 'ciudad', 'zona',
+            'id', 'titulo', 'tipo_nombre', 'direccion_fk',
             'precio', 'estado', 'habitaciones', 'banos',
             'imagen_principal', 'creado', 'is_favorito',
+            'largo', 'ancho', 'superficie'
         ]
 
     def get_is_favorito(self, obj):

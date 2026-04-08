@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import inmuebleService from '../../services/inmuebleService';
 import useAuth from '../../hooks/useAuth';
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
@@ -13,21 +14,43 @@ const Propiedades = () => {
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroCiudad, setFiltroCiudad] = useState('');
   const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
+  const [filtroHabitaciones, setFiltroHabitaciones] = useState('');
+  const [filtroBanos, setFiltroBanos] = useState('');
+  const [filtroGaraje, setFiltroGaraje] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([
-      api.get('/inmuebles/lista/'),
-      api.get('/inmuebles/tipos/'),
-    ]).then(([inmRes, catRes]) => {
-      setInmuebles(inmRes.data.results || inmRes.data);
-      setCategorias(catRes.data.results || catRes.data);
-    }).catch(err => console.error(err))
-      .finally(() => setLoading(false));
+    // Cargar solo los tipos la primera vez
+    api.get('/inmuebles/tipos/')
+      .then(res => setCategorias(res.data.results || res.data))
+      .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setLoading(true);
+      const filters = {};
+      if (searchTerm) filters.search = searchTerm; 
+      if (filtroCategoria) filters.tipo = categorias.find(c => c.nombre === filtroCategoria)?.id || '';
+      if (filtroCiudad) filters.ciudad = filtroCiudad;
+      if (filtroPrecioMax) filters.precio_max = filtroPrecioMax;
+      if (filtroHabitaciones) filters.habitaciones_min = filtroHabitaciones;
+      if (filtroBanos) filters.banos_min = filtroBanos;
+      if (filtroGaraje) filters.garaje = true;
+      
+      inmuebleService.getAll(filters)
+        .then(data => {
+          setInmuebles(data.results || data);
+        })
+        .catch(err => console.error(err))
+        .finally(() => setLoading(false));
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, filtroCategoria, filtroCiudad, filtroPrecioMax, filtroHabitaciones, filtroBanos, filtroGaraje, categorias]);
 
   const toggleFavorite = async (inmId, e) => {
     e.preventDefault();
@@ -45,14 +68,6 @@ const Propiedades = () => {
       console.error('Error toggling favorite:', err);
     }
   };
-
-  const filteredInmuebles = inmuebles.filter(inm => {
-    if (filtroCategoria && inm.tipo_nombre !== filtroCategoria) return false;
-    if (filtroCiudad && !inm.ciudad?.toLowerCase().includes(filtroCiudad.toLowerCase())) return false;
-    if (filtroPrecioMax && parseFloat(inm.precio) > parseFloat(filtroPrecioMax)) return false;
-    if (searchTerm && !inm.titulo?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
-  });
 
   const estadoColors = {
     disponible: { bg: '#dcfce7', color: '#15803d' },
@@ -102,15 +117,46 @@ const Propiedades = () => {
             onChange={e => setFiltroPrecioMax(e.target.value)}
             className="propiedades-filter__input"
           />
-          <span className="propiedades-filter__count">{filteredInmuebles.length} resultados</span>
+          <select
+            value={filtroHabitaciones}
+            onChange={e => setFiltroHabitaciones(e.target.value)}
+            className="propiedades-filter__select"
+          >
+            <option value="">Habitaciones: Cualquiera</option>
+            <option value="1">1 o más</option>
+            <option value="2">2 o más</option>
+            <option value="3">3 o más</option>
+            <option value="4">4 o más</option>
+          </select>
+          <select
+            value={filtroBanos}
+            onChange={e => setFiltroBanos(e.target.value)}
+            className="propiedades-filter__select"
+          >
+            <option value="">Baños: Cualquiera</option>
+            <option value="1">1 o más</option>
+            <option value="2">2 o más</option>
+            <option value="3">3 o más</option>
+          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+            <input 
+              type="checkbox" 
+              checked={filtroGaraje} 
+              onChange={e => setFiltroGaraje(e.target.checked)} 
+            />
+            Con Garaje
+          </label>
+          <span className="propiedades-filter__count">{inmuebles.length} resultados</span>
         </div>
 
         {loading ? (
           <div className="propiedades-loading">Cargando propiedades...</div>
         ) : (
           <div className="propiedades-grid">
-            {filteredInmuebles.map(inm => {
+            {inmuebles.map(inm => {
               const estadoStyle = estadoColors[inm.estado] || estadoColors.disponible;
+              const ciudad = inm.direccion_fk?.ciudad || 'N/A';
+              const zona = inm.direccion_fk?.zona || '';
               return (
                 <div key={inm.id} className="propiedad-card">
                   <div className="propiedad-card__image">
@@ -138,7 +184,7 @@ const Propiedades = () => {
                   </div>
                   <div className="propiedad-card__body">
                     <h3 className="propiedad-card__title">{inm.titulo}</h3>
-                    <p className="propiedad-card__location">{inm.ciudad}{inm.zona ? `, ${inm.zona}` : ''}</p>
+                    <p className="propiedad-card__location">{ciudad}{zona ? `, ${zona}` : ''}</p>
                     <div className="propiedad-card__attrs">
                       {inm.habitaciones > 0 && <span>{inm.habitaciones} hab.</span>}
                       {inm.banos > 0 && <span>{inm.banos} baños</span>}
@@ -151,7 +197,7 @@ const Propiedades = () => {
                 </div>
               );
             })}
-            {filteredInmuebles.length === 0 && (
+            {inmuebles.length === 0 && (
               <div className="propiedades-empty">
                 <p>No se encontraron propiedades con esos filtros.</p>
               </div>

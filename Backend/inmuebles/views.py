@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -13,7 +13,24 @@ from .serializers import (
     ComisionSerializer,
     FavoritoSerializer,
 )
+from django_filters.rest_framework import DjangoFilterBackend
+import django_filters
 
+
+class InmuebleFilter(django_filters.FilterSet):
+    precio_min = django_filters.NumberFilter(field_name="precio", lookup_expr='gte')
+    precio_max = django_filters.NumberFilter(field_name="precio", lookup_expr='lte')
+    superficie_min = django_filters.NumberFilter(field_name="superficie", lookup_expr='gte')
+    superficie_max = django_filters.NumberFilter(field_name="superficie", lookup_expr='lte')
+    ciudad = django_filters.CharFilter(field_name="direccion_fk__ciudad", lookup_expr='icontains')
+    zona = django_filters.CharFilter(field_name="direccion_fk__zona", lookup_expr='icontains')
+    habitaciones_min = django_filters.NumberFilter(field_name="habitaciones", lookup_expr='gte')
+    banos_min = django_filters.NumberFilter(field_name="banos", lookup_expr='gte')
+    garaje = django_filters.BooleanFilter(field_name="garaje")
+
+    class Meta:
+        model = Inmueble
+        fields = ['estado', 'tipo', 'habitaciones', 'banos']
 
 class TipoInmuebleViewSet(viewsets.ModelViewSet):
     """CRUD para tipos de inmueble."""
@@ -29,6 +46,9 @@ class TipoInmuebleViewSet(viewsets.ModelViewSet):
 class InmuebleViewSet(viewsets.ModelViewSet):
     """CRUD para inmuebles."""
     queryset = Inmueble.objects.select_related('tipo', 'propietario').prefetch_related('multimedia').all()
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = InmuebleFilter
+    search_fields = ['titulo', 'descripcion', 'direccion_fk__ciudad', 'direccion_fk__zona', 'direccion_fk__calle', 'direccion_fk__referencia']
 
     def get_permissions(self):
         # Permitir ver inmuebles de forma pública

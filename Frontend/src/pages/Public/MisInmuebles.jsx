@@ -46,10 +46,13 @@ const MisInmuebles = () => {
     titulo: '',
     descripcion: '',
     tipo: '',
-    direccion: '',
     ciudad: '',
     zona: '',
+    calle: '',
+    referencia: '',
     precio: '',
+    largo: '',
+    ancho: '',
     superficie: '',
     habitaciones: 0,
     banos: 0,
@@ -120,10 +123,13 @@ const MisInmuebles = () => {
         titulo: detailedInm.titulo || '',
         descripcion: detailedInm.descripcion || '',
         tipo: detailedInm.tipo || (tipos.length > 0 ? tipos[0].id : ''),
-        direccion: detailedInm.direccion || '',
-        ciudad: detailedInm.ciudad || '',
-        zona: detailedInm.zona || '',
+        ciudad: detailedInm.direccion_fk?.ciudad || '',
+        zona: detailedInm.direccion_fk?.zona || '',
+        calle: detailedInm.direccion_fk?.calle || '',
+        referencia: detailedInm.direccion_fk?.referencia || '',
         precio: detailedInm.precio || '',
+        largo: detailedInm.largo || '',
+        ancho: detailedInm.ancho || '',
         superficie: detailedInm.superficie || '',
         habitaciones: detailedInm.habitaciones || 0,
         banos: detailedInm.banos || 0,
@@ -149,7 +155,22 @@ const MisInmuebles = () => {
     setSaving(true);
     try {
       const payload = { ...formData };
-      if (!payload.superficie) payload.superficie = null; // manejar nulls recomendados
+      
+      payload.direccion_fk = {
+        ciudad: payload.ciudad || '',
+        zona: payload.zona || '',
+        calle: payload.calle || '',
+        referencia: payload.referencia || ''
+      };
+      delete payload.ciudad;
+      delete payload.zona;
+      delete payload.calle;
+      delete payload.referencia;
+
+      if (payload.superficie === '') payload.superficie = null;
+      if (payload.largo === '') payload.largo = null;
+      if (payload.ancho === '') payload.ancho = null;
+      if (payload.precio === '') payload.precio = null;
       
       let nuevoInmuebleId;
       if (editingId) {
@@ -190,9 +211,9 @@ const MisInmuebles = () => {
       setMediaToDelete([]);
       setFormData({
         titulo: '', descripcion: '', tipo: tipos.length > 0 ? tipos[0].id : '', 
-        direccion: '', ciudad: '', zona: '', precio: '', superficie: '', 
+        ciudad: '', zona: '', calle: '', referencia: '', precio: '', largo: '', ancho: '', superficie: '', 
         habitaciones: 0, banos: 0, garaje: false, estado: 'disponible',
-        latitud: null, longitud: null
+        gps: ''
       });
       setArchivos([]);
       setPreviewUrls([]);
@@ -250,7 +271,7 @@ const MisInmuebles = () => {
                 setEditingId(null);
                 setFormData({
                   titulo: '', descripcion: '', tipo: tipos.length > 0 ? tipos[0].id : '', 
-                  direccion: '', ciudad: '', zona: '', precio: '', superficie: '', 
+                  ciudad: '', zona: '', calle: '', referencia: '', precio: '', largo: '', ancho: '', superficie: '', 
                   habitaciones: 0, banos: 0, garaje: false, estado: 'disponible',
                   gps: ''
                 });
@@ -395,9 +416,15 @@ const MisInmuebles = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Dirección Exacta *</label>
-                  <input required type="text" name="direccion" value={formData.direccion} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Calle *</label>
+                    <input required type="text" name="calle" value={formData.calle} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Referencia</label>
+                    <input type="text" name="referencia" value={formData.referencia} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '16px' }}>
@@ -406,8 +433,16 @@ const MisInmuebles = () => {
                     <input required type="number" step="0.01" name="precio" value={formData.precio} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Largo (m) *</label>
+                    <input required type="number" step="0.01" name="largo" value={formData.largo} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Ancho (m) *</label>
+                    <input required type="number" step="0.01" name="ancho" value={formData.ancho} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Superficie (m²)</label>
-                    <input type="number" step="0.01" name="superficie" value={formData.superficie} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                    <input disabled type="number" step="0.01" name="superficie" value={formData.superficie} onChange={handleChange} disabled placeholder="Calculado auto." className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                 </div>
 

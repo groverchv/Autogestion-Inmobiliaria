@@ -15,14 +15,15 @@ const InmuebleCard = ({ inmueble, onEdit, onDelete }) => {
     id,
     titulo,
     tipo_nombre,
-    ciudad,
-    zona,
     precio,
     estado,
     habitaciones,
     banos,
     imagen_principal,
   } = inmueble;
+
+  const ciudad = inmueble.direccion_fk?.ciudad || '';
+  const zona = inmueble.direccion_fk?.zona || '';
 
   const estadoLabel = {
     disponible: 'Disponible',

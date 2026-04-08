@@ -16,6 +16,21 @@ class TipoInmueble(models.Model):
         return self.nombre
 
 
+class Direccion(models.Model):
+    """Normalización de datos de ubicación geográfica."""
+    ciudad = models.CharField(max_length=100)
+    zona = models.CharField(max_length=100, blank=True)
+    calle = models.CharField(max_length=200, blank=True)
+    referencia = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Dirección'
+        verbose_name_plural = 'Direcciones'
+
+    def __str__(self):
+        return f'{self.ciudad}, {self.zona} - {self.calle}'
+
+
 class Inmueble(models.Model):
     """Propiedad inmobiliaria."""
 
@@ -37,24 +52,32 @@ class Inmueble(models.Model):
         null=True,
         related_name='inmuebles',
     )
+    direccion_fk = models.OneToOneField(
+        'Direccion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='inmueble'
+    )
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
-    direccion = models.TextField()
-    ciudad = models.CharField(max_length=100)
-    zona = models.CharField(max_length=100, blank=True)
-    precio = models.DecimalField(max_digits=12, decimal_places=2)
+    precio = models.DecimalField(max_digits=12, decimal_places=2, db_index=True)
+    largo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    ancho = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     superficie = models.DecimalField(
         max_digits=10, decimal_places=2,
         help_text='Superficie en metros cuadrados',
         null=True, blank=True,
+        db_index=True
     )
-    habitaciones = models.PositiveIntegerField(default=0)
-    banos = models.PositiveIntegerField(default=0)
+    habitaciones = models.PositiveIntegerField(default=0, db_index=True)
+    banos = models.PositiveIntegerField(default=0, db_index=True)
     garaje = models.BooleanField(default=False)
     estado = models.CharField(
         max_length=20,
         choices=EstadoInmueble.choices,
         default=EstadoInmueble.DISPONIBLE,
+        db_index=True
     )
     # Coordenadas GPS
     gps = models.CharField(max_length=100, null=True, blank=True, help_text="Coordenadas GPS (ej. -17.7898, -63.1939)")
@@ -66,8 +89,14 @@ class Inmueble(models.Model):
         verbose_name_plural = 'Inmuebles'
         ordering = ['-creado']
 
+    def save(self, *args, **kwargs):
+        if self.largo is not None and self.ancho is not None:
+            self.superficie = self.largo * self.ancho
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f'{self.titulo} — {self.ciudad}'
+        ciudad_str = self.direccion_fk.ciudad if self.direccion_fk else 'Sin ciudad'
+        return f'{self.titulo} — {ciudad_str}'
 
 
 class Multimedia(models.Model):

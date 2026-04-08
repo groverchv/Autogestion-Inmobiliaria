@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
-const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id' }) => {
+const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id', transformPayload, transformEditItem }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -63,7 +63,8 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
   const openEdit = (item) => {
     setEditItem(item);
     const initial = {};
-    formFields.forEach(f => { initial[f.key] = item[f.key] ?? ''; });
+    const processedItem = transformEditItem ? transformEditItem(item) : item;
+    formFields.forEach(f => { initial[f.key] = processedItem[f.key] ?? ''; });
     setFormData(initial);
     setError('');
     setShowModal(true);
@@ -84,10 +85,11 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
     setSaving(true);
     setError('');
     try {
+      const payload = transformPayload ? transformPayload(formData) : formData;
       if (editItem) {
-        await api.patch(`${endpoint}${editItem[idKey]}/`, formData);
+        await api.patch(`${endpoint}${editItem[idKey]}/`, payload);
       } else {
-        await api.post(endpoint, formData);
+        await api.post(endpoint, payload);
       }
       setShowModal(false);
       fetchItems();
