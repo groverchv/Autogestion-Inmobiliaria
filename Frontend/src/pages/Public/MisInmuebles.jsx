@@ -85,11 +85,30 @@ const MisInmuebles = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    let { name, value, type, checked } = e.target;
+    if (type === 'number' && value !== '') {
+      value = value.replace(/^-/, '');
+      if (Number(value) < 0) return;
+    }
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      
+      // Auto-calcular superficie en tiempo real
+      if (name === 'largo' || name === 'ancho') {
+        const l = parseFloat(newData.largo);
+        const a = parseFloat(newData.ancho);
+        if (!isNaN(l) && !isNaN(a)) {
+          newData.superficie = (l * a).toFixed(2);
+        } else {
+          newData.superficie = '';
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const handleFileChange = (e) => {
@@ -430,30 +449,30 @@ const MisInmuebles = () => {
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Precio (Bs) *</label>
-                    <input required type="number" step="0.01" name="precio" value={formData.precio} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                    <input required type="number" min="0" step="0.01" name="precio" value={formData.precio} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Largo (m) *</label>
-                    <input required type="number" step="0.01" name="largo" value={formData.largo} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                    <input required type="number" min="0" step="0.01" name="largo" value={formData.largo} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Ancho (m) *</label>
-                    <input required type="number" step="0.01" name="ancho" value={formData.ancho} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                    <input required type="number" min="0" step="0.01" name="ancho" value={formData.ancho} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Superficie (m²)</label>
-                    <input disabled type="number" step="0.01" name="superficie" value={formData.superficie} onChange={handleChange} disabled placeholder="Calculado auto." className="propiedades-filter__input" style={{ width: '100%' }} />
+                    <input type="text" value={formData.superficie} disabled placeholder="Calculado auto." className="propiedades-filter__input" style={{ width: '100%', background: '#f8fafc', color: '#64748b', fontWeight: 600 }} />
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Habitaciones</label>
-                    <input type="number" name="habitaciones" value={formData.habitaciones} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                    <input type="number" min="0" name="habitaciones" value={formData.habitaciones} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Baños</label>
-                    <input type="number" name="banos" value={formData.banos} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
+                    <input type="number" min="0" name="banos" value={formData.banos} onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', paddingBottom: '12px' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>

@@ -17,13 +17,25 @@ from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 
 
+class UnaccentSearchFilter(filters.SearchFilter):
+    def construct_search(self, field_name, queryset=None):
+        lookup = self.lookup_prefixes.get(field_name[0])
+        if lookup:
+            field_name = field_name[1:]
+        else:
+            lookup = 'unaccent__icontains'
+        return "__".join([field_name, lookup])
+
+
 class InmuebleFilter(django_filters.FilterSet):
     precio_min = django_filters.NumberFilter(field_name="precio", lookup_expr='gte')
     precio_max = django_filters.NumberFilter(field_name="precio", lookup_expr='lte')
     superficie_min = django_filters.NumberFilter(field_name="superficie", lookup_expr='gte')
     superficie_max = django_filters.NumberFilter(field_name="superficie", lookup_expr='lte')
-    ciudad = django_filters.CharFilter(field_name="direccion_fk__ciudad", lookup_expr='icontains')
-    zona = django_filters.CharFilter(field_name="direccion_fk__zona", lookup_expr='icontains')
+    
+    # El filtro de ciudad ahora busca exclusivamente en ciudad (ignorando acentos)
+    ciudad = django_filters.CharFilter(field_name="direccion_fk__ciudad", lookup_expr='unaccent__icontains')
+    
     habitaciones_min = django_filters.NumberFilter(field_name="habitaciones", lookup_expr='gte')
     banos_min = django_filters.NumberFilter(field_name="banos", lookup_expr='gte')
     garaje = django_filters.BooleanFilter(field_name="garaje")
@@ -46,7 +58,7 @@ class TipoInmuebleViewSet(viewsets.ModelViewSet):
 class InmuebleViewSet(viewsets.ModelViewSet):
     """CRUD para inmuebles."""
     queryset = Inmueble.objects.select_related('tipo', 'propietario').prefetch_related('multimedia').all()
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [DjangoFilterBackend, UnaccentSearchFilter]
     filterset_class = InmuebleFilter
     search_fields = ['titulo', 'descripcion', 'direccion_fk__ciudad', 'direccion_fk__zona', 'direccion_fk__calle', 'direccion_fk__referencia']
 
