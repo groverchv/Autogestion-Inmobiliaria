@@ -88,7 +88,7 @@ const Propiedades = () => {
         <div className="propiedades-filters">
           <input
             type="text"
-            placeholder="Buscar por título..."
+            placeholder="Búsqueda general (Ej: Urbari, casa jardín, etc.)"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="propiedades-filter__input"
@@ -105,16 +105,20 @@ const Propiedades = () => {
           </select>
           <input
             type="text"
-            placeholder="Ciudad..."
+            placeholder="Filtrar por Ciudad..."
             value={filtroCiudad}
             onChange={e => setFiltroCiudad(e.target.value)}
             className="propiedades-filter__input"
           />
           <input
             type="number"
+            min="0"
             placeholder="Precio máximo (Bs)"
             value={filtroPrecioMax}
-            onChange={e => setFiltroPrecioMax(e.target.value)}
+            onChange={e => {
+              const val = e.target.value.replace(/^-/, '');
+              if (val === '' || Number(val) >= 0) setFiltroPrecioMax(val);
+            }}
             className="propiedades-filter__input"
           />
           <select

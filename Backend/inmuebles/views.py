@@ -17,6 +17,16 @@ from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 
 
+class UnaccentSearchFilter(filters.SearchFilter):
+    def construct_search(self, field_name, queryset=None):
+        lookup = self.lookup_prefixes.get(field_name[0])
+        if lookup:
+            field_name = field_name[1:]
+        else:
+            lookup = 'unaccent__icontains'
+        return "__".join([field_name, lookup])
+
+
 class InmuebleFilter(django_filters.FilterSet):
     precio_min = django_filters.NumberFilter(field_name="precio", lookup_expr='gte')
     precio_max = django_filters.NumberFilter(field_name="precio", lookup_expr='lte')
@@ -46,7 +56,7 @@ class TipoInmuebleViewSet(viewsets.ModelViewSet):
 class InmuebleViewSet(viewsets.ModelViewSet):
     """CRUD para inmuebles."""
     queryset = Inmueble.objects.select_related('tipo', 'propietario').prefetch_related('multimedia').all()
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [DjangoFilterBackend, UnaccentSearchFilter]
     filterset_class = InmuebleFilter
     search_fields = ['titulo', 'descripcion', 'direccion__ciudad', 'direccion__zona', 'direccion__calle', 'direccion__referencia']
 

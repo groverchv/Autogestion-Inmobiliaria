@@ -107,8 +107,26 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
     }
   };
 
-  const handleChange = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+  const handleChange = (key, value, type) => {
+    if (type === 'number' && value) {
+      value = String(value).replace(/^-/, '');
+      if (Number(value) < 0) return;
+    }
+    setFormData(prev => {
+      const newData = { ...prev, [key]: value };
+      
+      // Auto-calcular superficie en tiempo real
+      if (key === 'largo' || key === 'ancho') {
+        const l = parseFloat(newData.largo);
+        const a = parseFloat(newData.ancho);
+        if (!isNaN(l) && !isNaN(a)) {
+          newData.superficie = (l * a).toFixed(2);
+        } else {
+          newData.superficie = '';
+        }
+      }
+      return newData;
+    });
   };
 
   const s = {
@@ -240,21 +258,23 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
                 <div key={field.key}>
                   <label style={s.fieldLabel}>{field.label}{field.required !== false && ' *'}</label>
                   {field.type === 'select' ? (
-                    <select style={s.fieldSelect} value={formData[field.key] || ''} onChange={e => handleChange(field.key, e.target.value)} required={field.required !== false}>
+                    <select style={s.fieldSelect} value={formData[field.key] || ''} onChange={e => handleChange(field.key, e.target.value, field.type)} required={field.required !== false}>
                       <option value="">— Seleccionar —</option>
                       {(field.options || []).map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
                   ) : field.type === 'textarea' ? (
-                    <textarea style={{ ...s.fieldInput, minHeight: '80px', resize: 'vertical' }} value={formData[field.key] || ''} onChange={e => handleChange(field.key, e.target.value)} placeholder={field.placeholder || ''} required={field.required !== false} />
+                    <textarea style={{ ...s.fieldInput, minHeight: '80px', resize: 'vertical' }} value={formData[field.key] || ''} onChange={e => handleChange(field.key, e.target.value, field.type)} placeholder={field.placeholder || ''} required={field.required !== false} />
+                  ) : field.key === 'superficie' ? (
+                    <input style={{...s.fieldInput, background: '#f8fafc', color: '#64748b', fontWeight: 600}} type="text" value={formData[field.key] || ''} disabled placeholder={field.placeholder || ''} />
                   ) : field.type === 'boolean' ? (
-                    <select style={s.fieldSelect} value={formData[field.key] === true || formData[field.key] === 'true' ? 'true' : 'false'} onChange={e => handleChange(field.key, e.target.value === 'true')}>
+                    <select style={s.fieldSelect} value={formData[field.key] === true || formData[field.key] === 'true' ? 'true' : 'false'} onChange={e => handleChange(field.key, e.target.value === 'true', field.type)}>
                       <option value="true">Sí</option>
                       <option value="false">No</option>
                     </select>
                   ) : (
-                    <input style={s.fieldInput} type={field.type || 'text'} value={formData[field.key] || ''} onChange={e => handleChange(field.key, e.target.value)} placeholder={field.placeholder || ''} required={field.required !== false} step={field.type === 'number' ? 'any' : undefined} />
+                    <input style={s.fieldInput} type={field.type || 'text'} min={field.type === 'number' ? "0" : undefined} value={formData[field.key] || ''} onChange={e => handleChange(field.key, e.target.value, field.type)} placeholder={field.placeholder || ''} required={field.required !== false} step={field.type === 'number' ? 'any' : undefined} />
                   )}
                 </div>
               ))}

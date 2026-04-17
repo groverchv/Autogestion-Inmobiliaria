@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class TipoInmueble(models.Model):
@@ -63,7 +64,10 @@ class Inmueble(models.Model):
     )
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
-    precio = models.DecimalField(max_digits=12, decimal_places=2, db_index=True)
+    precio = models.DecimalField(
+        max_digits=12, decimal_places=2, db_index=True,
+        validators=[MinValueValidator(0)]
+    )
     largo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     ancho = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     superficie = models.DecimalField(

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'cloudinary',
     'django_filters',
     'channels',
+    'django.contrib.postgres',
     # Local apps
     'usuarios',
     'inmuebles',
