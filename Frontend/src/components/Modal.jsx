@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { X } from 'lucide-react';
 import './Modal.css';
 
 /**
@@ -25,7 +26,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
         <div className="modal__header">
           <h2 className="modal__title">{title}</h2>
           <button className="modal__close" onClick={onClose}>
-            ✕
+            <X size={18} />
           </button>
         </div>
         <div className="modal__body">{children}</div>

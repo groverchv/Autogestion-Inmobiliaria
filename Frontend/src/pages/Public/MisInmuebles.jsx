@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { MapPin, Check, X } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -123,10 +124,10 @@ const MisInmuebles = () => {
         titulo: detailedInm.titulo || '',
         descripcion: detailedInm.descripcion || '',
         tipo: detailedInm.tipo || (tipos.length > 0 ? tipos[0].id : ''),
-        ciudad: detailedInm.direccion_fk?.ciudad || '',
-        zona: detailedInm.direccion_fk?.zona || '',
-        calle: detailedInm.direccion_fk?.calle || '',
-        referencia: detailedInm.direccion_fk?.referencia || '',
+        ciudad: detailedInm.direccion?.ciudad || '',
+        zona: detailedInm.direccion?.zona || '',
+        calle: detailedInm.direccion?.calle || '',
+        referencia: detailedInm.direccion?.referencia || '',
         precio: detailedInm.precio || '',
         largo: detailedInm.largo || '',
         ancho: detailedInm.ancho || '',
@@ -156,7 +157,7 @@ const MisInmuebles = () => {
     try {
       const payload = { ...formData };
       
-      payload.direccion_fk = {
+      payload.direccion = {
         ciudad: payload.ciudad || '',
         zona: payload.zona || '',
         calle: payload.calle || '',
@@ -190,12 +191,12 @@ const MisInmuebles = () => {
 
       // Subir imágenes/videos a Cloudinary vía el backend
       if (archivos.length > 0) {
-        const currentPrincipalExists = existingMedia.some(m => m.es_principal);
+        const currentPrincipalExists = existingMedia.some(m => m.principal);
         const uploadPromises = archivos.map(async (file, i) => {
           const mediaForm = new FormData();
           mediaForm.append('inmueble', nuevoInmuebleId);
           mediaForm.append('archivo', file);
-          mediaForm.append('es_principal', (!currentPrincipalExists && i === 0) ? 'true' : 'false');
+          mediaForm.append('principal', (!currentPrincipalExists && i === 0) ? 'true' : 'false');
           mediaForm.append('tipo', file.type.startsWith('video/') ? 'video' : 'imagen');
           
           return api.post('/inmuebles/multimedia/', mediaForm, {
@@ -488,7 +489,9 @@ const MisInmuebles = () => {
                     }}
                     style={{ marginBottom: '16px', background: 'var(--color-secondary, #475569)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}
                   >
-                    📍 Usar mi ubicación actual
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <MapPin size={14} /> Usar mi ubicación actual
+                    </span>
                   </button>
 
                   <div style={{ height: '300px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
@@ -516,8 +519,8 @@ const MisInmuebles = () => {
                     })()}
                   </div>
                   {formData.gps && (
-                    <div style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--color-success, #10b981)', fontWeight: 600 }}>
-                      ✓ Ubicación registrada ({formData.gps})
+                    <div style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--color-success, #10b981)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <Check size={14} /> Ubicación registrada ({formData.gps})
                     </div>
                   )}
                 </div>
@@ -538,7 +541,7 @@ const MisInmuebles = () => {
                             ) : (
                               <img src={media.archivo} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--color-border)' }} alt={`existing-${i}`} />
                             )}
-                            {media.es_principal && (
+                            {media.principal && (
                               <span style={{ position: 'absolute', bottom: '4px', left: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.65rem', textAlign: 'center', padding: '2px', borderRadius: '4px' }}>Principal</span>
                             )}
                             <button 
@@ -550,7 +553,7 @@ const MisInmuebles = () => {
                               style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--color-danger, #ef4444)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
                               title="Eliminar archivo existente"
                             >
-                              ×
+                              <X size={12} />
                             </button>
                           </div>
                         ))}
@@ -585,7 +588,7 @@ const MisInmuebles = () => {
                             onClick={() => removeFile(i)}
                             style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--color-danger, #ef4444)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
                           >
-                            ×
+                            <X size={12} />
                           </button>
                         </div>
                       ))}

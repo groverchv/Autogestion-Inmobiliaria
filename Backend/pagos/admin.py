@@ -16,8 +16,8 @@ class DetallePagoInline(admin.TabularInline):
 
 @admin.register(Pago)
 class PagoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'contrato', 'usuario', 'monto', 'tipo_pago', 'estado', 'fecha_pago']
-    list_filter = ['estado', 'tipo_pago', 'fecha_pago']
+    list_display = ['id', 'contrato', 'usuario', 'monto', 'tipo_pago', 'estado', 'fecha']
+    list_filter = ['estado', 'tipo_pago', 'fecha']
     search_fields = ['referencia', 'usuario__username']
     inlines = [DetallePagoInline]
 
@@ -30,8 +30,8 @@ class DetallePagoAdmin(admin.ModelAdmin):
 
 @admin.register(HistorialPago)
 class HistorialPagoAdmin(admin.ModelAdmin):
-    list_display = ['pago', 'estado_anterior', 'estado_nuevo', 'usuario', 'fecha']
-    list_filter = ['estado_nuevo']
+    list_display = ['pago', 'anterior', 'nuevo', 'usuario', 'fecha']
+    list_filter = ['nuevo']
 
 
 @admin.register(TipoPlan)
@@ -42,6 +42,6 @@ class TipoPlanAdmin(admin.ModelAdmin):
 
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'tipo_plan', 'precio_mensual', 'duracion_meses', 'activo']
+    list_display = ['nombre', 'tipo_plan', 'precio', 'duracion', 'activo']
     list_filter = ['activo', 'tipo_plan']
     search_fields = ['nombre']

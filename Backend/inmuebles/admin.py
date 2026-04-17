@@ -22,19 +22,19 @@ class DireccionAdmin(admin.ModelAdmin):
 @admin.register(Inmueble)
 class InmuebleAdmin(admin.ModelAdmin):
     list_display = ['titulo', 'tipo', 'propietario', 'get_ciudad', 'precio', 'estado', 'creado']
-    list_filter = ['estado', 'tipo', 'direccion_fk__ciudad']
-    search_fields = ['titulo', 'direccion_fk__calle', 'direccion_fk__ciudad']
+    list_filter = ['estado', 'tipo', 'direccion__ciudad']
+    search_fields = ['titulo', 'direccion__calle', 'direccion__ciudad']
     inlines = [MultimediaInline]
 
     def get_ciudad(self, obj):
-        return obj.direccion_fk.ciudad if obj.direccion_fk else 'N/A'
+        return obj.direccion.ciudad if obj.direccion else 'N/A'
     get_ciudad.short_description = 'Ciudad'
 
 
 @admin.register(Multimedia)
 class MultimediaAdmin(admin.ModelAdmin):
-    list_display = ['inmueble', 'tipo', 'es_principal', 'subido']
-    list_filter = ['tipo', 'es_principal']
+    list_display = ['inmueble', 'tipo', 'principal', 'subido']
+    list_filter = ['tipo', 'principal']
 
 
 @admin.register(TipoContrato)
@@ -45,7 +45,7 @@ class TipoContratoAdmin(admin.ModelAdmin):
 
 @admin.register(Contrato)
 class ContratoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'inmueble', 'inquilino', 'tipo_contrato', 'monto', 'estado', 'fecha_inicio']
+    list_display = ['id', 'inmueble', 'inquilino', 'tipo_contrato', 'monto', 'estado', 'inicio']
     list_filter = ['estado', 'tipo_contrato']
     search_fields = ['inmueble__titulo', 'inquilino__username']
 

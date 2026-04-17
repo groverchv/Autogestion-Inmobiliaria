@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Star } from 'lucide-react';
 import api from '../services/api';
 
 const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
@@ -56,19 +57,21 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
     return (
       <div style={{ display: 'flex', gap: '4px' }}>
         {[1, 2, 3, 4, 5].map(star => (
-          <span 
+          <span
             key={star} 
             onClick={() => interactive && onRate && onRate(star)}
             style={{ 
-              color: star <= rating ? '#fbbf24' : '#e2e8f0', 
-              fontSize: size,
               cursor: interactive ? 'pointer' : 'default',
               transition: 'transform 0.1s'
             }}
             onMouseEnter={e => interactive && (e.currentTarget.style.transform = 'scale(1.2)')}
             onMouseLeave={e => interactive && (e.currentTarget.style.transform = 'scale(1)')}
           >
-             ★ 
+            <Star
+              size={parseInt(size, 10) * 16 || 16}
+              fill={star <= rating ? '#fbbf24' : 'none'}
+              color={star <= rating ? '#fbbf24' : '#e2e8f0'}
+            />
           </span>
         ))}
       </div>

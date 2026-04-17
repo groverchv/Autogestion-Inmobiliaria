@@ -27,7 +27,7 @@ class InmuebleSerializer(serializers.ModelSerializer):
         source='propietario.get_full_name', read_only=True
     )
     multimedia = MultimediaSerializer(many=True, read_only=True)
-    direccion_fk = DireccionSerializer()
+    direccion = DireccionSerializer()
 
     class Meta:
         model = Inmueble
@@ -35,20 +35,20 @@ class InmuebleSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'propietario', 'creado', 'actualizado', 'superficie']
 
     def create(self, validated_data):
-        direccion_data = validated_data.pop('direccion_fk', None)
+        direccion_data = validated_data.pop('direccion', None)
         direccion = Direccion.objects.create(**direccion_data) if direccion_data else None
-        return Inmueble.objects.create(direccion_fk=direccion, **validated_data)
+        return Inmueble.objects.create(direccion=direccion, **validated_data)
 
     def update(self, instance, validated_data):
-        direccion_data = validated_data.pop('direccion_fk', None)
+        direccion_data = validated_data.pop('direccion', None)
         if direccion_data:
-            if instance.direccion_fk:
+            if instance.direccion:
                 for attr, value in direccion_data.items():
-                    setattr(instance.direccion_fk, attr, value)
-                instance.direccion_fk.save()
+                    setattr(instance.direccion, attr, value)
+                instance.direccion.save()
             else:
                 direccion = Direccion.objects.create(**direccion_data)
-                instance.direccion_fk = direccion
+                instance.direccion = direccion
         return super().update(instance, validated_data)
 
 
@@ -57,12 +57,12 @@ class InmuebleListSerializer(serializers.ModelSerializer):
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
     is_favorito = serializers.SerializerMethodField()
     imagen_principal = serializers.SerializerMethodField()
-    direccion_fk = DireccionSerializer(read_only=True)
+    direccion = DireccionSerializer(read_only=True)
 
     class Meta:
         model = Inmueble
         fields = [
-            'id', 'titulo', 'tipo_nombre', 'direccion_fk',
+            'id', 'titulo', 'tipo_nombre', 'direccion',
             'precio', 'estado', 'habitaciones', 'banos',
             'imagen_principal', 'creado', 'is_favorito',
             'largo', 'ancho', 'superficie'
@@ -77,7 +77,7 @@ class InmuebleListSerializer(serializers.ModelSerializer):
 
     def get_imagen_principal(self, obj):
         try:
-            img = obj.multimedia.filter(es_principal=True).first()
+            img = obj.multimedia.filter(principal=True).first()
             if not img:
                 img = obj.multimedia.first()
             

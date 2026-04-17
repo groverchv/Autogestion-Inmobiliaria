@@ -10,7 +10,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'rol', 'rol_nombre', 'telefono', 'direccion', 'foto',
-            'fecha_nacimiento', 'ci', 'activo', 'date_joined',
+            'nacimiento', 'ci', 'activo', 'date_joined',
         ]
         read_only_fields = ['id', 'date_joined']
 
@@ -24,7 +24,7 @@ class UsuarioCreateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'password', 'first_name',
             'last_name', 'rol', 'telefono', 'direccion',
-            'fecha_nacimiento', 'ci',
+            'nacimiento', 'ci',
         ]
 
     def create(self, validated_data):
@@ -53,6 +53,9 @@ class NotificacionSerializer(serializers.ModelSerializer):
 
 class MensajeSerializer(serializers.ModelSerializer):
     remitente_nombre = serializers.SerializerMethodField(read_only=True)
+    tipo_mensaje = serializers.CharField(source='tipo', read_only=True)
+    archivo_url = serializers.CharField(source='archivo', read_only=True)
+    ubicacion_gps = serializers.CharField(source='ubicacion', read_only=True)
 
     class Meta:
         model = Mensaje

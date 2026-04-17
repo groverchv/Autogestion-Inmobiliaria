@@ -8,6 +8,7 @@ class TipoInmueble(models.Model):
     descripcion = models.TextField(blank=True)
 
     class Meta:
+        db_table = 'inmuebles_tipo_inmueble'
         verbose_name = 'Tipo de Inmueble'
         verbose_name_plural = 'Tipos de Inmueble'
         ordering = ['nombre']
@@ -24,6 +25,7 @@ class Direccion(models.Model):
     referencia = models.TextField(blank=True)
 
     class Meta:
+        db_table = 'inmuebles_direccion'
         verbose_name = 'Dirección'
         verbose_name_plural = 'Direcciones'
 
@@ -52,7 +54,7 @@ class Inmueble(models.Model):
         null=True,
         related_name='inmuebles',
     )
-    direccion_fk = models.OneToOneField(
+    direccion = models.OneToOneField(
         'Direccion',
         on_delete=models.SET_NULL,
         null=True,
@@ -85,6 +87,7 @@ class Inmueble(models.Model):
     actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'inmuebles_inmueble'
         verbose_name = 'Inmueble'
         verbose_name_plural = 'Inmuebles'
         ordering = ['-creado']
@@ -95,7 +98,7 @@ class Inmueble(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        ciudad_str = self.direccion_fk.ciudad if self.direccion_fk else 'Sin ciudad'
+        ciudad_str = self.direccion.ciudad if self.direccion else 'Sin ciudad'
         return f'{self.titulo} — {ciudad_str}'
 
 
@@ -118,13 +121,14 @@ class Multimedia(models.Model):
     )
     archivo = models.CharField(max_length=500, help_text='URL de Cloudinary o ruta')
     descripcion = models.CharField(max_length=200, blank=True)
-    es_principal = models.BooleanField(default=False)
+    principal = models.BooleanField(default=False)
     subido = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'inmuebles_multimedia'
         verbose_name = 'Multimedia'
         verbose_name_plural = 'Multimedia'
-        ordering = ['-es_principal', '-subido']
+        ordering = ['-principal', '-subido']
 
     def __str__(self):
         return f'{self.tipo} — {self.inmueble.titulo}'
@@ -136,6 +140,7 @@ class TipoContrato(models.Model):
     descripcion = models.TextField(blank=True)
 
     class Meta:
+        db_table = 'inmuebles_tipo_contrato'
         verbose_name = 'Tipo de Contrato'
         verbose_name_plural = 'Tipos de Contrato'
         ordering = ['nombre']
@@ -169,8 +174,8 @@ class Contrato(models.Model):
         on_delete=models.CASCADE,
         related_name='contratos_inquilino',
     )
-    fecha_inicio = models.DateField()
-    fecha_fin = models.DateField(null=True, blank=True)
+    inicio = models.DateField()
+    fin = models.DateField(null=True, blank=True)
     monto = models.DecimalField(max_digits=12, decimal_places=2)
     deposito = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     estado = models.CharField(
@@ -182,6 +187,7 @@ class Contrato(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'inmuebles_contrato'
         verbose_name = 'Contrato'
         verbose_name_plural = 'Contratos'
         ordering = ['-creado']
@@ -204,6 +210,7 @@ class Comision(models.Model):
     descripcion = models.TextField(blank=True)
 
     class Meta:
+        db_table = 'inmuebles_comision'
         verbose_name = 'Comisión'
         verbose_name_plural = 'Comisiones'
         ordering = ['-fecha']
@@ -227,6 +234,7 @@ class Favorito(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'inmuebles_favorito'
         verbose_name = 'Favorito'
         verbose_name_plural = 'Favoritos'
         unique_together = ('usuario', 'inmueble')

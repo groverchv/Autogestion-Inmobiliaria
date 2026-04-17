@@ -17,11 +17,12 @@ class Usuario(AbstractUser):
     telefono = models.CharField(max_length=20, blank=True)
     direccion = models.TextField(blank=True)
     foto = models.ImageField(upload_to='usuarios/fotos/', blank=True, null=True)
-    fecha_nacimiento = models.DateField(null=True, blank=True)
+    nacimiento = models.DateField(null=True, blank=True)
     ci = models.CharField('Cédula de Identidad', max_length=20, blank=True, db_index=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
+        db_table = 'usuarios_usuario'
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
         ordering = ['last_name', 'first_name']
@@ -39,16 +40,17 @@ class Agenda(models.Model):
     )
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
-    fecha_inicio = models.DateTimeField()
-    fecha_fin = models.DateTimeField(null=True, blank=True)
+    inicio = models.DateTimeField()
+    fin = models.DateTimeField(null=True, blank=True)
     ubicacion = models.CharField(max_length=255, blank=True)
     completado = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'usuarios_agenda'
         verbose_name = 'Agenda'
         verbose_name_plural = 'Agendas'
-        ordering = ['-fecha_inicio']
+        ordering = ['-inicio']
 
     def __str__(self):
         return f'{self.titulo} — {self.usuario.username}'
@@ -62,6 +64,11 @@ class Notificacion(models.Model):
         ALERTA = 'alerta', 'Alerta'
         RECORDATORIO = 'recordatorio', 'Recordatorio'
         PAGO = 'pago', 'Pago'
+        CONFIRMACION = 'confirmacion', 'Confirmación'
+
+    class OrigenNotificacion(models.TextChoices):
+        SISTEMA = 'sistema', 'Sistema'
+        USUARIO = 'usuario', 'Usuario'
 
     usuario = models.ForeignKey(
         Usuario,
@@ -73,12 +80,18 @@ class Notificacion(models.Model):
         choices=TipoNotificacion.choices,
         default=TipoNotificacion.INFO,
     )
+    origen = models.CharField(
+        max_length=20,
+        choices=OrigenNotificacion.choices,
+        default=OrigenNotificacion.SISTEMA,
+    )
     titulo = models.CharField(max_length=200)
     mensaje = models.TextField()
     leida = models.BooleanField(default=False)
     creada = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'usuarios_notificacion'
         verbose_name = 'Notificación'
         verbose_name_plural = 'Notificaciones'
         ordering = ['-creada']
@@ -94,6 +107,7 @@ class Bloqueo(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'usuarios_bloqueo'
         unique_together = ('bloqueador', 'bloqueado')
         verbose_name = 'Bloqueo'
         verbose_name_plural = 'Bloqueos'
@@ -111,6 +125,7 @@ class Chat(models.Model):
     actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'usuarios_conversacion'
         verbose_name = 'Chat'
         verbose_name_plural = 'Chats'
         ordering = ['-actualizado']
@@ -131,21 +146,23 @@ class Mensaje(models.Model):
         VIDEO = 'video', 'Video'
         UBICACION = 'ubicacion', 'Ubicación'
         EMOJI = 'emoji', 'Emoji'
+        WHATSAPP = 'whatsapp', 'WhatsApp'
 
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='mensajes')
     remitente = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='mensajes_enviados')
-    tipo_mensaje = models.CharField(
+    tipo = models.CharField(
         max_length=20,
         choices=TipoMensaje.choices,
         default=TipoMensaje.TEXTO,
     )
     contenido = models.TextField(blank=True)
-    archivo_url = models.CharField(max_length=500, blank=True, help_text='URL de imagen/video en Cloudinary')
-    ubicacion_gps = models.CharField(max_length=100, blank=True, help_text='lat, lng para mensajes de ubicación')
+    archivo = models.CharField(max_length=500, blank=True, help_text='URL de imagen/video en Cloudinary')
+    ubicacion = models.CharField(max_length=100, blank=True, help_text='lat, lng para mensajes de ubicación')
     leido = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'usuarios_mensaje'
         verbose_name = 'Mensaje'
         verbose_name_plural = 'Mensajes'
         ordering = ['creado']
@@ -167,6 +184,7 @@ class Resena(models.Model):
     actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'usuarios_resena'
         verbose_name = 'Reseña'
         verbose_name_plural = 'Reseñas'
         unique_together = ('usuario', 'inmueble')
@@ -190,12 +208,15 @@ def notificar_nuevo_mensaje(sender, instance, created, **kwargs):
                 {
                     'type': 'chat_message',
                     'action': 'new_message',
+                    'chat_id': instance.chat.id,
+                    'mensaje_id': instance.id,
                 }
             )
             event = {
                 'type': 'user_event',
                 'action': 'new_message',
-                'chat_id': instance.chat.id
+                'chat_id': instance.chat.id,
+                'mensaje_id': instance.id,
             }
             async_to_sync(channel_layer.group_send)(f'user_{instance.chat.participante1.id}', event)
             async_to_sync(channel_layer.group_send)(f'user_{instance.chat.participante2.id}', event)

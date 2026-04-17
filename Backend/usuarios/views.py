@@ -5,6 +5,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.db.models import Q, Count
 
 from .models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
+from .services import crear_notificacion_sistema, crear_notificacion_usuario
 from .serializers import (
     UsuarioSerializer,
     UsuarioCreateSerializer,
@@ -44,6 +45,16 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         """Contadores de cosas no leídas para el navbar."""
         user = request.user
         notif_count = Notificacion.objects.filter(usuario=user, leida=False).count()
+        notif_sistema = Notificacion.objects.filter(
+            usuario=user,
+            leida=False,
+            origen=Notificacion.OrigenNotificacion.SISTEMA,
+        ).count()
+        notif_usuario = Notificacion.objects.filter(
+            usuario=user,
+            leida=False,
+            origen=Notificacion.OrigenNotificacion.USUARIO,
+        ).count()
         
         # Mensajes no leídos en todos los chats del usuario
         chats = Chat.objects.filter(Q(participante1=user) | Q(participante2=user))
@@ -54,6 +65,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         
         return Response({
             'notificaciones': notif_count,
+            'notificaciones_sistema': notif_sistema,
+            'notificaciones_usuario': notif_usuario,
             'mensajes': msg_count,
         })
 
@@ -98,20 +111,85 @@ class NotificacionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff or user.rol == 'admin':
-            return Notificacion.objects.all()
-        return Notificacion.objects.filter(usuario=user)
+        qs = Notificacion.objects.all() if (user.is_staff or user.rol == 'admin') else Notificacion.objects.filter(usuario=user)
+        
+        # Filtrar por origen si se especifica
+        origen = self.request.query_params.get('origen')
+        if origen in ['sistema', 'usuario']:
+            qs = qs.filter(origen=origen)
+        return qs
 
     def perform_create(self, serializer):
         if 'usuario' not in serializer.validated_data:
-            serializer.save(usuario=self.request.user)
+            serializer.save(
+                usuario=self.request.user,
+                origen=Notificacion.OrigenNotificacion.USUARIO,
+            )
         else:
-            serializer.save()
+            serializer.save(origen=Notificacion.OrigenNotificacion.SISTEMA)
+
+    @action(detail=False, methods=['get'], url_path='sistema')
+    def sistema(self, request):
+        qs = self.get_queryset().filter(origen=Notificacion.OrigenNotificacion.SISTEMA)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='usuario')
+    def usuario(self, request):
+        qs = self.get_queryset().filter(origen=Notificacion.OrigenNotificacion.USUARIO)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='usuario-confirmacion')
+    def usuario_confirmacion(self, request):
+        titulo = (request.data.get('titulo') or '').strip()
+        mensaje = (request.data.get('mensaje') or '').strip()
+        if not titulo or not mensaje:
+            return Response({'error': 'titulo y mensaje son requeridos'}, status=400)
+
+        notif = crear_notificacion_usuario(
+            usuario=request.user,
+            titulo=titulo,
+            mensaje=mensaje,
+            tipo=Notificacion.TipoNotificacion.CONFIRMACION,
+        )
+        serializer = self.get_serializer(notif)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='sistema-alerta')
+    def sistema_alerta(self, request):
+        if not (request.user.is_staff or request.user.rol == 'admin'):
+            return Response({'error': 'No autorizado'}, status=403)
+
+        usuario_id = request.data.get('usuario')
+        titulo = (request.data.get('titulo') or '').strip()
+        mensaje = (request.data.get('mensaje') or '').strip()
+        tipo = request.data.get('tipo') or Notificacion.TipoNotificacion.ALERTA
+        if not usuario_id or not titulo or not mensaje:
+            return Response({'error': 'usuario, titulo y mensaje son requeridos'}, status=400)
+
+        try:
+            usuario = Usuario.objects.get(id=usuario_id)
+        except Usuario.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=404)
+
+        notif = crear_notificacion_sistema(
+            usuario=usuario,
+            titulo=titulo,
+            mensaje=mensaje,
+            tipo=tipo,
+        )
+        serializer = self.get_serializer(notif)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'], url_path='marcar-leidas')
     def marcar_leidas(self, request):
         """Marca todas las notificaciones como leídas."""
-        self.get_queryset().filter(leida=False).update(leida=True)
+        origen = request.data.get('origen')
+        qs = self.get_queryset().filter(leida=False)
+        if origen in ['sistema', 'usuario']:
+            qs = qs.filter(origen=origen)
+        qs.update(leida=True)
         return Response({'status': 'Notificaciones marcadas como leídas'})
 
 
@@ -185,11 +263,11 @@ class MensajeViewSet(viewsets.ModelViewSet):
         return Mensaje.objects.filter(Q(chat__participante1=user) | Q(chat__participante2=user)).distinct()
 
     def create(self, request, *args, **kwargs):
-        tipo = request.data.get('tipo_mensaje', 'texto')
+        tipo = request.data.get('tipo') or request.data.get('tipo_mensaje') or 'texto'
         chat_id = request.data.get('chat')
         contenido = request.data.get('contenido', '')
-        archivo = request.FILES.get('archivo')
-        ubicacion = request.data.get('ubicacion_gps', '')
+        archivo_file = request.FILES.get('archivo')
+        ubicacion_val = request.data.get('ubicacion') or request.data.get('ubicacion_gps') or ''
         
         # Verificar bloqueos
         try:
@@ -205,7 +283,7 @@ class MensajeViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Bloqueado: no puedes enviar mensajes'}, status=403)
 
         archivo_url = ''
-        if archivo and tipo in ['imagen', 'video']:
+        if archivo_file and tipo in ['imagen', 'video']:
             import cloudinary
             import cloudinary.uploader
             from django.conf import settings
@@ -216,22 +294,34 @@ class MensajeViewSet(viewsets.ModelViewSet):
                 api_secret=settings.CLOUDINARY_STORAGE['API_SECRET']
             )
             upload_data = cloudinary.uploader.upload(
-                archivo,
+                archivo_file,
                 resource_type='auto' if tipo == 'video' else 'image'
             )
             archivo_url = upload_data.get('secure_url', '')
 
+        if tipo == 'whatsapp' and not contenido:
+            return Response({'error': 'Debes enviar un número de WhatsApp válido'}, status=400)
+
         msg = Mensaje.objects.create(
             chat_id=chat_id,
             remitente=request.user,
-            tipo_mensaje=tipo,
+            tipo=tipo,
             contenido=contenido,
-            archivo_url=archivo_url,
-            ubicacion_gps=ubicacion,
+            archivo=archivo_url,
+            ubicacion=ubicacion_val,
         )
         
         # Actualizar timestamp del chat
         chat.save()  # triggers auto_now on actualizado
+
+        receptor = chat.participante2 if chat.participante1 == request.user else chat.participante1
+        if receptor != request.user:
+            crear_notificacion_usuario(
+                usuario=receptor,
+                titulo='Nuevo mensaje recibido',
+                mensaje=f'Tienes un nuevo mensaje de {request.user.get_full_name() or request.user.username}.',
+                tipo=Notificacion.TipoNotificacion.CONFIRMACION,
+            )
 
         serializer = MensajeSerializer(msg)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

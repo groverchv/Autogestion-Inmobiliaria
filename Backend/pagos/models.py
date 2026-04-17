@@ -10,6 +10,7 @@ class TipoPago(models.Model):
     activo = models.BooleanField(default=True)
 
     class Meta:
+        db_table = 'pagos_tipo_pago'
         verbose_name = 'Tipo de Pago'
         verbose_name_plural = 'Tipos de Pago'
         ordering = ['nombre']
@@ -44,7 +45,7 @@ class Pago(models.Model):
         related_name='pagos',
     )
     monto = models.DecimalField(max_digits=12, decimal_places=2)
-    fecha_pago = models.DateField()
+    fecha = models.DateField()
     referencia = models.CharField(max_length=100, blank=True)
     comprobante = models.FileField(upload_to='pagos/comprobantes/', blank=True, null=True)
     estado = models.CharField(
@@ -56,9 +57,10 @@ class Pago(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'pagos_pago'
         verbose_name = 'Pago'
         verbose_name_plural = 'Pagos'
-        ordering = ['-fecha_pago']
+        ordering = ['-fecha']
 
     def __str__(self):
         return f'Pago #{self.id} — {self.monto} Bs'
@@ -75,6 +77,7 @@ class DetallePago(models.Model):
     monto = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
+        db_table = 'pagos_detalle_pago'
         verbose_name = 'Detalle de Pago'
         verbose_name_plural = 'Detalles de Pago'
 
@@ -89,8 +92,8 @@ class HistorialPago(models.Model):
         on_delete=models.CASCADE,
         related_name='historial',
     )
-    estado_anterior = models.CharField(max_length=20)
-    estado_nuevo = models.CharField(max_length=20)
+    anterior = models.CharField(max_length=20)
+    nuevo = models.CharField(max_length=20)
     comentario = models.TextField(blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(
@@ -101,12 +104,13 @@ class HistorialPago(models.Model):
     )
 
     class Meta:
+        db_table = 'pagos_historial_pago'
         verbose_name = 'Historial de Pago'
         verbose_name_plural = 'Historial de Pagos'
         ordering = ['-fecha']
 
     def __str__(self):
-        return f'Pago #{self.pago.id}: {self.estado_anterior} → {self.estado_nuevo}'
+        return f'Pago #{self.pago.id}: {self.anterior} → {self.nuevo}'
 
 
 class TipoPlan(models.Model):
@@ -115,6 +119,7 @@ class TipoPlan(models.Model):
     descripcion = models.TextField(blank=True)
 
     class Meta:
+        db_table = 'pagos_tipo_plan'
         verbose_name = 'Tipo de Plan'
         verbose_name_plural = 'Tipos de Plan'
         ordering = ['nombre']
@@ -133,8 +138,8 @@ class Plan(models.Model):
     )
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True)
-    precio_mensual = models.DecimalField(max_digits=10, decimal_places=2)
-    duracion_meses = models.PositiveIntegerField(default=1)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    duracion = models.PositiveIntegerField(default=1, help_text='Duración en meses')
     max_inmuebles = models.PositiveIntegerField(
         default=5,
         help_text='Cantidad máxima de inmuebles permitidos',
@@ -147,9 +152,10 @@ class Plan(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'pagos_plan'
         verbose_name = 'Plan'
         verbose_name_plural = 'Planes'
-        ordering = ['precio_mensual']
+        ordering = ['precio']
 
     def __str__(self):
-        return f'{self.nombre} — {self.precio_mensual} Bs/mes'
+        return f'{self.nombre} — {self.precio} Bs/mes'

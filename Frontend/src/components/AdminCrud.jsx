@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { RotateCcw, Plus, Search, ChevronLeft, ChevronRight, Edit3, Trash2 } from 'lucide-react';
 import api from '../services/api';
 
 const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id', transformPayload, transformEditItem }) => {
@@ -149,19 +150,26 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
           <p style={s.subtitle}>{subtitle}</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button style={s.btnSecondary} onClick={fetchItems}>↻ Actualizar</button>
-          <button style={s.btnPrimary} onClick={openCreate}>+ Crear</button>
+          <button style={s.btnSecondary} onClick={fetchItems}>
+            <RotateCcw size={16} style={{ marginRight: '6px' }} /> Actualizar
+          </button>
+          <button style={s.btnPrimary} onClick={openCreate}>
+            <Plus size={16} style={{ marginRight: '6px' }} /> Crear
+          </button>
         </div>
       </div>
 
       <div style={s.searchBar}>
-        <input
-          style={s.searchInput}
-          type="text"
-          placeholder="🔍 Buscar en todos los campos..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-        />
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <input
+            style={{ ...s.searchInput, paddingLeft: '40px' }}
+            type="text"
+            placeholder="Buscar en todos los campos..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
         <span style={s.badge}>{filtered.length} registro{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
@@ -186,8 +194,12 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
                       </td>
                     ))}
                     <td style={{ ...s.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <button style={s.btnEdit} onClick={() => openEdit(item)}>Editar</button>
-                      <button style={s.btnDel} onClick={() => handleDelete(item)}>Eliminar</button>
+                      <button style={s.btnEdit} onClick={() => openEdit(item)} title="Editar">
+                        <Edit3 size={14} />
+                      </button>
+                      <button style={s.btnDel} onClick={() => handleDelete(item)} title="Eliminar">
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -204,11 +216,15 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
               Mostrando {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} de {filtered.length}
             </span>
             <div style={s.paginationBtns}>
-              <button style={s.pageBtn(false)} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>‹</button>
+              <button style={s.pageBtn(false)} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                <ChevronLeft size={16} />
+              </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                 <button key={p} style={s.pageBtn(p === currentPage)} onClick={() => setCurrentPage(p)}>{p}</button>
               ))}
-              <button style={s.pageBtn(false)} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>›</button>
+              <button style={s.pageBtn(false)} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
         </>
