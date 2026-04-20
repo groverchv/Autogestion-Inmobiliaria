@@ -5,8 +5,8 @@ import api from './api';
  */
 const authService = {
   /** Iniciar sesión */
-  login: async (username, password) => {
-    const { data } = await api.post('/token/', { username, password });
+  login: async (email, password) => {
+    const { data } = await api.post('/token/', { email, password });
     localStorage.setItem('access_token', data.access);
     localStorage.setItem('refresh_token', data.refresh);
     return data;

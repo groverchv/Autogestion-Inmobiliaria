@@ -3,8 +3,16 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
 class Usuario(AbstractUser):
-    """Modelo de usuario personalizado que extiende AbstractUser."""
+    username = None 
+    email = models.EmailField(unique=True) 
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = [] 
+
     class RolesConfig(models.TextChoices):
         ADMIN = 'admin', 'Administrador'
         USUARIO = 'usuario', 'Usuario'
@@ -23,12 +31,10 @@ class Usuario(AbstractUser):
 
     class Meta:
         db_table = 'usuarios_usuario'
-        verbose_name = 'Usuario'
-        verbose_name_plural = 'Usuarios'
         ordering = ['last_name', 'first_name']
 
     def __str__(self):
-        return f'{self.get_full_name()} ({self.username})'
+        return f'{self.get_full_name()} ({self.email})'
 
 
 class Agenda(models.Model):
@@ -53,7 +59,7 @@ class Agenda(models.Model):
         ordering = ['-inicio']
 
     def __str__(self):
-        return f'{self.titulo} — {self.usuario.username}'
+        return f'{self.titulo} — {self.usuario.email}'
 
 
 class Notificacion(models.Model):
@@ -97,7 +103,7 @@ class Notificacion(models.Model):
         ordering = ['-creada']
 
     def __str__(self):
-        return f'{self.titulo} → {self.usuario.username}'
+        return f'{self.titulo} → {self.usuario.email}'
 
 
 class Bloqueo(models.Model):
@@ -113,7 +119,7 @@ class Bloqueo(models.Model):
         verbose_name_plural = 'Bloqueos'
 
     def __str__(self):
-        return f'{self.bloqueador.username} bloqueó a {self.bloqueado.username}'
+        return f'{self.bloqueador.email} bloqueó a {self.bloqueado.email}'
 
 
 class Chat(models.Model):
@@ -131,7 +137,7 @@ class Chat(models.Model):
         ordering = ['-actualizado']
 
     def __str__(self):
-        desc = f"Chat: {self.participante1.username} - {self.participante2.username}"
+        desc = f"Chat: {self.participante1.email} - {self.participante2.email}"
         if self.inmueble:
             desc += f" (Inm: {self.inmueble.id})"
         return desc
@@ -168,7 +174,7 @@ class Mensaje(models.Model):
         ordering = ['creado']
 
     def __str__(self):
-        return f'Msg de {self.remitente.username} - {self.creado.strftime("%Y-%m-%d %H:%M")}'
+        return f'Msg de {self.remitente.email} - {self.creado.strftime("%Y-%m-%d %H:%M")}'
 
 
 class Resena(models.Model):
@@ -191,7 +197,7 @@ class Resena(models.Model):
         ordering = ['-creado']
 
     def __str__(self):
-        return f'{self.usuario.username} → {self.inmueble.titulo} ({self.calificacion}★)'
+        return f'{self.usuario.email} → {self.inmueble.titulo} ({self.calificacion}★)'
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver

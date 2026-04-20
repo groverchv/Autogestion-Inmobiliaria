@@ -7,12 +7,11 @@ import './Login.css';
 const Registro = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     first_name: '',
     last_name: '',
     telefono: '',
-    ci: '', // Usamos 'ci' para que coincida exactamente con tu Backend
+    ci: '',
     fecha_nacimiento: '',
     password: ''
   });
@@ -32,6 +31,16 @@ const Registro = () => {
     setError('');
     setSuccess('');
     setLoading(true);
+
+    // Validación mayores de 18 años
+    const today = new Date();
+    const minBirthDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    
+    if (formData.fecha_nacimiento && formData.fecha_nacimiento > minBirthDate) {
+      setError('Debes ser mayor de 18 años para poder registrarte.');
+      setLoading(false);
+      return;
+    }
 
     try {
       await api.post('/usuarios/registro/', formData);
@@ -58,10 +67,7 @@ const Registro = () => {
         {error && <div className="login__error">{error}</div>}
         {success && <div style={{ background: '#10b981', color: 'white', padding: '10px', borderRadius: '5px', marginBottom: '15px', textAlign: 'center' }}>{success}</div>}
 
-        <div className="login__field">
-          <label htmlFor="username" className="login__label">Usuario</label>
-          <input id="username" type="text" className="login__input" value={formData.username} onChange={handleChange} required />
-        </div>
+        {/* El campo username fue erradicado, nos basamos puramente en email */}
 
         <div className="login__field">
           <label htmlFor="email" className="login__label">Correo Electrónico</label>
@@ -94,7 +100,16 @@ const Registro = () => {
 
         <div className="login__field">
           <label htmlFor="fecha_nacimiento" className="login__label">Fecha de Nacimiento</label>
-          <input id="fecha_nacimiento" type="date" className="login__input" value={formData.fecha_nacimiento} onChange={handleChange} style={{ colorScheme: 'dark' }} />
+          <input 
+            id="fecha_nacimiento" 
+            type="date" 
+            className="login__input" 
+            value={formData.fecha_nacimiento} 
+            onChange={handleChange} 
+            max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+            style={{ colorScheme: 'dark' }} 
+            required
+          />
         </div>
 
         <div className="login__field">

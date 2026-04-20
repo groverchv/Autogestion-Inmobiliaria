@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { APP_NAME } from '../config/constants';
+import UserDropdown from './UserDropdown';
 import './Navbar.css';
 
 /**
@@ -21,14 +22,6 @@ const Navbar = () => {
         <div className="navbar__actions">
           {isAuthenticated ? (
             <>
-            <div className="navbar__user-info">
-              <span className="navbar__user-name">
-                {user?.first_name} {user?.last_name}
-              </span>
-              <span className="navbar__user-role">
-                {user?.rol === 'admin' ? 'ADMINISTRADOR' : 'USUARIO'}
-              </span>
-            </div>
               {user?.rol === 'admin' && (
                 <Link to="/panel/dashboard" className="navbar__btn navbar__btn--panel" style={{
                   padding: '6px 14px',
@@ -42,9 +35,7 @@ const Navbar = () => {
                   Panel Admin
                 </Link>
               )}
-              <button className="navbar__btn navbar__btn--logout" onClick={logout}>
-                Cerrar Sesión
-              </button>
+              <UserDropdown />
             </>
           ) : (
             <>

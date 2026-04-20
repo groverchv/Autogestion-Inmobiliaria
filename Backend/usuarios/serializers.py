@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
 
 
@@ -8,7 +9,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name',
+            'id', 'email', 'first_name', 'last_name',
             'rol', 'rol_nombre', 'telefono', 'direccion', 'foto',
             'nacimiento', 'ci', 'activo', 'date_joined',
         ]
@@ -22,7 +23,7 @@ class UsuarioCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = [
-            'id', 'username', 'email', 'password', 'first_name',
+            'id', 'email', 'password', 'first_name',
             'last_name', 'rol', 'telefono', 'direccion',
             'nacimiento', 'ci',
         ]
@@ -69,8 +70,8 @@ class MensajeSerializer(serializers.ModelSerializer):
 class ChatSerializer(serializers.ModelSerializer):
     participante1_nombre = serializers.CharField(source='participante1.get_full_name', read_only=True)
     participante2_nombre = serializers.CharField(source='participante2.get_full_name', read_only=True)
-    participante1_username = serializers.CharField(source='participante1.username', read_only=True)
-    participante2_username = serializers.CharField(source='participante2.username', read_only=True)
+    participante1_email = serializers.CharField(source='participante1.email', read_only=True)
+    participante2_email = serializers.CharField(source='participante2.email', read_only=True)
     inmueble_titulo = serializers.SerializerMethodField(read_only=True)
     ultimo_mensaje = serializers.SerializerMethodField(read_only=True)
     no_leidos = serializers.SerializerMethodField(read_only=True)
@@ -98,7 +99,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
 class BloqueoSerializer(serializers.ModelSerializer):
     bloqueado_nombre = serializers.CharField(source='bloqueado.get_full_name', read_only=True)
-    bloqueado_username = serializers.CharField(source='bloqueado.username', read_only=True)
+    bloqueado_email = serializers.CharField(source='bloqueado.email', read_only=True)
 
     class Meta:
         model = Bloqueo
@@ -108,9 +109,26 @@ class BloqueoSerializer(serializers.ModelSerializer):
 
 class ResenaSerializer(serializers.ModelSerializer):
     usuario_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
-    usuario_username = serializers.CharField(source='usuario.username', read_only=True)
+    usuario_email = serializers.CharField(source='usuario.email', read_only=True)
 
     class Meta:
         model = Resena
         fields = '__all__'
         read_only_fields = ['id', 'creado', 'actualizado', 'usuario']
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        
+        # Add custom claims
+        data['usuario'] = {
+            'id': self.user.id,
+            'email': self.user.email,
+            'first_name': self.user.first_name,
+            'last_name': self.user.last_name,
+            'rol': self.user.rol,
+            'foto': self.user.foto.url if self.user.foto else None
+        }
+        
+        return data

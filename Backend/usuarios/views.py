@@ -319,7 +319,7 @@ class MensajeViewSet(viewsets.ModelViewSet):
             crear_notificacion_usuario(
                 usuario=receptor,
                 titulo='Nuevo mensaje recibido',
-                mensaje=f'Tienes un nuevo mensaje de {request.user.get_full_name() or request.user.username}.',
+                mensaje=f'Tienes un nuevo mensaje de {request.user.get_full_name() or request.user.email}.',
                 tipo=Notificacion.TipoNotificacion.CONFIRMACION,
             )
 
@@ -393,3 +393,13 @@ class ResenaViewSet(viewsets.ModelViewSet):
             'promedio': round(result['promedio'] or 0, 1),
             'total': result['total']
         })
+
+
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomTokenObtainPairSerializer
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Vista personalizada para retornar tokens y datos del usuario.
+    """
+    serializer_class = CustomTokenObtainPairSerializer

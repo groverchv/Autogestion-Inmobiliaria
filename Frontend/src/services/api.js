@@ -9,9 +9,14 @@ const api = axios.create({
   },
 });
 
-// ─── Interceptor de Request: inyecta token JWT ──────────────
+// ─── Interceptor de Request: inyecta token JWT y arregla FormData ───
 api.interceptors.request.use(
   (config) => {
+    // Si la data es FormData, eliminar el header explícito para que el navegador ponga su boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

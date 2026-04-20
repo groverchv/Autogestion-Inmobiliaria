@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import './Modal.css';
 
 /**
- * Modal reutilizable con overlay.
+ * Modal reutilizable con overlay. Usa Portals para escapar del stacking context.
  */
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   useEffect(() => {
@@ -17,7 +18,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div
         className={`modal modal--${size}`}
@@ -31,7 +32,8 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
         </div>
         <div className="modal__body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

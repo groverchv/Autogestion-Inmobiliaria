@@ -1,10 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     UsuarioViewSet, RegistroView, AgendaViewSet,
     NotificacionViewSet, ChatViewSet, MensajeViewSet,
-    BloqueoViewSet, ResenaViewSet
+    BloqueoViewSet, ResenaViewSet, CustomTokenObtainPairView
 )
 
 router = DefaultRouter()
@@ -24,6 +24,6 @@ router.register(r'panel/notificaciones', NotificacionViewSet, basename='panel-no
 urlpatterns = [
     path('', include(router.urls)),
     #  RUTAS DE AUTENTICACIÓN (LOGIN) 
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
