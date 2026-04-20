@@ -6,47 +6,10 @@ import useAuth from '../../hooks/useAuth';
 import './Propiedades.css';
 
 const MiPerfil = () => {
-  const { isAuthenticated, user, updateUser } = useAuth();
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    telefono: ''
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const { isAuthenticated, user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
-        email: user.email || '',
-        telefono: user.telefono || ''
-      });
-    }
-  }, [user]);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      await updateUser(formData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error(error);
-      setError('Ocurrió un error al actualizar el perfil.');
-    } finally {
-      setSaving(false);
-    }
-  };
+  // Avatar por defecto incrustado si no hay foto
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${user?.first_name || 'U'}+${user?.last_name || 'X'}&background=0ea5e9&color=fff&size=200`;
 
   return (
     <div className="propiedades-page">
@@ -59,116 +22,64 @@ const MiPerfil = () => {
         <div className="propiedad-card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h2 style={{ color: 'var(--color-text)', margin: 0 }}>Datos Personales</h2>
-            {!isEditing && (
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="propiedad-card__cta"
-                style={{ background: 'var(--color-bg-hover)', color: 'var(--color-primary)' }}
-              >
-                Editar Perfil
-              </button>
-            )}
           </div>
 
-          {error && <div style={{ color: 'var(--color-danger)', marginBottom: '16px' }}>{error}</div>}
-
-          {isEditing ? (
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Nombres</label>
-                  <input 
-                    type="text" 
-                    name="first_name" 
-                    value={formData.first_name} 
-                    onChange={handleChange} 
-                    className="propiedades-filter__input" 
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Apellidos</label>
-                  <input 
-                    type="text" 
-                    name="last_name" 
-                    value={formData.last_name} 
-                    onChange={handleChange} 
-                    className="propiedades-filter__input" 
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Correo Electrónico</label>
-                <input 
-                  type="email" 
-                  name="email" 
-                  value={formData.email} 
-                  onChange={handleChange} 
-                  className="propiedades-filter__input" 
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Teléfono</label>
-                <input 
-                  type="text" 
-                  name="telefono" 
-                  value={formData.telefono} 
-                  onChange={handleChange} 
-                  className="propiedades-filter__input" 
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '12px', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setIsEditing(false)} 
-                  className="propiedad-card__cta" 
-                  style={{ background: 'var(--color-bg-hover)', color: 'var(--color-text-secondary)' }}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="propiedad-card__cta" 
-                  disabled={saving}
-                >
-                  {saving ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Nombre de Usuario</strong>
-                <div style={{ fontSize: '1rem', color: 'var(--color-text)' }}>{user?.username}</div>
-              </div>
-              <div>
-                <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Nombre Completo</strong>
-                <div style={{ fontSize: '1rem', color: 'var(--color-text)' }}>{user?.first_name} {user?.last_name}</div>
-              </div>
-              <div>
-                <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Correo Electrónico</strong>
-                <div style={{ fontSize: '1rem', color: 'var(--color-text)' }}>{user?.email}</div>
-              </div>
-              {user?.telefono && (
-                <div>
-                  <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Teléfono</strong>
-                  <div style={{ fontSize: '1rem', color: 'var(--color-text)' }}>{user?.telefono}</div>
-                </div>
-              )}
-              <div>
-                <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Rol</strong>
-                <span style={{ textTransform: 'capitalize', background: 'rgba(14,165,233,0.1)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
-                  {user?.rol === 'admin' ? 'Administrador' : 'Usuario'}
-                </span>
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'flex-start' }}>
+            
+            {/* Foto de Perfil */}
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+              <img 
+                src={user?.foto || defaultAvatar} 
+                alt="Avatar de Perfil" 
+                style={{ 
+                  width: '140px', 
+                  height: '140px', 
+                  borderRadius: '50%', 
+                  objectFit: 'cover',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                  border: '3px solid var(--color-border)'
+                }} 
+              />
             </div>
-          )}
+
+            <div>
+              <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Nombre Completo</strong>
+              <div style={{ fontSize: '1.05rem', color: 'var(--color-text)', fontWeight: '500' }}>{user?.first_name} {user?.last_name}</div>
+            </div>
+            
+            <div>
+              <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Correo Electrónico</strong>
+              <div style={{ fontSize: '1.05rem', color: 'var(--color-text)' }}>{user?.email}</div>
+            </div>
+            
+            {user?.ci && (
+              <div>
+                <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Cédula</strong>
+                <div style={{ fontSize: '1.05rem', color: 'var(--color-text)' }}>{user?.ci}</div>
+              </div>
+            )}
+
+            {user?.telefono && (
+              <div>
+                <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Teléfono</strong>
+                <div style={{ fontSize: '1.05rem', color: 'var(--color-text)' }}>{user?.telefono}</div>
+              </div>
+            )}
+            
+            {user?.direccion && (
+              <div>
+                <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Dirección</strong>
+                <div style={{ fontSize: '1.05rem', color: 'var(--color-text)' }}>{user?.direccion}</div>
+              </div>
+            )}
+
+            <div>
+              <strong style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>Rol</strong>
+              <span style={{ textTransform: 'capitalize', background: 'rgba(14,165,233,0.1)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
+                {user?.rol === 'admin' ? 'Administrador' : 'Usuario'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
