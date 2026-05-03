@@ -138,8 +138,12 @@ const MisNotificaciones = () => {
             ) : null}
 
             {!loading && dataActiva.length === 0 ? (
-              <div style={{ padding: '24px', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                No hay notificaciones de {tab} por el momento.
+              <div style={{ padding: '80px 24px', color: '#94a3b8', textAlign: 'center' }}>
+                <BellRing size={48} style={{ color: '#cbd5e1', marginBottom: '16px', opacity: 0.5 }} />
+                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#64748b' }}>Sin notificaciones</div>
+                <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>
+                  No hay alertas de {tab} por el momento.
+                </p>
               </div>
             ) : null}
 

@@ -7,6 +7,11 @@ from .views import (
     HistorialPagoViewSet,
     TipoPlanViewSet,
     PlanViewSet,
+    TransaccionStripeViewSet,
+    CrearSesionStripeView,
+    ConfirmarPagoStripeView,
+    ContratosParaPagoView,
+    stripe_webhook,
 )
 
 router = DefaultRouter()
@@ -16,10 +21,17 @@ router.register(r'detalles', DetallePagoViewSet)
 router.register(r'historial', HistorialPagoViewSet)
 router.register(r'tipos-plan', TipoPlanViewSet)
 router.register(r'planes', PlanViewSet)
+router.register(r'transacciones', TransaccionStripeViewSet, basename='transacciones')
 
 router.register(r'panel/lista', PagoViewSet, basename='panel-pagos')
 router.register(r'panel/historial', HistorialPagoViewSet, basename='panel-historial')
+router.register(r'panel/transacciones', TransaccionStripeViewSet, basename='panel-transacciones')
 
 urlpatterns = [
     path('', include(router.urls)),
+    # ─── Stripe endpoints ───────────────────────────────────────
+    path('stripe/crear-sesion/', CrearSesionStripeView.as_view(), name='stripe-crear-sesion'),
+    path('stripe/confirmar/', ConfirmarPagoStripeView.as_view(), name='stripe-confirmar'),
+    path('stripe/contratos/', ContratosParaPagoView.as_view(), name='stripe-contratos'),
+    path('stripe/webhook/', stripe_webhook, name='stripe-webhook'),
 ]

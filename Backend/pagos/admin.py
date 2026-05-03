@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan
+from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe
 
 
 @admin.register(TipoPago)
@@ -45,3 +45,11 @@ class PlanAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'tipo_plan', 'precio', 'duracion', 'activo']
     list_filter = ['activo', 'tipo_plan']
     search_fields = ['nombre']
+
+
+@admin.register(TransaccionStripe)
+class TransaccionStripeAdmin(admin.ModelAdmin):
+    list_display = ['id', 'contrato', 'pagador', 'propietario', 'monto', 'moneda', 'tipo_operacion', 'estado', 'creado']
+    list_filter = ['estado', 'tipo_operacion', 'moneda']
+    search_fields = ['stripe_session_id', 'stripe_payment_intent', 'descripcion']
+    readonly_fields = ['stripe_session_id', 'stripe_payment_intent', 'comprobante_url']

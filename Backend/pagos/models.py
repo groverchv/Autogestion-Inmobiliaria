@@ -159,3 +159,71 @@ class Plan(models.Model):
 
     def __str__(self):
         return f'{self.nombre} — {self.precio} Bs/mes'
+
+
+class TransaccionStripe(models.Model):
+    """Registro de transacciones de pago procesadas por Stripe."""
+
+    class EstadoTransaccion(models.TextChoices):
+        PENDIENTE = 'pendiente', 'Pendiente'
+        COMPLETADA = 'completada', 'Completada'
+        FALLIDA = 'fallida', 'Fallida'
+        CANCELADA = 'cancelada', 'Cancelada'
+        REEMBOLSADA = 'reembolsada', 'Reembolsada'
+
+    class TipoOperacion(models.TextChoices):
+        COMPRA = 'compra', 'Compra'
+        ALQUILER = 'alquiler', 'Alquiler'
+        DEPOSITO = 'deposito', 'Depósito'
+        MENSUALIDAD = 'mensualidad', 'Mensualidad'
+
+    contrato = models.ForeignKey(
+        Contrato,
+        on_delete=models.CASCADE,
+        related_name='transacciones_stripe',
+    )
+    pagador = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='transacciones_pagadas',
+    )
+    propietario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='transacciones_recibidas',
+    )
+    tipo_operacion = models.CharField(
+        max_length=20,
+        choices=TipoOperacion.choices,
+        default=TipoOperacion.MENSUALIDAD,
+    )
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    moneda = models.CharField(max_length=10, default='usd')
+    descripcion = models.TextField(blank=True)
+    stripe_session_id = models.CharField(max_length=255, unique=True, db_index=True)
+    stripe_payment_intent = models.CharField(max_length=255, blank=True)
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoTransaccion.choices,
+        default=EstadoTransaccion.PENDIENTE,
+    )
+    comprobante_url = models.URLField(blank=True, help_text='URL del recibo de Stripe')
+    chat = models.ForeignKey(
+        'usuarios.Chat',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transacciones',
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'pagos_transaccion_stripe'
+        verbose_name = 'Transacción Stripe'
+        verbose_name_plural = 'Transacciones Stripe'
+        ordering = ['-creado']
+
+    def __str__(self):
+        return f'Tx #{self.id} — {self.monto} {self.moneda.upper()} ({self.estado})'
+

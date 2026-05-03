@@ -96,9 +96,17 @@ class TipoContratoSerializer(serializers.ModelSerializer):
 
 class ContratoSerializer(serializers.ModelSerializer):
     inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+    inmueble_direccion = serializers.SerializerMethodField(read_only=True)
+    propietario_nombre = serializers.SerializerMethodField(read_only=True)
+    propietario_ci = serializers.SerializerMethodField(read_only=True)
+    propietario_telefono = serializers.SerializerMethodField(read_only=True)
+    propietario_email = serializers.SerializerMethodField(read_only=True)
     inquilino_nombre = serializers.CharField(
         source='inquilino.get_full_name', read_only=True
     )
+    inquilino_ci = serializers.CharField(source='inquilino.ci', read_only=True)
+    inquilino_telefono = serializers.CharField(source='inquilino.telefono', read_only=True)
+    inquilino_email = serializers.CharField(source='inquilino.email', read_only=True)
     tipo_contrato_nombre = serializers.CharField(
         source='tipo_contrato.nombre', read_only=True
     )
@@ -106,7 +114,25 @@ class ContratoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contrato
         fields = '__all__'
-        read_only_fields = ['id', 'creado']
+        read_only_fields = ['id', 'creado', 'actualizado']
+
+    def get_inmueble_direccion(self, obj):
+        if obj.inmueble and obj.inmueble.direccion:
+            d = obj.inmueble.direccion
+            return f'{d.ciudad}, {d.zona} - {d.calle}'
+        return ''
+
+    def get_propietario_nombre(self, obj):
+        return obj.inmueble.propietario.get_full_name() if obj.inmueble else ''
+
+    def get_propietario_ci(self, obj):
+        return obj.inmueble.propietario.ci if obj.inmueble else ''
+
+    def get_propietario_telefono(self, obj):
+        return obj.inmueble.propietario.telefono if obj.inmueble else ''
+
+    def get_propietario_email(self, obj):
+        return obj.inmueble.propietario.email if obj.inmueble else ''
 
 
 class ComisionSerializer(serializers.ModelSerializer):

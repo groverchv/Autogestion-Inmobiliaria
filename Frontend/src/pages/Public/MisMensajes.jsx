@@ -13,12 +13,23 @@ import {
   Check,
   CheckCheck,
   ExternalLink,
+  DollarSign,
+  CreditCard,
+  FileText,
+  Loader2,
+  FileSignature,
+  FileCheck,
+  FileX,
+  AlertCircle,
+  CheckCircle2,
+  Eye,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
 import Modal from '../../components/Modal';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
+import pagoService from '../../services/pagoService';
 import { API_BASE_URL } from '../../config';
 import './Propiedades.css';
 
@@ -33,6 +44,39 @@ const MisMensajes = () => {
   const [blockedByOther, setBlockedByOther] = useState(false);
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [whatsappNumero, setWhatsappNumero] = useState('');
+
+  // ─── Estado de pago Stripe ─────────────────────────────────
+  const [showPagoModal, setShowPagoModal] = useState(false);
+  const [contratosDisponibles, setContratosDisponibles] = useState([]);
+  const [pagoForm, setPagoForm] = useState({ contrato_id: '', monto: '', tipo_operacion: 'mensualidad', descripcion: '', moneda: 'usd' });
+  const [pagoLoading, setPagoLoading] = useState(false);
+  const [esOwner, setEsOwner] = useState(false);
+
+  // ─── Estado de Contrato ────────────────────────────────────
+  const [showContratoModal, setShowContratoModal] = useState(false);
+  const [tiposContrato, setTiposContrato] = useState([]);
+  const [contratoForm, setContratoForm] = useState({
+    id: null,
+    tipo_contrato: '',
+    inicio: '',
+    fin: '',
+    monto: '',
+    deposito: '0',
+    moneda: 'USD',
+    clausulas: '',
+    condiciones_uso: '',
+    penalidades: '',
+    restricciones: '',
+    incluye_servicios: '',
+    dia_pago: '1'
+  });
+  const [contratoLoading, setContratoLoading] = useState(false);
+  
+  // Notificaciones Profesionales (Reemplazo de alert)
+  const [statusModal, setStatusModal] = useState({ show: false, title: '', message: '', type: 'info' });
+  const mostrarMensaje = (title, message, type = 'info') => {
+    setStatusModal({ show: true, title, message, type });
+  };
 
   const location = useLocation();
   const msgEndRef = useRef(null);
@@ -81,6 +125,20 @@ const MisMensajes = () => {
     }
   }, [user?.id]);
 
+  // ─── Verificar si el usuario es propietario del inmueble del chat ─────
+  const checkOwnership = useCallback(async (chat) => {
+    if (!chat || chat.id === 'temp' || !chat.inmueble || !user?.id) {
+      setEsOwner(false);
+      return;
+    }
+    try {
+      const res = await api.get(`/inmuebles/lista/${chat.inmueble}/`);
+      setEsOwner(res.data.propietario === user.id);
+    } catch {
+      setEsOwner(false);
+    }
+  }, [user?.id]);
+
   // Crear chat con propietario si viene desde PropiedadDetalle
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -117,6 +175,8 @@ const MisMensajes = () => {
     
     fetchMensajes(selectedChat.id);
     checkBloqueo(selectedChat);
+    checkOwnership(selectedChat);
+    fetchTiposContrato();
     
     // Auto-refresh mensajes cada 3 segundos
     const interval = setInterval(() => {
@@ -248,8 +308,9 @@ const MisMensajes = () => {
       const res = await api.post('/usuarios/bloqueos/toggle/', { bloqueado: otherUserId });
       setIsBlocked(!!res.data.bloqueado);
       fetchChats();
+      mostrarMensaje('Usuario Bloqueado', 'Se ha actualizado el estado de bloqueo correctamente.', 'success');
     } catch {
-      alert('No se pudo actualizar el bloqueo');
+      mostrarMensaje('Error', 'No se pudo actualizar el estado de bloqueo.', 'error');
     }
   };
 
@@ -259,8 +320,142 @@ const MisMensajes = () => {
       await api.delete(`/usuarios/chats/${selectedChat.id}/`);
       setSelectedChat(null);
       fetchChats();
+      mostrarMensaje('Chat Eliminado', 'La conversacion ha sido eliminada exitosamente.', 'success');
     } catch {
-      alert('Error al eliminar chat');
+      mostrarMensaje('Error', 'No se pudo eliminar el chat.', 'error');
+    }
+  };
+
+  // ─── Contratos: Cargar tipos y gestionar ───────────────────
+  const fetchTiposContrato = async () => {
+    try {
+      const res = await api.get('/inmuebles/tipos-contrato/');
+      setTiposContrato(res.data.results || res.data);
+    } catch { setTiposContrato([]); }
+  };
+
+  const abrirModalContrato = async (idContrato = null) => {
+    setContratoLoading(true);
+    setShowContratoModal(true);
+    
+    if (idContrato) {
+      try {
+        const res = await api.get(`/inmuebles/contratos/${idContrato}/`);
+        setContratoForm(res.data);
+      } catch { mostrarMensaje('Error', 'No se pudo cargar el detalle del contrato.', 'error'); }
+    } else {
+      // Default para nuevo contrato
+      const inquilinoId = selectedChat.participante1 === user.id ? selectedChat.participante2 : selectedChat.participante1;
+      setContratoForm({
+        id: null,
+        inmueble: selectedChat.inmueble,
+        inquilino: inquilinoId,
+        chat: selectedChat.id,
+        tipo_contrato: '',
+        inicio: new Date().toISOString().split('T')[0],
+        fin: '',
+        monto: selectedChat.inmueble_precio || '', // Monto predefinido
+        deposito: '0',
+        moneda: 'BOB', // Solo Bolivianos
+        clausulas: 'PRIMERA: El arrendador entrega el inmueble en buenas condiciones...\nSEGUNDA: El pago se realizara mensualmente...',
+        condiciones_uso: 'Uso exclusivo de vivienda familiar.',
+        penalidades: 'Mora del 5% por retraso en el pago superior a 5 dias.',
+        restricciones: 'No se permiten mascotas de gran tamaño. No subarrendar.',
+        incluye_servicios: 'Agua y Luz incluidos.',
+        dia_pago: '5'
+      });
+    }
+    setContratoLoading(false);
+  };
+
+  const handleGuardarContrato = async () => {
+    if (!contratoForm.tipo_contrato || !contratoForm.monto || !contratoForm.inicio) {
+      alert('Por favor rellena los campos obligatorios (Tipo, Monto e Inicio)');
+      return;
+    }
+    setContratoLoading(true);
+    
+    const dataToSave = {
+      ...contratoForm,
+      inmueble: typeof contratoForm.inmueble === 'object' ? contratoForm.inmueble.id : contratoForm.inmueble,
+      inquilino: typeof contratoForm.inquilino === 'object' ? contratoForm.inquilino.id : contratoForm.inquilino,
+      tipo_contrato: parseInt(contratoForm.tipo_contrato),
+      chat: selectedChat.id,
+      fin: contratoForm.fin === '' ? null : contratoForm.fin // SOLUCION AL ERROR DE FECHA
+    };
+
+    try {
+      let res;
+      if (dataToSave.id) {
+        res = await api.put(`/inmuebles/contratos/${dataToSave.id}/`, dataToSave);
+      } else {
+        res = await api.post('/inmuebles/contratos/', dataToSave);
+      }
+      
+      await api.post(`/inmuebles/contratos/${res.data.id}/enviar/`);
+      setShowContratoModal(false);
+      fetchMensajes(selectedChat.id);
+      mostrarMensaje('Contrato Enviado', 'La propuesta legal ha sido enviada exitosamente.', 'success');
+    } catch (err) {
+      console.error("Error al guardar contrato:", err.response?.data);
+      const detail = err.response?.data ? JSON.stringify(err.response.data) : 'Verifique los campos del contrato.';
+      mostrarMensaje('Error de Validacion', detail, 'error');
+    } finally {
+      setContratoLoading(false);
+    }
+  };
+
+  // ─── Stripe: Abrir modal de pago ──────────────────────────
+  const abrirModalPago = async () => {
+    setPagoLoading(true);
+    try {
+      const contratos = await pagoService.obtenerContratosParaPago({ chat_id: selectedChat.id });
+      const aceptados = contratos.filter(c => c.estado === 'aceptado' || c.estado === 'activo');
+      
+      if (aceptados.length === 0) {
+        // SI NO HAY CONTRATOS ACEPTADOS, ABRIMOS EL MODAL DE CONTRATO DIRECTAMENTE
+        setShowPagoModal(false);
+        abrirModalContrato();
+        return;
+      }
+
+      setContratosDisponibles(aceptados);
+      setShowPagoModal(true);
+      setPagoForm({ contrato_id: '', monto: '', tipo_operacion: 'mensualidad', descripcion: '', moneda: 'usd' });
+      
+      if (aceptados.length === 1) {
+        setPagoForm(prev => ({ ...prev, contrato_id: aceptados[0].id, monto: aceptados[0].monto }));
+      }
+    } catch {
+      setContratosDisponibles([]);
+      abrirModalContrato(); // Ante error, también permitimos redactar
+    } finally {
+      setPagoLoading(false);
+    }
+  };
+
+  const handleEnviarSolicitudPago = async () => {
+    if (!pagoForm.contrato_id || !pagoForm.monto || parseFloat(pagoForm.monto) <= 0) {
+      alert('Selecciona un contrato y un monto válido');
+      return;
+    }
+    setPagoLoading(true);
+    try {
+      await pagoService.crearSesionPago({
+        contrato_id: pagoForm.contrato_id,
+        monto: pagoForm.monto,
+        tipo_operacion: pagoForm.tipo_operacion,
+        descripcion: pagoForm.descripcion,
+        chat_id: selectedChat.id,
+        moneda: pagoForm.moneda,
+      });
+      setShowPagoModal(false);
+      await fetchMensajes(selectedChat.id);
+      await fetchChats();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error creando solicitud de pago');
+    } finally {
+      setPagoLoading(false);
     }
   };
 
@@ -339,6 +534,116 @@ const MisMensajes = () => {
               <Phone size={14} />
               Abrir WhatsApp
               <ExternalLink size={14} />
+            </a>
+          )}
+        </div>
+      );
+    }
+
+    // ─── Contrato Review Card ────────────────────────────────
+    if (msg.contenido?.includes('CONTRATO_REVIEW:')) {
+      const match = msg.contenido.match(/CONTRATO_REVIEW:(\d+):END/);
+      const contratoId = match ? match[1] : null;
+      const lines = msg.contenido.split('\n').filter(l => !l.includes('CONTRATO_REVIEW:'));
+      
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '220px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isMine ? '#fff' : '#6366f1' }}>
+            <FileSignature size={20} />
+            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Propuesta de Contrato</span>
+          </div>
+          <div style={{ fontSize: '0.88rem', opacity: 0.9, background: 'rgba(0,0,0,0.05)', padding: '10px', borderRadius: '8px' }}>
+            {lines.map((line, i) => (
+              <div key={i} style={{ marginBottom: '2px' }}>{line}</div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <Link
+              to="/mis-contratos"
+              style={{
+                flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
+                background: isMine ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+                color: isMine ? '#fff' : '#475569', padding: '8px 12px', borderRadius: '8px',
+                textDecoration: 'none', fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center'
+              }}
+            >
+              <Eye size={14} /> Ver detalles
+            </Link>
+            {isMine && (
+              <button
+                onClick={() => abrirModalContrato(contratoId)}
+                style={{
+                  flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none',
+                  padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
+                  fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center'
+                }}
+              >
+                Editar
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Stripe Payment Link ─────────────────────────────────
+    if (msg.contenido?.includes('STRIPE_PAYMENT:')) {
+      const payMatch = msg.contenido.match(/STRIPE_PAYMENT:(.*?):TRANSACCION:(\d+):END/);
+      const payUrl = payMatch ? payMatch[1] : null;
+      const txId = payMatch ? payMatch[2] : null;
+      const lines = msg.contenido.split('\n').filter(l => !l.includes('STRIPE_PAYMENT:'));
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {lines.map((line, i) => (
+            <div key={i} style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{line}</div>
+          ))}
+          {payUrl && !isMine && (
+            <a
+              href={payUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#fff', padding: '12px 20px', borderRadius: '12px',
+                textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem',
+                boxShadow: '0 4px 12px rgba(99,102,241,0.3)', transition: 'transform 0.15s',
+                justifyContent: 'center', marginTop: '4px',
+              }}
+              onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
+              onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <CreditCard size={18} /> Pagar con Stripe
+            </a>
+          )}
+          {isMine && <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Enlace de pago enviado (Tx #{txId})</div>}
+        </div>
+      );
+    }
+
+    // ─── Stripe Receipt ─────────────────────────────────────
+    if (msg.contenido?.includes('STRIPE_RECEIPT:')) {
+      const receiptMatch = msg.contenido.match(/STRIPE_RECEIPT:(.*?):END/);
+      const receiptUrl = receiptMatch ? receiptMatch[1] : null;
+      const lines = msg.contenido.split('\n').filter(l => !l.includes('STRIPE_RECEIPT:'));
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {lines.map((line, i) => (
+            <div key={i} style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{line}</div>
+          ))}
+          {receiptUrl && receiptUrl !== '' && (
+            <a
+              href={receiptUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                color: isMine ? '#fff' : '#059669', fontWeight: 600,
+                textDecoration: 'none', fontSize: '0.9rem',
+              }}
+            >
+              <FileText size={14} /> Ver Comprobante
             </a>
           )}
         </div>
@@ -716,6 +1021,32 @@ const MisMensajes = () => {
                       >
                         <Phone size={22} color="#64748b" />
                       </button>
+                        {esOwner && (
+                          <button
+                            onClick={abrirModalPago}
+                            style={{
+                              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              flexShrink: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              color: '#fff',
+                              fontWeight: 600,
+                              fontSize: '0.8rem',
+                              transition: 'transform 0.15s',
+                            }}
+                            title="Cobrar"
+                            onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                            onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                          >
+                            <DollarSign size={18} /> Cobrar
+                          </button>
+                        )}
                       <input
                         type="file"
                         ref={fileInputRef}
@@ -834,8 +1165,298 @@ const MisMensajes = () => {
           </div>
         </div>
       </Modal>
+
+      {/* ─── Modal de Creación/Edición de Contrato ────────────────── */}
+      <Modal
+        isOpen={showContratoModal}
+        onClose={() => setShowContratoModal(false)}
+        title={contratoForm.id ? "Gestionar Contrato" : "Redactar Propuesta de Contrato"}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '75vh', overflowY: 'auto', padding: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: '#f8fafc', borderRadius: '10px', marginBottom: '8px' }}>
+            <FileText size={24} color="#6366f1" />
+            <p style={{ margin: 0, fontSize: '0.88rem', color: '#64748b' }}>Complete los terminos legales para formalizar el acuerdo con el cliente.</p>
+          </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Tipo de Contrato *</label>
+                  <select
+                    value={contratoForm.tipo_contrato}
+                    onChange={e => setContratoForm({ ...contratoForm, tipo_contrato: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                  >
+                    <option value="">Seleccione...</option>
+                    {tiposContrato.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Moneda</label>
+                  <input
+                    type="text"
+                    value="Bolivianos (BOB)"
+                    readOnly
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#f9fafb', color: '#64748b' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Monto Total *</label>
+                  <input
+                    type="number"
+                    value={contratoForm.monto}
+                    onChange={e => setContratoForm({ ...contratoForm, monto: e.target.value })}
+                    placeholder="0.00"
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Garantía / Depósito</label>
+                  <input
+                    type="number"
+                    value={contratoForm.deposito}
+                    onChange={e => setContratoForm({ ...contratoForm, deposito: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Fecha Inicio *</label>
+                  <input
+                    type="date"
+                    value={contratoForm.inicio}
+                    onChange={e => setContratoForm({ ...contratoForm, inicio: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Día de Pago (Mensual)</label>
+                  <input
+                    type="number"
+                    min="1" max="28"
+                    value={contratoForm.dia_pago}
+                    onChange={e => setContratoForm({ ...contratoForm, dia_pago: e.target.value })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Cláusulas Legales Detalladas</label>
+                <textarea
+                  value={contratoForm.clausulas}
+                  onChange={e => setContratoForm({ ...contratoForm, clausulas: e.target.value })}
+                  rows={4}
+                  placeholder="Detalle todas las cláusulas legales aquí..."
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Servicios Incluidos</label>
+                  <textarea
+                    value={contratoForm.incluye_servicios}
+                    onChange={e => setContratoForm({ ...contratoForm, incluye_servicios: e.target.value })}
+                    rows={2}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Restricciones</label>
+                  <textarea
+                    value={contratoForm.restricciones}
+                    onChange={e => setContratoForm({ ...contratoForm, restricciones: e.target.value })}
+                    rows={2}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button onClick={() => setShowContratoModal(false)} style={{ padding: '10px 20px', border: '1px solid #d1d5db', background: '#fff', borderRadius: '8px', fontWeight: 600 }}>Cancelar</button>
+                <button
+                  onClick={handleGuardarContrato}
+                  style={{
+                    padding: '10px 24px', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+                    color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: '8px'
+                  }}
+                >
+                  <FileCheck size={18} /> Guardar y Enviar al Cliente
+                </button>
+              </div>
+        </div>
+      </Modal>
+
+      {/* ─── Modal de Solicitud de Pago Stripe ─────────────────── */}
+      <Modal
+        isOpen={showPagoModal}
+        onClose={() => setShowPagoModal(false)}
+        title="Solicitud de Pago Seguro"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {pagoLoading && contratosDisponibles.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Loader2 size={32} className="spin" />
+              <p style={{ color: '#64748b', marginTop: '8px' }}>Cargando contratos aceptados...</p>
+            </div>
+          ) : contratosDisponibles.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+              <AlertCircle size={32} style={{ margin: '0 auto 10px', color: '#f59e0b' }} />
+              <p>No hay contratos <b>ACEPTADOS</b> por el cliente.</p>
+              <p style={{ fontSize: '0.85rem', marginBottom: '16px' }}>Debes enviar un contrato legal y que el cliente lo acepte antes de cobrar.</p>
+              <button 
+                onClick={() => { setShowPagoModal(false); abrirModalContrato(); }}
+                style={{
+                  background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', 
+                  borderRadius: '8px', fontWeight: 700, cursor: 'pointer'
+                }}
+              >
+                Redactar Contrato Ahora
+              </button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#374151', marginBottom: '4px', display: 'block' }}>Contrato Aceptado</label>
+                <select
+                  value={pagoForm.contrato_id}
+                  onChange={e => {
+                    const c = contratosDisponibles.find(x => x.id === parseInt(e.target.value));
+                    setPagoForm(prev => ({ ...prev, contrato_id: e.target.value, monto: c?.monto || prev.monto }));
+                  }}
+                  style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
+                >
+                  <option value="">Seleccionar contrato...</option>
+                  {contratosDisponibles.map(c => (
+                    <option key={c.id} value={c.id}>
+                      #{c.id} — {c.inmueble_titulo} ({c.tipo_contrato_nombre})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* ... resto del formulario de pago (monto, moneda, etc) ... */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#374151', marginBottom: '4px', display: 'block' }}>Monto</label>
+                  <input
+                    type="number"
+                    value={pagoForm.monto}
+                    onChange={e => setPagoForm(prev => ({ ...prev, monto: e.target.value }))}
+                    placeholder="0.00"
+                    style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#374151', marginBottom: '4px', display: 'block' }}>Moneda</label>
+                  <select
+                    value={pagoForm.moneda}
+                    onChange={e => setPagoForm(prev => ({ ...prev, moneda: e.target.value }))}
+                    style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: '8px', padding: '10px', fontSize: '0.9rem' }}
+                  >
+                    <option value="usd">USD</option>
+                    <option value="bob">BOB</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+                <button onClick={() => setShowPagoModal(false)} style={{ border: '1px solid #d1d5db', background: '#fff', borderRadius: '8px', padding: '10px 16px', fontWeight: 600 }}>Cancelar</button>
+                <button
+                  onClick={handleEnviarSolicitudPago}
+                  disabled={pagoLoading}
+                  style={{
+                    border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    color: '#fff', borderRadius: '8px', padding: '10px 20px', fontWeight: 700,
+                    display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: pagoLoading ? 0.7 : 1
+                  }}
+                >
+                  <CreditCard size={16} /> {pagoLoading ? 'Enviando...' : 'Enviar Enlace de Pago'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+      {/* ─── Modal de Notificaciones (Reemplazo de alert) ────────── */}
+      <Modal 
+        isOpen={statusModal.show} 
+        onClose={() => setStatusModal({ ...statusModal, show: false })}
+        title={statusModal.title}
+      >
+        <div style={{ textAlign: 'center', padding: '10px' }}>
+          <div style={{ 
+            width: '60px', height: '60px', borderRadius: '50%', 
+            background: statusModal.type === 'error' ? '#fee2e2' : '#f0f9ff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+          }}>
+            {statusModal.type === 'error' ? (
+              <AlertCircle size={32} color="#ef4444" />
+            ) : (
+              <CheckCircle2 size={32} color="#0ea5e9" />
+            )}
+          </div>
+          <p style={{ color: '#374151', fontSize: '1rem', lineHeight: '1.5', marginBottom: '20px' }}>
+            {statusModal.message}
+          </p>
+          <button 
+            onClick={() => setStatusModal({ ...statusModal, show: false })}
+            style={{
+              width: '100%', padding: '12px', borderRadius: '8px', border: 'none',
+              background: statusModal.type === 'error' ? '#ef4444' : '#0ea5e9',
+              color: '#fff', fontWeight: 700, cursor: 'pointer'
+            }}
+          >
+            Entendido
+          </button>
+        </div>
+      </Modal>
+
+      {/* ─── Modal de Notificaciones (Reemplazo de alert) ────────── */}
+      <Modal 
+        isOpen={statusModal.show} 
+        onClose={() => setStatusModal({ ...statusModal, show: false })}
+        title={statusModal.title}
+      >
+        <div style={{ textAlign: 'center', padding: '10px' }}>
+          <div style={{ 
+            width: '60px', height: '60px', borderRadius: '50%', 
+            background: statusModal.type === 'error' ? '#fee2e2' : '#f0f9ff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+          }}>
+            {statusModal.type === 'error' ? (
+              <AlertCircle size={32} color="#ef4444" />
+            ) : (
+              <CheckCircle2 size={32} color="#0ea5e9" />
+            )}
+          </div>
+          <p style={{ color: '#374151', fontSize: '1rem', lineHeight: '1.5', marginBottom: '20px' }}>
+            {statusModal.message}
+          </p>
+          <button 
+            onClick={() => setStatusModal({ ...statusModal, show: false })}
+            style={{
+              width: '100%', padding: '12px', borderRadius: '8px', border: 'none',
+              background: statusModal.type === 'error' ? '#ef4444' : '#0ea5e9',
+              color: '#fff', fontWeight: 700, cursor: 'pointer'
+            }}
+          >
+            Entendido
+          </button>
+        </div>
+      </Modal>
+
+      <style>{`
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };
 
 export default MisMensajes;
+
+

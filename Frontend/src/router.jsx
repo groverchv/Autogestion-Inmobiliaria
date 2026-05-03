@@ -17,6 +17,10 @@ import MiPerfil from './pages/Public/MiPerfil';
 import MisMensajes from './pages/Public/MisMensajes';
 import MisInmuebles from './pages/Public/MisInmuebles';
 import MiAgenda from './pages/Public/MiAgenda';
+import PagoExitoso from './pages/Public/PagoExitoso';
+import PagoCancelado from './pages/Public/PagoCancelado';
+import MisContratos from './pages/Public/MisContratos';
+import MisPagos from './pages/Public/MisPagos';
 
 // Pages - Admin
 import DashboardAdmin from './pages/Admin/DashboardAdmin';
@@ -59,6 +63,14 @@ const router = createBrowserRouter([
     element: <ProtectedRoute><MiAgenda /></ProtectedRoute>,
   },
   {
+    path: '/mis-contratos',
+    element: <ProtectedRoute><MisContratos /></ProtectedRoute>,
+  },
+  {
+    path: '/mis-pagos',
+    element: <ProtectedRoute><MisPagos /></ProtectedRoute>,
+  },
+  {
     path: '/favoritos',
     element: <ProtectedRoute><MisFavoritos /></ProtectedRoute>,
   },
@@ -73,6 +85,14 @@ const router = createBrowserRouter([
   {
     path: '/mensajes',
     element: <ProtectedRoute><MisMensajes /></ProtectedRoute>,
+  },
+  {
+    path: '/pago-exitoso',
+    element: <PagoExitoso />,
+  },
+  {
+    path: '/pago-cancelado',
+    element: <PagoCancelado />,
   },
 
   // ─── Rutas de autenticación ───────────────────────────────

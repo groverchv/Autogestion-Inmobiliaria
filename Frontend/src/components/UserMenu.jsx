@@ -59,6 +59,8 @@ const UserMenu = () => {
         <Link to="/propiedades" style={getStyle('/propiedades')}>Catálogo</Link>
         <Link to="/mis-inmuebles" style={getStyle('/mis-inmuebles')}>Mis Inmuebles</Link>
         <Link to="/mi-agenda" style={getStyle('/mi-agenda')}>Mi Agenda</Link>
+        <Link to="/mis-contratos" style={getStyle('/mis-contratos')}>Mis Contratos</Link>
+        <Link to="/mis-pagos" style={getStyle('/mis-pagos')}>Mis Pagos</Link>
         <Link to="/favoritos" style={getStyle('/favoritos')}>Favorito</Link>
         <Link to="/notificaciones" style={getStyle('/notificaciones')}>
           Notificaciones

@@ -16,15 +16,15 @@ def create_seed_data():
     # ═══════════════════════════════════════════════════════════
     #  11 USUARIOS (Admin + 9 + muerte)
     # ═══════════════════════════════════════════════════════════
-    if not Usuario.objects.filter(username='admin').exists():
+    if not Usuario.objects.filter(email='admin@autogestion.bo').exists():
         admin = Usuario.objects.create_superuser(
-            'admin', 'admin@autogestion.bo', 'admin123',
+            'admin@autogestion.bo', 'admin123',
             rol='admin', first_name='Carlos', last_name='Mendoza',
             ci='9876543', telefono='71234567',
         )
-        print("  ✓ Superuser: admin / admin123")
+        print("  OK Superuser: admin@autogestion.bo / admin123")
     else:
-        admin = Usuario.objects.get(username='admin')
+        admin = Usuario.objects.get(email='admin@autogestion.bo')
 
     usuarios_data = [
         ('propietario1', 'juan.perez@gmail.com', 'Juan', 'Pérez', 'usuario', '1234567', '70011001', date(1985, 3, 15)),
@@ -42,9 +42,9 @@ def create_seed_data():
     users = {'admin': admin}
     for uname, email, fn, ln, rol_n, ci, tel, fnac in usuarios_data:
         user, created = Usuario.objects.get_or_create(
-            username=uname,
+            email=email,
             defaults={
-                'email': email, 'first_name': fn, 'last_name': ln,
+                'first_name': fn, 'last_name': ln,
                 'rol': rol_n, 'ci': ci, 'telefono': tel,
                 'nacimiento': fnac,
             }
@@ -53,7 +53,7 @@ def create_seed_data():
             user.set_password('usuario123' if uname != 'muerte' else 'muerte60')
             user.save()
         users[uname] = user
-    print(f"  ✓ Usuarios creados: {len(users)} (admin + 10)")
+    print(f"  OK Usuarios creados: {len(users)} (admin + 10)")
 
     # ═══════════════════════════════════════════════════════════
     #  TIPOS DE INMUEBLE (Categorías)
@@ -65,7 +65,7 @@ def create_seed_data():
     for nombre, desc in categorias_data:
         tipo, _ = TipoInmueble.objects.get_or_create(nombre=nombre, defaults={'descripcion': desc})
         tipos[nombre] = tipo
-    print(f"  ✓ Categorías: {len(tipos)}")
+    print(f"  OK Categorías: {len(tipos)}")
 
     # ═══════════════════════════════════════════════════════════
     #  10 INMUEBLES (1-10), uno por cada usuario propietario
@@ -104,7 +104,7 @@ def create_seed_data():
             }
         )
         inmuebles[titulo] = inm
-    print(f"  ✓ Inmuebles: {len(inmuebles)} (1-10, 1 por usuario)")
+    print(f"  OK Inmuebles: {len(inmuebles)} (1-10, 1 por usuario)")
 
 
     # ═══════════════════════════════════════════════════════════
@@ -176,7 +176,7 @@ def create_seed_data():
                 defaults={'principal': principal, 'tipo': 'imagen'}
             )
             media_count += 1
-    print(f"  ✓ Multimedia: {media_count} fotos asignadas")
+    print(f"  OK Multimedia: {media_count} fotos asignadas")
 
     # ═══════════════════════════════════════════════════════════
     #  TIPOS DE CONTRATO
@@ -191,7 +191,7 @@ def create_seed_data():
     for nombre, desc in tipos_contrato_data:
         tc, _ = TipoContrato.objects.get_or_create(nombre=nombre, defaults={'descripcion': desc})
         t_contratos[nombre] = tc
-    print(f"  ✓ Tipos de Contrato: {len(t_contratos)}")
+    print(f"  OK Tipos de Contrato: {len(t_contratos)}")
 
     # ═══════════════════════════════════════════════════════════
     #  CONTRATOS (5 contratos entre usuarios e inmuebles)
@@ -218,7 +218,7 @@ def create_seed_data():
                 }
             )
             contratos[inm_idx] = c
-    print(f"  ✓ Contratos: {len(contratos)}")
+    print(f"  OK Contratos: {len(contratos)}")
 
     # ═══════════════════════════════════════════════════════════
     #  TIPOS DE PAGO
@@ -234,7 +234,7 @@ def create_seed_data():
     for nombre, desc, activo in tipos_pago_data:
         tp, _ = TipoPago.objects.get_or_create(nombre=nombre, defaults={'descripcion': desc, 'activo': activo})
         t_pagos[nombre] = tp
-    print(f"  ✓ Tipos de Pago: {len(t_pagos)}")
+    print(f"  OK Tipos de Pago: {len(t_pagos)}")
 
     # ═══════════════════════════════════════════════════════════
     #  PAGOS (8 pagos de contratos)
@@ -263,7 +263,7 @@ def create_seed_data():
                 }
             )
             pagos.append(pago)
-    print(f"  ✓ Pagos: {len(pagos)}")
+    print(f"  OK Pagos: {len(pagos)}")
 
     # ═══════════════════════════════════════════════════════════
     #  HISTORIAL DE PAGOS
@@ -276,7 +276,7 @@ def create_seed_data():
                 'comentario': 'Pago verificado y aprobado.', 'usuario': admin
             }
         )
-    print("  ✓ Historial de pagos: 4 registros")
+    print("  OK Historial de pagos: 4 registros")
 
     # ═══════════════════════════════════════════════════════════
     #  AGENDA (8 eventos)
@@ -302,7 +302,7 @@ def create_seed_data():
                 'ubicacion': ubic, 'completado': comp,
             }
         )
-    print(f"  ✓ Eventos de agenda: {len(agenda_data)}")
+    print(f"  OK Eventos de agenda: {len(agenda_data)}")
 
     # ═══════════════════════════════════════════════════════════
     #  NOTIFICACIONES (10 notificaciones)
@@ -324,7 +324,7 @@ def create_seed_data():
             usuario=users[usr], titulo=titulo,
             defaults={'tipo': tipo, 'mensaje': mensaje, 'leida': False}
         )
-    print(f"  ✓ Notificaciones: {len(notif_data)}")
+    print(f"  OK Notificaciones: {len(notif_data)}")
 
     # ═══════════════════════════════════════════════════════════
     #  CHATS Y MENSAJES (4 chats con múltiples mensajes)
@@ -374,7 +374,7 @@ def create_seed_data():
                 }
             )
         chats_count += 1
-    print(f"  ✓ Chats: {chats_count} (con 16 mensajes)")
+    print(f"  OK Chats: {chats_count} (con 16 mensajes)")
 
     # ═══════════════════════════════════════════════════════════
     #  RESEÑAS (10 reseñas de inmuebles)
@@ -398,7 +398,7 @@ def create_seed_data():
                 inmueble=inm_list[inm_idx],
                 defaults={'calificacion': calif, 'comentario': com}
             )
-    print(f"  ✓ Reseñas: {len(resenas_data)}")
+    print(f"  OK Reseñas: {len(resenas_data)}")
 
     # ═══════════════════════════════════════════════════════════
     #  BLOQUEOS (2 bloqueos de usuarios)
@@ -413,9 +413,9 @@ def create_seed_data():
         bloqueado=users['muerte'],
         defaults={}
     )
-    print("  ✓ Bloqueos de usuarios: 2")
+    print("  OK Bloqueos de usuarios: 2")
 
-    print("\n  ✓ Datos semilla creados exitosamente.")
+    print("\n  OK Datos semilla creados exitosamente.")
     print("  ──────────────────────────────────────────────")
     print("  📋 USUARIOS:           11 (admin + 10 propietarios)")
     print("  🏠 INMUEBLES:          10 (Santa Cruz y La Guardia, 1 por usuario)")

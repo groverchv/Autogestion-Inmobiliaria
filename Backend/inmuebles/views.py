@@ -140,18 +140,142 @@ class TipoContratoViewSet(viewsets.ModelViewSet):
     serializer_class = TipoContratoSerializer
 
 class ContratoViewSet(viewsets.ModelViewSet):
-    """CRUD para contratos."""
+    """CRUD para contratos con flujo de revisión."""
     queryset = Contrato.objects.all()
     serializer_class = ContratoSerializer
 
     def get_queryset(self):
         user = self.request.user
-        qs = Contrato.objects.select_related('inmueble', 'tipo_contrato', 'inquilino')
+        qs = Contrato.objects.select_related(
+            'inmueble', 'inmueble__propietario', 'inmueble__direccion',
+            'tipo_contrato', 'inquilino'
+        )
         if user.is_staff or user.rol == 'admin':
             return qs.all()
-        # Ver contratos donde es el dueño del inmueble o el inquilino
         from django.db.models import Q
         return qs.filter(Q(inquilino=user) | Q(inmueble__propietario=user))
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    @action(detail=True, methods=['post'], url_path='enviar')
+    def enviar(self, request, pk=None):
+        """Propietario envía el contrato al cliente vía chat."""
+        contrato = self.get_object()
+        if contrato.inmueble.propietario != request.user:
+            return Response({'error': 'Solo el propietario puede enviar contratos'}, status=403)
+
+        contrato.estado = 'enviado'
+        contrato.save()
+
+        # Enviar mensaje en el chat
+        if contrato.chat:
+            from usuarios.models import Mensaje
+            Mensaje.objects.create(
+                chat=contrato.chat,
+                remitente=request.user,
+                tipo='texto',
+                contenido=(
+                    f'📋 CONTRATO ENVIADO\n'
+                    f'Propiedad: {contrato.inmueble.titulo}\n'
+                    f'Tipo: {contrato.tipo_contrato.nombre if contrato.tipo_contrato else "N/A"}\n'
+                    f'Monto: ${contrato.monto} {contrato.moneda}\n'
+                    f'Período: {contrato.inicio} → {contrato.fin or "Indefinido"}\n'
+                    f'───────────────\n'
+                    f'CONTRATO_REVIEW:{contrato.id}:END'
+                ),
+            )
+            contrato.chat.save()
+
+            # Notificar al inquilino
+            from usuarios.services import crear_notificacion_sistema
+            from usuarios.models import Notificacion
+            crear_notificacion_sistema(
+                usuario=contrato.inquilino,
+                titulo='Nuevo contrato para revisar',
+                mensaje=f'{request.user.get_full_name()} te ha enviado un contrato para "{contrato.inmueble.titulo}". Revísalo en el chat.',
+                tipo=Notificacion.TipoNotificacion.INFO,
+            )
+
+        return Response(ContratoSerializer(contrato).data)
+
+    @action(detail=True, methods=['post'], url_path='aceptar')
+    def aceptar(self, request, pk=None):
+        """Cliente acepta el contrato."""
+        contrato = self.get_object()
+        if contrato.inquilino != request.user:
+            return Response({'error': 'Solo el cliente puede aceptar'}, status=403)
+        if contrato.estado not in ['enviado', 'rechazado']:
+            return Response({'error': 'El contrato no está en estado de revisión'}, status=400)
+
+        contrato.estado = 'aceptado'
+        contrato.motivo_rechazo = ''
+        contrato.save()
+
+        if contrato.chat:
+            from usuarios.models import Mensaje
+            Mensaje.objects.create(
+                chat=contrato.chat,
+                remitente=request.user,
+                tipo='texto',
+                contenido=(
+                    f'CONTRATO ACEPTADO\n'
+                    f'He aceptado el contrato #{contrato.id} para "{contrato.inmueble.titulo}".\n'
+                    f'Pendiente de enlace de pago.'
+                ),
+            )
+            contrato.chat.save()
+
+            from usuarios.services import crear_notificacion_sistema
+            from usuarios.models import Notificacion
+            crear_notificacion_sistema(
+                usuario=contrato.inmueble.propietario,
+                titulo='Contrato aceptado',
+                mensaje=f'{request.user.get_full_name()} ha aceptado el contrato para "{contrato.inmueble.titulo}".',
+                tipo=Notificacion.TipoNotificacion.CONFIRMACION,
+            )
+
+        return Response(ContratoSerializer(contrato).data)
+
+    @action(detail=True, methods=['post'], url_path='rechazar')
+    def rechazar(self, request, pk=None):
+        """Cliente rechaza el contrato con motivo."""
+        contrato = self.get_object()
+        if contrato.inquilino != request.user:
+            return Response({'error': 'Solo el cliente puede rechazar'}, status=403)
+        if contrato.estado not in ['enviado']:
+            return Response({'error': 'El contrato no está en estado de revisión'}, status=400)
+
+        motivo = request.data.get('motivo', '').strip()
+        contrato.estado = 'rechazado'
+        contrato.motivo_rechazo = motivo
+        contrato.save()
+
+        if contrato.chat:
+            from usuarios.models import Mensaje
+            Mensaje.objects.create(
+                chat=contrato.chat,
+                remitente=request.user,
+                tipo='texto',
+                contenido=(
+                    f'CONTRATO RECHAZADO\n'
+                    f'He rechazado el contrato #{contrato.id} para "{contrato.inmueble.titulo}".\n'
+                    f'{("Motivo: " + motivo) if motivo else "Sin motivo especificado."}\n'
+                    f'Podemos negociar nuevas condiciones.'
+                ),
+            )
+            contrato.chat.save()
+
+            from usuarios.services import crear_notificacion_sistema
+            from usuarios.models import Notificacion
+            crear_notificacion_sistema(
+                usuario=contrato.inmueble.propietario,
+                titulo='Contrato rechazado',
+                mensaje=f'{request.user.get_full_name()} ha rechazado el contrato para "{contrato.inmueble.titulo}". Motivo: {motivo or "No especificado"}',
+                tipo=Notificacion.TipoNotificacion.ALERTA,
+            )
+
+        return Response(ContratoSerializer(contrato).data)
 
 
 class ComisionViewSet(viewsets.ModelViewSet):

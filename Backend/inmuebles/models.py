@@ -154,14 +154,19 @@ class TipoContrato(models.Model):
 
 
 class Contrato(models.Model):
-    """Contrato que vincula un inmueble con un inquilino/comprador."""
+    """Contrato legal detallado que vincula un inmueble con un inquilino/comprador."""
 
     class EstadoContrato(models.TextChoices):
+        BORRADOR = 'borrador', 'Borrador'
+        ENVIADO = 'enviado', 'Enviado al cliente'
+        ACEPTADO = 'aceptado', 'Aceptado por el cliente'
+        RECHAZADO = 'rechazado', 'Rechazado por el cliente'
         ACTIVO = 'activo', 'Activo'
         FINALIZADO = 'finalizado', 'Finalizado'
         CANCELADO = 'cancelado', 'Cancelado'
         PENDIENTE = 'pendiente', 'Pendiente'
 
+    # ─── Partes del contrato ─────────────────────────────────
     inmueble = models.ForeignKey(
         Inmueble,
         on_delete=models.CASCADE,
@@ -178,17 +183,59 @@ class Contrato(models.Model):
         on_delete=models.CASCADE,
         related_name='contratos_inquilino',
     )
+
+    # ─── Datos económicos ────────────────────────────────────
     inicio = models.DateField()
     fin = models.DateField(null=True, blank=True)
     monto = models.DecimalField(max_digits=12, decimal_places=2)
+    moneda = models.CharField(max_length=10, default='USD')
     deposito = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    dia_pago = models.PositiveIntegerField(default=1, help_text='Día del mes para pago (1-28)')
+    forma_pago = models.CharField(max_length=100, default='Stripe / Transferencia', blank=True)
+
+    # ─── Detalles legales ────────────────────────────────────
+    clausulas = models.TextField(
+        blank=True,
+        help_text='Cláusulas adicionales del contrato'
+    )
+    condiciones_uso = models.TextField(
+        blank=True,
+        help_text='Condiciones de uso del inmueble'
+    )
+    penalidades = models.TextField(
+        blank=True,
+        help_text='Penalidades por incumplimiento'
+    )
+    politica_cancelacion = models.TextField(
+        blank=True,
+        help_text='Política de cancelación anticipada'
+    )
+    incluye_servicios = models.TextField(
+        blank=True,
+        help_text='Servicios incluidos (agua, luz, internet, etc.)'
+    )
+    restricciones = models.TextField(
+        blank=True,
+        help_text='Restricciones (mascotas, subarriendo, etc.)'
+    )
+
+    # ─── Estado y seguimiento ────────────────────────────────
     estado = models.CharField(
         max_length=20,
         choices=EstadoContrato.choices,
-        default=EstadoContrato.PENDIENTE,
+        default=EstadoContrato.BORRADOR,
     )
     observaciones = models.TextField(blank=True)
+    motivo_rechazo = models.TextField(blank=True, help_text='Motivo si el cliente rechaza')
+    chat = models.ForeignKey(
+        'usuarios.Chat',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contratos_chat',
+    )
     creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'inmuebles_contrato'
