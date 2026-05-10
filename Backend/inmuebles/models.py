@@ -293,3 +293,74 @@ class Favorito(models.Model):
 
     def __str__(self):
         return f'{self.usuario.username} — {self.inmueble.titulo}'
+class Cita(models.Model):
+    """Cita/visita agendada entre un cliente y un propietario para ver un inmueble."""
+
+    class EstadoCita(models.TextChoices):
+        PENDIENTE   = 'pendiente',  'Pendiente'
+        CONFIRMADA  = 'confirmada', 'Confirmada'
+        CANCELADA   = 'cancelada',  'Cancelada'
+        COMPLETADA  = 'completada', 'Completada'
+
+    inmueble = models.ForeignKey(
+        Inmueble, on_delete=models.CASCADE, related_name='citas',
+    )
+    cliente = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='citas_como_cliente',
+    )
+    propietario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='citas_como_propietario',
+    )
+    fecha       = models.DateField()
+    hora_inicio = models.TimeField()
+    hora_fin    = models.TimeField()
+    estado = models.CharField(
+        max_length=20, choices=EstadoCita.choices, default=EstadoCita.PENDIENTE,
+    )
+    notas   = models.TextField(blank=True)
+    creado  = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table        = 'inmuebles_cita'
+        verbose_name    = 'Cita'
+        verbose_name_plural = 'Citas'
+        ordering        = ['fecha', 'hora_inicio']
+        unique_together = ('inmueble', 'fecha', 'hora_inicio')
+
+    def __str__(self):
+        return f'Cita {self.fecha} {self.hora_inicio} — {self.inmueble.titulo}'
+
+
+class HorarioDisponible(models.Model):
+    """Horario semanal que el propietario define para recibir visitas."""
+
+    DIAS_SEMANA = [
+        (0, 'Lunes'), (1, 'Martes'), (2, 'Miércoles'), (3, 'Jueves'),
+        (4, 'Viernes'), (5, 'Sábado'), (6, 'Domingo'),
+    ]
+
+    propietario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='horarios_disponibles',
+    )
+    inmueble = models.ForeignKey(
+        Inmueble, on_delete=models.CASCADE, related_name='horarios_disponibles',
+        null=True, blank=True,
+        help_text='Si es nulo, aplica a todos los inmuebles del propietario',
+    )
+    dia_semana  = models.IntegerField(choices=DIAS_SEMANA)
+    hora_inicio = models.TimeField()
+    hora_fin    = models.TimeField()
+    activo      = models.BooleanField(default=True)
+
+    class Meta:
+        db_table        = 'inmuebles_horario_disponible'
+        verbose_name    = 'Horario Disponible'
+        verbose_name_plural = 'Horarios Disponibles'
+        ordering        = ['dia_semana', 'hora_inicio']
+
+    def __str__(self):
+        return f'{self.get_dia_semana_display()} {self.hora_inicio}-{self.hora_fin}'

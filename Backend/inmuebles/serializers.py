@@ -149,3 +149,45 @@ class FavoritoSerializer(serializers.ModelSerializer):
         model = Favorito
         fields = ['id', 'inmueble', 'inmueble_data', 'creado']
         read_only_fields = ['id', 'creado']
+
+from .models import Cita, HorarioDisponible
+
+
+class HorarioDisponibleSerializer(serializers.ModelSerializer):
+    dia_nombre = serializers.CharField(source='get_dia_semana_display', read_only=True)
+
+    class Meta:
+        model  = HorarioDisponible
+        fields = '__all__'
+        read_only_fields = ['id', 'propietario']
+
+
+class CitaSerializer(serializers.ModelSerializer):
+    cliente_nombre    = serializers.CharField(source='cliente.get_full_name',    read_only=True)
+    propietario_nombre = serializers.CharField(source='propietario.get_full_name', read_only=True)
+    inmueble_titulo   = serializers.CharField(source='inmueble.titulo',          read_only=True)
+
+    class Meta:
+        model  = Cita
+        fields = '__all__'
+        read_only_fields = ['id', 'cliente', 'propietario', 'hora_fin', 'creado', 'actualizado']
+
+    def validate(self, data):
+        inmueble    = data.get('inmueble')
+        fecha       = data.get('fecha')
+        hora_inicio = data.get('hora_inicio')
+
+        if inmueble and fecha and hora_inicio:
+            qs = Cita.objects.filter(
+                inmueble=inmueble,
+                fecha=fecha,
+                hora_inicio=hora_inicio,
+                estado__in=['pendiente', 'confirmada'],
+            )
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError(
+                    {'hora_inicio': 'Ya existe una cita agendada para ese horario.'}
+                )
+        return data

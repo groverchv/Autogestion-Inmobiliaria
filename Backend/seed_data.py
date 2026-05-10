@@ -17,11 +17,19 @@ def create_seed_data():
     #  11 USUARIOS (Admin + 9 + muerte)
     # ═══════════════════════════════════════════════════════════
     if not Usuario.objects.filter(email='admin@autogestion.bo').exists():
-        admin = Usuario.objects.create_superuser(
-            'admin@autogestion.bo', 'admin123',
-            rol='admin', first_name='Carlos', last_name='Mendoza',
-            ci='9876543', telefono='71234567',
-        )
+        admin = Usuario(
+            email='admin@autogestion.bo',
+            rol='admin',
+            first_name='Carlos',
+            last_name='Mendoza',
+            ci='9876543',
+            telefono='71234567',
+            is_staff=True,
+            is_superuser=True,
+            is_active=True,
+    )
+        admin.set_password('admin123')
+        admin.save()
         print("  OK Superuser: admin@autogestion.bo / admin123")
     else:
         admin = Usuario.objects.get(email='admin@autogestion.bo')

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Direccion
-
+from .models import Cita, HorarioDisponible
 
 @admin.register(TipoInmueble)
 class TipoInmuebleAdmin(admin.ModelAdmin):
@@ -54,3 +54,18 @@ class ContratoAdmin(admin.ModelAdmin):
 class ComisionAdmin(admin.ModelAdmin):
     list_display = ['contrato', 'porcentaje', 'monto', 'pagada', 'fecha']
     list_filter = ['pagada']
+@admin.register(Cita)
+class CitaAdmin(admin.ModelAdmin):
+    list_display  = ['id', 'inmueble', 'cliente', 'propietario',
+                     'fecha', 'hora_inicio', 'hora_fin', 'estado']
+    list_filter   = ['estado', 'fecha']
+    search_fields = ['inmueble__titulo', 'cliente__email', 'propietario__email']
+    ordering      = ['-fecha', 'hora_inicio']
+
+
+@admin.register(HorarioDisponible)
+class HorarioDisponibleAdmin(admin.ModelAdmin):
+    list_display  = ['propietario', 'inmueble', 'dia_semana',
+                     'hora_inicio', 'hora_fin', 'activo']
+    list_filter   = ['dia_semana', 'activo']
+    search_fields = ['propietario__email']

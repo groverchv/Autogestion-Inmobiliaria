@@ -2,7 +2,10 @@ from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Favorito
+from .models import (
+    TipoInmueble, Inmueble, Multimedia, TipoContrato,
+    Contrato, Comision, Favorito, Cita, HorarioDisponible,
+)
 from .serializers import (
     TipoInmuebleSerializer,
     InmuebleSerializer,
@@ -12,7 +15,10 @@ from .serializers import (
     ContratoSerializer,
     ComisionSerializer,
     FavoritoSerializer,
+    CitaSerializer,
+    HorarioDisponibleSerializer,
 )
+from django.db import models as dj_models
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 
@@ -310,3 +316,219 @@ class FavoritoViewSet(viewsets.ModelViewSet):
             return Response({'is_favorito': False, 'status': 'Quitado de favoritos'})
         
         return Response({'is_favorito': True, 'status': 'Agregado a favoritos'})
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CITAS Y HORARIOS
+# ─────────────────────────────────────────────────────────────────────────────
+from datetime import datetime, timedelta, date as date_type
+
+
+class HorarioDisponibleViewSet(viewsets.ModelViewSet):
+    """CRUD de horarios de disponibilidad del propietario."""
+    serializer_class   = HorarioDisponibleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user          = self.request.user
+        inmueble_id   = self.request.query_params.get('inmueble')
+        propietario_id = self.request.query_params.get('propietario')
+
+        # Consulta pública: slots para un propietario+inmueble concreto
+        if propietario_id:
+            qs = HorarioDisponible.objects.filter(
+                propietario_id=propietario_id, activo=True,
+            )
+            if inmueble_id:
+                qs = qs.filter(
+                    dj_models.Q(inmueble_id=inmueble_id) |
+                    dj_models.Q(inmueble__isnull=True)
+                )
+            return qs
+
+        if user.is_staff or user.rol == 'admin':
+            return HorarioDisponible.objects.all()
+        return HorarioDisponible.objects.filter(propietario=user)
+
+    def perform_create(self, serializer):
+        serializer.save(propietario=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='slots-disponibles',
+            permission_classes=[permissions.AllowAny])
+    def slots_disponibles(self, request):
+        """
+        Devuelve los slots de 1 hora disponibles para una fecha+inmueble.
+        Query params: inmueble_id, fecha (YYYY-MM-DD), propietario_id
+        """
+        inmueble_id    = request.query_params.get('inmueble_id')
+        fecha_str      = request.query_params.get('fecha')
+        propietario_id = request.query_params.get('propietario_id')
+
+        if not all([inmueble_id, fecha_str, propietario_id]):
+            return Response(
+                {'error': 'Se requieren inmueble_id, fecha y propietario_id'},
+                status=400,
+            )
+
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}, status=400)
+
+        if fecha < date_type.today():
+            return Response(
+                {'error': 'No se pueden agendar citas en fechas pasadas'}, status=400
+            )
+
+        dia_semana = fecha.weekday()  # 0=Lunes … 6=Domingo
+
+        horarios = HorarioDisponible.objects.filter(
+            propietario_id=propietario_id,
+            dia_semana=dia_semana,
+            activo=True,
+        ).filter(
+            dj_models.Q(inmueble_id=inmueble_id) |
+            dj_models.Q(inmueble__isnull=True)
+        )
+
+        if not horarios.exists():
+            return Response({
+                'slots': [],
+                'mensaje': 'El propietario no tiene horarios disponibles para ese día.',
+            })
+
+        # Generar slots de 1 hora dentro de cada franja
+        slots_posibles = []
+        for h in horarios:
+            current = datetime.combine(fecha, h.hora_inicio)
+            fin     = datetime.combine(fecha, h.hora_fin)
+            while current + timedelta(hours=1) <= fin:
+                slots_posibles.append({
+                    'hora_inicio': current.strftime('%H:%M'),
+                    'hora_fin':   (current + timedelta(hours=1)).strftime('%H:%M'),
+                })
+                current += timedelta(hours=1)
+
+        # Marcar slots ocupados
+        citas_ocupadas = Cita.objects.filter(
+            inmueble_id=inmueble_id,
+            fecha=fecha,
+            estado__in=['pendiente', 'confirmada'],
+        ).values_list('hora_inicio', flat=True)
+
+        horas_ocupadas = {c.strftime('%H:%M') for c in citas_ocupadas}
+
+        for slot in slots_posibles:
+            slot['disponible'] = slot['hora_inicio'] not in horas_ocupadas
+
+        return Response({'slots': slots_posibles, 'fecha': fecha_str})
+
+
+class CitaViewSet(viewsets.ModelViewSet):
+    """CRUD de citas de visita."""
+    serializer_class   = CitaSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or user.rol == 'admin':
+            return Cita.objects.select_related(
+                'inmueble', 'cliente', 'propietario'
+            ).all()
+        return Cita.objects.filter(
+            dj_models.Q(cliente=user) | dj_models.Q(propietario=user)
+        ).select_related('inmueble', 'cliente', 'propietario')
+
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        from usuarios.services import crear_notificacion_sistema
+        from usuarios.models import Notificacion
+
+        inmueble    = serializer.validated_data['inmueble']
+        hora_inicio = serializer.validated_data['hora_inicio']
+        hora_fin    = (
+            datetime.combine(datetime.today(), hora_inicio) + timedelta(hours=1)
+        ).time()
+
+        # Un cliente solo puede tener UNA cita activa por inmueble
+        if Cita.objects.filter(
+            inmueble=inmueble,
+            cliente=self.request.user,
+            estado__in=['pendiente', 'confirmada'],
+        ).exists():
+            raise DRFValidationError(
+                {'detail': 'Ya tienes una cita activa para este inmueble.'}
+            )
+
+        serializer.save(
+            cliente=self.request.user,
+            propietario=inmueble.propietario,
+            hora_fin=hora_fin,
+        )
+
+        # Notificar al propietario
+        crear_notificacion_sistema(
+            usuario=inmueble.propietario,
+            titulo='Nueva cita agendada',
+            mensaje=(
+                f'{self.request.user.get_full_name() or self.request.user.email} '
+                f'agendó una visita para el {serializer.validated_data["fecha"]} '
+                f'a las {hora_inicio.strftime("%H:%M")} en "{inmueble.titulo}".'
+            ),
+            tipo=Notificacion.TipoNotificacion.INFO,
+        )
+
+    @action(detail=True, methods=['patch'], url_path='cambiar-estado')
+    def cambiar_estado(self, request, pk=None):
+        """Propietario confirma/completa; cualquier parte puede cancelar."""
+        cita          = self.get_object()
+        nuevo_estado  = request.data.get('estado')
+        estados_validos = ['confirmada', 'cancelada', 'completada']
+
+        if nuevo_estado not in estados_validos:
+            return Response(
+                {'error': f'Estado inválido. Use: {", ".join(estados_validos)}'},
+                status=400,
+            )
+
+        es_propietario = cita.propietario == request.user
+        es_cliente     = cita.cliente == request.user
+        es_admin       = request.user.is_staff or request.user.rol == 'admin'
+
+        # Solo el propietario (o admin) puede confirmar/completar
+        if nuevo_estado in ['confirmada', 'completada'] and not (es_propietario or es_admin):
+            return Response({'error': 'Solo el propietario puede realizar esta acción.'}, status=403)
+
+        # Cualquiera de los dos puede cancelar
+        if nuevo_estado == 'cancelada' and not (es_propietario or es_cliente or es_admin):
+            return Response({'error': 'No autorizado.'}, status=403)
+
+        cita.estado = nuevo_estado
+        cita.save()
+
+        # Notificar a la otra parte
+        from usuarios.services import crear_notificacion_sistema
+        from usuarios.models import Notificacion
+
+        hora_fmt = cita.hora_inicio.strftime('%H:%M')
+        textos   = {
+            'confirmada': f'Tu cita del {cita.fecha} a las {hora_fmt} en "{cita.inmueble.titulo}" fue confirmada.',
+            'cancelada':  f'Tu cita del {cita.fecha} a las {hora_fmt} en "{cita.inmueble.titulo}" fue cancelada.',
+            'completada': f'Tu cita del {cita.fecha} a las {hora_fmt} en "{cita.inmueble.titulo}" fue marcada como completada.',
+        }
+        notificar_a = cita.cliente if es_propietario else cita.propietario
+        crear_notificacion_sistema(
+            usuario=notificar_a,
+            titulo=f'Cita {nuevo_estado}',
+            mensaje=textos[nuevo_estado],
+            tipo=Notificacion.TipoNotificacion.INFO,
+        )
+
+        return Response(self.get_serializer(cita).data)
+
+    @action(detail=False, methods=['get'], url_path='mis-citas-agenda')
+    def mis_citas_agenda(self, request):
+        """Lista todas las citas del usuario (como cliente o propietario)."""
+        citas = Cita.objects.filter(
+            dj_models.Q(cliente=request.user) | dj_models.Q(propietario=request.user)
+        ).select_related('inmueble', 'cliente', 'propietario').order_by('fecha', 'hora_inicio')
+        return Response(self.get_serializer(citas, many=True).data)

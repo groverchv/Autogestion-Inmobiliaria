@@ -1,4 +1,4 @@
-from django.urls import path, include
+"""from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     TipoInmuebleViewSet,
@@ -23,6 +23,44 @@ router.register(r'favoritos', FavoritoViewSet, basename='favoritos')
 router.register(r'panel/tipos', TipoInmuebleViewSet, basename='panel-tipos')
 router.register(r'panel/lista', InmuebleViewSet, basename='panel-inmuebles')
 router.register(r'panel/contratos', ContratoViewSet, basename='panel-contratos')
+
+urlpatterns = [
+    path('', include(router.urls)),
+]
+"""
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    TipoInmuebleViewSet,
+    InmuebleViewSet,
+    MultimediaViewSet,
+    TipoContratoViewSet,
+    ContratoViewSet,
+    ComisionViewSet,
+    FavoritoViewSet,
+    CitaViewSet,
+    HorarioDisponibleViewSet,
+)
+
+router = DefaultRouter()
+
+# ─── Rutas públicas / generales ──────────────────────────────────────────────
+router.register(r'tipos',           TipoInmuebleViewSet)
+router.register(r'lista',           InmuebleViewSet)
+router.register(r'multimedia',      MultimediaViewSet)
+router.register(r'tipos-contrato',  TipoContratoViewSet)
+router.register(r'contratos',       ContratoViewSet)
+router.register(r'comisiones',      ComisionViewSet)
+router.register(r'favoritos',       FavoritoViewSet,        basename='favoritos')
+router.register(r'citas',           CitaViewSet,            basename='citas')
+router.register(r'horarios',        HorarioDisponibleViewSet, basename='horarios')
+
+# ─── Rutas del panel admin ────────────────────────────────────────────────────
+router.register(r'panel/tipos',     TipoInmuebleViewSet,    basename='panel-tipos')
+router.register(r'panel/lista',     InmuebleViewSet,        basename='panel-inmuebles')
+router.register(r'panel/contratos', ContratoViewSet,        basename='panel-contratos')
+router.register(r'panel/citas',     CitaViewSet,            basename='panel-citas')
+router.register(r'panel/horarios',  HorarioDisponibleViewSet, basename='panel-horarios')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  Heart, Share2, MapPin, Bed, Bath, Maximize2, X, ChevronLeft, 
-  ChevronRight, Home, Video, MessageCircle, Check, AlertCircle
+import {
+  Heart, Share2, MapPin, Bed, Bath, Maximize2, X, ChevronLeft,
+  ChevronRight, Home, Video, MessageCircle, Check, AlertCircle, Calendar
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -10,11 +10,12 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import ResenaSection from '../../components/ResenaSection';
+import ModalAgendarCita from '../../components/ModalAgendarCita';
 
 let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconAnchor: [12, 41]
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconAnchor: [12, 41]
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
@@ -31,6 +32,7 @@ const PropiedadDetalle = () => {
   const [error, setError] = useState(null);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showCitaModal, setShowCitaModal] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
@@ -49,7 +51,7 @@ const PropiedadDetalle = () => {
       navigate('/login');
       return;
     }
-    
+
     if (user?.rol === 'admin') {
       setShowConfirmModal(true);
       return;
@@ -139,7 +141,7 @@ const PropiedadDetalle = () => {
         <Link to="/propiedades" style={{ display: 'inline-block', marginBottom: '20px', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ChevronLeft size={18} /> Volver al catálogo
         </Link>
-        
+
         <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', gap: '12px', background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
             {/* Imagen Principal */}
@@ -164,7 +166,7 @@ const PropiedadDetalle = () => {
                 </span>
               )}
             </div>
-            
+
             {/* Galería de Miniaturas */}
             {thumbMedia.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px', width: '120px', minWidth: '120px', background: 'rgba(255,255,255,0.5)' }}>
@@ -212,7 +214,7 @@ const PropiedadDetalle = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '32px', background: 'var(--color-bg)', padding: '24px', borderRadius: '12px' }}>
               {inmueble.habitaciones > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bed size={20}/></div>
+                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bed size={20} /></div>
                   <div>
                     <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Habitaciones</strong>
                     <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.habitaciones}</span>
@@ -221,7 +223,7 @@ const PropiedadDetalle = () => {
               )}
               {inmueble.banos > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bath size={20}/></div>
+                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bath size={20} /></div>
                   <div>
                     <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Baños</strong>
                     <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.banos}</span>
@@ -230,7 +232,7 @@ const PropiedadDetalle = () => {
               )}
               {inmueble.superficie > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Maximize2 size={20}/></div>
+                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Maximize2 size={20} /></div>
                   <div>
                     <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Superficie</strong>
                     <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.superficie} m²</span>
@@ -253,7 +255,7 @@ const PropiedadDetalle = () => {
                     const lat = parseFloat(parts[0]);
                     const lng = parseFloat(parts[1]);
                     if (isNaN(lat) || isNaN(lng)) return <div style={{ padding: '16px', color: 'var(--color-text-secondary)' }}>Ubicación inválida</div>;
-                    
+
                     return (
                       <MapContainer center={[lat, lng]} zoom={15} style={{ height: '100%', width: '100%', zIndex: 1 }}>
                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -266,7 +268,21 @@ const PropiedadDetalle = () => {
             )}
 
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '24px', flexWrap: 'wrap' }}>
-              <button onClick={handleContactar} style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: '10px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  if (!isAuthenticated) { navigate('/login'); return; }
+                  setShowCitaModal(true);
+                }}
+                style={{
+                  background: '#10b981', color: '#fff', border: 'none',
+                  padding: '12px 32px', borderRadius: '10px', fontSize: '1rem',
+                  fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                }}
+              >
+                <Calendar size={18} /> Agendar Visita
+              </button>
+              <button onClick={handleContactar}
+                style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: '10px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MessageCircle size={18} /> Contactar Dueño
               </button>
             </div>
@@ -275,7 +291,7 @@ const PropiedadDetalle = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Modal de Confirmación para Admin */}
       {showConfirmModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
@@ -286,13 +302,13 @@ const PropiedadDetalle = () => {
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '12px', color: '#1e293b' }}>Confirmación de contacto</h3>
             <p style={{ color: '#64748b', marginBottom: '28px', lineHeight: '1.5' }}>¿Ya habló con el usuario sobre este inmueble?</p>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
+              <button
                 onClick={() => setShowConfirmModal(false)}
                 style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 onClick={confirmAdminContact}
                 style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '12px', background: '#0ea5e9', color: '#fff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
@@ -304,7 +320,7 @@ const PropiedadDetalle = () => {
       )}
 
       {selectedMediaIndex !== null && (
-        <div 
+        <div
           onClick={() => setSelectedMediaIndex(null)}
           style={{
             position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
@@ -314,7 +330,7 @@ const PropiedadDetalle = () => {
           }}
         >
           {allMedia.length > 1 && (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); setSelectedMediaIndex(prev => (prev > 0 ? prev - 1 : allMedia.length - 1)); }}
               style={{ position: 'absolute', left: '24px', background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: '16px', borderRadius: '50%', backdropFilter: 'blur(4px)', transition: 'background 0.2s' }}
             >
@@ -323,22 +339,22 @@ const PropiedadDetalle = () => {
           )}
 
           {allMedia[selectedMediaIndex]?.tipo === 'video' ? (
-             <video 
+            <video
               src={allMedia[selectedMediaIndex].archivo} controls autoPlay
-              style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }} 
+              style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }}
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <img 
-              src={allMedia[selectedMediaIndex]?.archivo} 
-              alt="Fullscreen media" 
-              style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }} 
+            <img
+              src={allMedia[selectedMediaIndex]?.archivo}
+              alt="Fullscreen media"
+              style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }}
               onClick={(e) => e.stopPropagation()}
             />
           )}
 
           {allMedia.length > 1 && (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); setSelectedMediaIndex(prev => (prev < allMedia.length - 1 ? prev + 1 : 0)); }}
               style={{ position: 'absolute', right: '24px', background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: '16px', borderRadius: '50%', backdropFilter: 'blur(4px)', transition: 'background 0.2s' }}
             >
@@ -346,11 +362,20 @@ const PropiedadDetalle = () => {
             </button>
           )}
 
-          <button 
+          <button
             onClick={() => setSelectedMediaIndex(null)}
             style={{ position: 'absolute', top: '24px', right: '32px', background: 'none', border: 'none', color: '#fff', fontSize: '3rem', cursor: 'pointer' }}
           ><X size={48} /></button>
         </div>
+      )}
+      {inmueble && (
+        <ModalAgendarCita
+          isOpen={showCitaModal}
+          onClose={() => setShowCitaModal(false)}
+          inmueble={inmueble}
+          propietarioId={inmueble.propietario}
+          onCitaAgendada={() => { }}
+        />
       )}
     </div>
   );
