@@ -28,6 +28,7 @@ import ManageUsers from './pages/Admin/ManageUsers';
 import ManageCategorias from './pages/Admin/ManageCategorias';
 import ManageInmuebles from './pages/Admin/ManageInmuebles';
 import ManageContratos from './pages/Admin/ManageContratos';
+import ManageTipoContrato from './pages/Admin/ManageTipoContrato';
 import ManagePagos from './pages/Admin/ManagePagos';
 import ManageTipoPagos from './pages/Admin/ManageTipoPagos';
 import ManageHistorialPagos from './pages/Admin/ManageHistorialPagos';
@@ -122,6 +123,7 @@ const router = createBrowserRouter([
       { path: 'tipo-pagos', element: <ManageTipoPagos /> },
       { path: 'historial-pagos', element: <ManageHistorialPagos /> },
       { path: 'agenda', element: <ManageAgenda /> },
+      { path: 'tipo-contrato', element: <ManageTipoContrato /> },
       { path: 'notificaciones', element: <ManageNotificaciones /> },
       { path: 'favoritos', element: <ManageFavoritos /> },
     ],

@@ -75,6 +75,39 @@ const inmuebleService = {
     });
     return data;
   },
+
+  /**
+   * Gestión de Tipos de Contrato (Admin)
+   */
+  getTiposContrato: async () => {
+    const { data } = await api.get('/inmuebles/tipos-contrato/');
+    return data;
+  },
+  
+  createTipoContrato: async (payload) => {
+    const { data } = await api.post('/inmuebles/tipos-contrato/', payload);
+    return data;
+  },
+
+  updateTipoContrato: async (id, payload) => {
+    const { data } = await api.patch(`/inmuebles/tipos-contrato/${id}/`, payload);
+    return data;
+  },
+
+  deleteTipoContrato: async (id) => {
+    await api.delete(`/inmuebles/tipos-contrato/${id}/`);
+  },
+
+  /**
+   * Descarga de Contrato en PDF
+   */
+  downloadContratoPdf: async (id) => {
+    const response = await api.get(`/inmuebles/contratos/${id}/pdf/`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
+
 
 export default inmuebleService;

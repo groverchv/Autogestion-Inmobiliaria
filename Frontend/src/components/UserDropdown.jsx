@@ -23,9 +23,7 @@ const UserDropdown = () => {
   }, []);
 
   const handleLogoutClick = () => {
-    if (window.confirm('¿Seguro que deseas cerrar sesión?')) {
-      logout();
-    }
+    logout();
   };
 
   const openProfile = () => {

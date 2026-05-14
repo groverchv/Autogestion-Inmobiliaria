@@ -194,6 +194,8 @@ def create_seed_data():
         ('Venta', 'Contrato de compraventa de inmueble.'),
         ('Anticrético', 'Contrato de anticresis con depósito como garantía.'),
         ('Contrato Mixto', 'Combinación de alquiler con opción de compra.'),
+        ('Traspaso', 'Transferencia de derechos de uso sobre un local comercial.'),
+        ('Comodato', 'Préstamo de uso gratuito por un tiempo determinado.'),
     ]
     t_contratos = {}
     for nombre, desc in tipos_contrato_data:

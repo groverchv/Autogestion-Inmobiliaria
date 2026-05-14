@@ -85,9 +85,9 @@ DATABASES = {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
         'NAME': os.getenv('DB_NAME', 'autogestion'),
         'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'Ch@rles7i02s6q5'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'diego12948850'),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '5433'),
     }
 }
 
@@ -157,4 +157,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 # ─── Frontend URL ───────────────────────────────────────────
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+# ─── Groq (IA Generativa) ───────────────────────────────────
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 

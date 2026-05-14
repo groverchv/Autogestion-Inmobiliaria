@@ -1,1 +1,10 @@
 Mis Cosas/
+test/
+
+# AI Workspace & Agent Configs
+.agents/
+MEMORY.md
+
+# Seguridad
+.env
+*.pem

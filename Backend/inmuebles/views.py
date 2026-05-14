@@ -2,6 +2,8 @@ from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.http import HttpResponse
+from django.core.exceptions import ValidationError
 from .models import (
     TipoInmueble, Inmueble, Multimedia, TipoContrato,
     Contrato, Comision, Favorito, Cita, HorarioDisponible,
@@ -19,6 +21,19 @@ from .serializers import (
     HorarioDisponibleSerializer,
 )
 from django.db import models as dj_models
+from .services import (
+    get_tipo_contrato_by_id,
+    create_tipo_contrato,
+    update_tipo_contrato,
+    delete_tipo_contrato,
+    generate_contract_pdf
+)
+from .selectors import (
+    get_all_tipos_contrato,
+    get_tipos_contrato_for_select,
+    get_contrato_pdf_data,
+    get_contratos_for_user
+)
 from django_filters.rest_framework import DjangoFilterBackend
 import django_filters
 
@@ -141,25 +156,38 @@ class MultimediaViewSet(viewsets.ModelViewSet):
 
 
 class TipoContratoViewSet(viewsets.ModelViewSet):
-    """CRUD para tipos de contrato."""
-    queryset = TipoContrato.objects.all()
+    """CRUD para tipos de contrato siguiendo arquitectura de 4 capas."""
     serializer_class = TipoContratoSerializer
 
+    def get_queryset(self):
+        return get_all_tipos_contrato()
+
+    def perform_create(self, serializer):
+        # La vista valida (vía serializer) y el servicio escribe
+        create_tipo_contrato(**serializer.validated_data)
+
+    def perform_update(self, serializer):
+        # La vista valida y el servicio escribe
+        update_tipo_contrato(serializer.instance, **serializer.validated_data)
+
+    def destroy(self, request, *args, **kwargs):
+        """Usa el servicio para validar integridad referencial antes de borrar."""
+        try:
+            delete_tipo_contrato(kwargs.get('pk'))
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': 'Error al eliminar el tipo contrato'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class ContratoViewSet(viewsets.ModelViewSet):
-    """CRUD para contratos con flujo de revisión."""
-    queryset = Contrato.objects.all()
+    """CRUD para contratos con flujo de revisión siguiendo arquitectura de 4 capas."""
     serializer_class = ContratoSerializer
 
     def get_queryset(self):
-        user = self.request.user
-        qs = Contrato.objects.select_related(
-            'inmueble', 'inmueble__propietario', 'inmueble__direccion',
-            'tipo_contrato', 'inquilino'
-        )
-        if user.is_staff or user.rol == 'admin':
-            return qs.all()
-        from django.db.models import Q
-        return qs.filter(Q(inquilino=user) | Q(inmueble__propietario=user))
+        return get_contratos_for_user(self.request.user)
+
 
     def perform_create(self, serializer):
         serializer.save()
@@ -282,6 +310,41 @@ class ContratoViewSet(viewsets.ModelViewSet):
             )
 
         return Response(ContratoSerializer(contrato).data)
+
+    @action(detail=True, methods=['get'], url_path='pdf')
+    def download_pdf(self, request, pk=None):
+        """Generate and download PDF for a contract."""
+        try:
+            contrato = self.get_object()
+            pdf_content = generate_contract_pdf(contrato.id)
+            if pdf_content:
+                response = HttpResponse(pdf_content, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="contrato_{contrato.id}.pdf"'
+                return response
+            else:
+                return Response({'error': 'No se pudo generar el PDF'}, status=400)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=True, methods=['get'], url_path='generar-ia')
+    def generar_contrato_ia(self, request, pk=None):
+        """Generate a contract text with AI and download it as PDF."""
+        try:
+            from .services import generar_contrato_pdf_con_ia
+            
+            contrato = self.get_object()
+            
+            # La lógica pesada está en la capa de servicios
+            pdf_content = generar_contrato_pdf_con_ia(contrato.id, request.user)
+            
+            if pdf_content:
+                response = HttpResponse(pdf_content, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="Contrato_IA_{contrato.id}.pdf"'
+                return response
+            else:
+                return Response({'error': 'No se pudo generar el PDF con IA'}, status=400)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
 
 
 class ComisionViewSet(viewsets.ModelViewSet):

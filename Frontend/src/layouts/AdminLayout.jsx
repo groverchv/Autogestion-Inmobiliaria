@@ -20,6 +20,7 @@ const AdminLayout = () => {
     { to: '/panel/inmuebles', label: 'Inmuebles', icon: <Home size={20} /> },
     { to: '/panel/categorias', label: 'Categorías', icon: <Archive size={20} /> },
     { to: '/panel/contratos', label: 'Contratos', icon: <FileText size={20} /> },
+    { to: '/panel/tipo-contrato', label: 'Tipos de Contrato', icon: <CreditCard size={20} /> },
     { to: '/panel/pagos', label: 'Pagos', icon: <Banknote size={20} /> },
     { to: '/panel/tipo-pagos', label: 'Tipos de Pago', icon: <CreditCard size={20} /> },
     { to: '/panel/historial-pagos', label: 'Historial', icon: <History size={20} /> },

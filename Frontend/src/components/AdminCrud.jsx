@@ -72,12 +72,16 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
   };
 
   const handleDelete = async (item) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este registro?')) return;
+    console.log("Intentando eliminar item:", item[idKey], "en endpoint:", endpoint);
     try {
+      console.log("Enviando petición DELETE a:", `${endpoint}${item[idKey]}/`);
       await api.delete(`${endpoint}${item[idKey]}/`);
+      console.log("Eliminación exitosa");
       fetchItems();
     } catch (err) {
-      alert('Error al eliminar: ' + (err.response?.data?.detail || 'Error desconocido'));
+      console.error("Error en DELETE:", err);
+      const msg = err.response?.data?.error || err.response?.data?.detail || 'Error desconocido';
+      alert('Error al eliminar: ' + msg);
     }
   };
 
@@ -215,7 +219,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
                       <button style={s.btnEdit} onClick={() => openEdit(item)} title="Editar">
                         <Edit3 size={14} />
                       </button>
-                      <button style={s.btnDel} onClick={() => handleDelete(item)} title="Eliminar">
+                      <button type="button" style={s.btnDel} onClick={() => handleDelete(item)} title="Eliminar">
                         <Trash2 size={14} />
                       </button>
                     </td>

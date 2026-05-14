@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Eye, ChevronDown, ChevronUp, CheckCircle, XCircle, Clock, AlertTriangle, Home, User } from 'lucide-react';
+import { FileText, Eye, ChevronDown, ChevronUp, CheckCircle, XCircle, Clock, AlertTriangle, Home, User, Sparkles } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
 import Modal from '../../components/Modal';
 import useAuth from '../../hooks/useAuth';
-import api from '../../services/api';
+import contratoService from '../../services/contratoService';
 import './Propiedades.css';
 
 const estadoConfig = {
@@ -27,8 +27,8 @@ const MisContratos = () => {
 
   const fetchContratos = useCallback(async () => {
     try {
-      const res = await api.get('/inmuebles/contratos/');
-      setContratos(res.data.results || res.data);
+      const data = await contratoService.getAll();
+      setContratos(data);
     } catch { setContratos([]); }
     finally { setLoading(false); }
   }, []);
@@ -123,6 +123,32 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
+  const handleDownloadPDF = async () => {
+    try {
+      const blob = await contratoService.downloadPdf(c.id);
+      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+      const blobUrl = URL.createObjectURL(pdfBlob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `Contrato_Oficial_${c.id}.pdf`;
+      // Estilo fuera de pantalla para evitar flicker y asegurar compatibilidad Chrome
+      link.style.position = 'absolute';
+      link.style.left = '-9999px';
+      link.style.top = '0';
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        if (link.parentNode) document.body.removeChild(link);
+      }, 2000);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Error al descargar el PDF');
+    }
+  };
+
   const esCliente = c.inquilino === user?.id;
   const puedeAceptar = esCliente && c.estado === 'enviado';
   const puedeRechazar = esCliente && c.estado === 'enviado';
@@ -130,7 +156,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
   const handleAceptar = async () => {
     setActionLoading(true);
     try {
-      await api.post(`/inmuebles/contratos/${c.id}/aceptar/`);
+      await contratoService.aceptar(c.id);
       onUpdate();
     } catch (e) { alert(e.response?.data?.error || 'Error'); }
     finally { setActionLoading(false); }
@@ -140,10 +166,48 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
     if (!motivoRechazo.trim()) { alert('Ingresa un motivo de rechazo'); return; }
     setActionLoading(true);
     try {
-      await api.post(`/inmuebles/contratos/${c.id}/rechazar/`, { motivo: motivoRechazo });
+      await contratoService.rechazar(c.id, motivoRechazo);
       onUpdate();
     } catch (e) { alert(e.response?.data?.error || 'Error'); }
     finally { setActionLoading(false); }
+  };
+
+  const [isGeneratingIA, setIsGeneratingIA] = useState(false);
+
+  const handleDownloadIA = async () => {
+    setIsGeneratingIA(true);
+    try {
+      const blob = await contratoService.generarContratoIA(c.id);
+      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+      const fileName = `Contrato_IA_${c.id}.pdf`;
+
+      // Método universal: funciona en Brave, Firefox y Chrome moderno
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        // IE/Edge Legacy
+        window.navigator.msSaveOrOpenBlob(pdfBlob, fileName);
+      } else {
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        // Chrome bloquea 'download' si el elemento no está en el layout o es 'display: none'
+        link.style.position = 'absolute';
+        link.style.left = '-9999px';
+        link.style.top = '0';
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          if (link.parentNode) document.body.removeChild(link);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error generando PDF con IA:', error);
+      alert('Hubo un error al contactar a la Inteligencia Artificial. Intenta de nuevo.');
+    } finally {
+      setIsGeneratingIA(false);
+    }
   };
 
   const cfg = estadoConfig[c.estado] || estadoConfig.pendiente;
@@ -239,6 +303,34 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
           </div>
         </div>
       )}
+      
+      {/* Botón de descarga de PDF */}
+      <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '16px', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <button onClick={handleDownloadIA} disabled={isGeneratingIA} style={{
+          width: '100%', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff',
+          border: 'none', borderRadius: '10px', padding: '12px', fontWeight: 700, fontSize: '0.95rem',
+          cursor: isGeneratingIA ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          opacity: isGeneratingIA ? 0.7 : 1
+        }}>
+          {isGeneratingIA ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+              Redactando con IA...
+            </span>
+          ) : (
+            <><Sparkles size={18} /> Generar Contrato con IA</>
+          )}
+        </button>
+
+        <button onClick={handleDownloadPDF} style={{
+          width: '100%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#fff',
+          border: 'none', borderRadius: '10px', padding: '12px', fontWeight: 700, fontSize: '0.95rem',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+        }}>
+          <FileText size={18} /> Descargar Contrato Básico PDF
+        </button>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
