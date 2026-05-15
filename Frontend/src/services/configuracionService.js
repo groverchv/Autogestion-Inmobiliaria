@@ -4,7 +4,11 @@ const configuracionService = {
   obtenerConfiguracion: async () => {
     try {
       const response = await axiosInstance.get('/pagos/configuracion/');
-      // Al ser Singleton, siempre nos interesa el primer elemento si devuelve un array
+      // Si es una respuesta paginada de DRF
+      if (response.data && Array.isArray(response.data.results) && response.data.results.length > 0) {
+        return response.data.results[0];
+      }
+      // Si devuelve un array directamente
       if (Array.isArray(response.data) && response.data.length > 0) {
         return response.data[0];
       }

@@ -5,40 +5,59 @@ from django.utils import timezone
 from pagos.models import Pago, TransaccionStripe
 from inmuebles.models import Comision, Contrato, Inmueble
 
+import calendar
+
 def parsear_fechas(filtros: dict):
-    """Extrae y parsea fechas desde los filtros."""
+    """Extrae y parsea fechas desde los filtros de manera robusta."""
     rango = filtros.get('rango')
     fecha_inicio = filtros.get('fecha_inicio')
     fecha_fin = filtros.get('fecha_fin')
     anio = filtros.get('anio')
+    mes = filtros.get('mes')
     
     hoy = timezone.now().date()
     
-    if anio:
+    # Prioridad 1: Año (y opcionalmente mes)
+    if anio and str(anio).strip():
         try:
             anio_int = int(anio)
-            fecha_inicio = datetime(anio_int, 1, 1).date()
-            fecha_fin = datetime(anio_int, 12, 31).date()
-        except ValueError:
+            # Verificar si el mes es válido y numérico
+            if mes and str(mes).isdigit():
+                mes_int = int(mes)
+                if 1 <= mes_int <= 12:
+                    _, ultimo_dia = calendar.monthrange(anio_int, mes_int)
+                    return (
+                        datetime(anio_int, mes_int, 1).date(),
+                        datetime(anio_int, mes_int, ultimo_dia).date()
+                    )
+            
+            # Si no hay mes válido, filtrar todo el año
+            return (
+                datetime(anio_int, 1, 1).date(),
+                datetime(anio_int, 12, 31).date()
+            )
+        except (ValueError, TypeError):
             pass
-    elif rango:
+
+    # Prioridad 2: Rangos predefinidos
+    if rango:
         if rango == 'mes_actual':
-            fecha_inicio = hoy.replace(day=1)
-            fecha_fin = hoy
+            return hoy.replace(day=1), hoy
         elif rango == 'ultimos_3_meses':
-            fecha_inicio = hoy - timedelta(days=90)
-            fecha_fin = hoy
+            return hoy - timedelta(days=90), hoy
         elif rango == 'ultimos_6_meses':
-            fecha_inicio = hoy - timedelta(days=180)
-            fecha_fin = hoy
+            return hoy - timedelta(days=180), hoy
         elif rango == 'ultimos_12_meses':
-            fecha_inicio = hoy - timedelta(days=365)
-            fecha_fin = hoy
-    else:
-        if fecha_inicio:
+            return hoy - timedelta(days=365), hoy
+            
+    # Prioridad 3: Fechas explícitas
+    try:
+        if fecha_inicio and isinstance(fecha_inicio, str):
             fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-        if fecha_fin:
+        if fecha_fin and isinstance(fecha_fin, str):
             fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return None, None
             
     return fecha_inicio, fecha_fin
 
@@ -46,6 +65,8 @@ def obtener_estadisticas_admin(filtros: dict) -> dict:
     """Devuelve las ganancias totales de la plataforma por comisiones."""
     fecha_inicio, fecha_fin = parsear_fechas(filtros)
     tipo_contrato = filtros.get('tipo_contrato')
+    ciudad_filtro = filtros.get('ciudad')
+    mes_filtro = filtros.get('mes')
 
     comisiones_qs = Comision.objects.filter(pagada=True)
     
@@ -55,35 +76,133 @@ def obtener_estadisticas_admin(filtros: dict) -> dict:
         comisiones_qs = comisiones_qs.filter(fecha__lte=fecha_fin)
     if tipo_contrato:
         comisiones_qs = comisiones_qs.filter(contrato__tipo_contrato__id=tipo_contrato)
+    if ciudad_filtro:
+        comisiones_qs = comisiones_qs.filter(contrato__inmueble__direccion__ciudad__icontains=ciudad_filtro)
 
     # Total generado
     total_comisiones = comisiones_qs.aggregate(total=Sum('monto'))['total'] or 0.0
 
-    # Agrupación por mes para el gráfico
-    evolucion_mensual = (
+    data_grafico: list[dict] = []
+    
+    # Determinar el periodo base para el gráfico desde las fechas ya parseadas
+    if fecha_inicio:
+        anio_int = fecha_inicio.year
+        # Si la fecha_inicio y fecha_fin corresponden al mismo mes, es vista mensual (diaria)
+        es_vista_mensual = (fecha_inicio.month == fecha_fin.month and (fecha_fin - fecha_inicio).days < 32) if fecha_fin else False
+        mes_int = fecha_inicio.month if es_vista_mensual else None
+    else:
+        anio_int = datetime.now().year
+        mes_int = None
+
+    if mes_int:
+        # Vista DIARIA de un mes específico
+        from django.db.models.functions import TruncDay
+        
+        evolucion_diaria = (
+            comisiones_qs
+            .annotate(dia=TruncDay('fecha'))
+            .values('dia')
+            .annotate(ingreso=Sum('monto'))
+            .order_by('dia')
+        )
+        
+        dict_ingresos = {item['dia'].strftime('%Y-%m-%d'): float(item['ingreso']) for item in evolucion_diaria}
+        _, ultimo_dia = calendar.monthrange(anio_int, mes_int)
+        
+        for d in range(1, ultimo_dia + 1):
+            fecha_str = f"{anio_int}-{mes_int:02d}-{d:02d}"
+            data_grafico.append({
+                "fecha": fecha_str,
+                "ingreso": dict_ingresos.get(fecha_str, 0.0)
+            })
+    else:
+        # Vista MENSUAL de un año completo (o rango)
+        from django.db.models.functions import TruncMonth
+        evolucion_mensual = (
+            comisiones_qs
+            .annotate(mes_trunc=TruncMonth('fecha'))
+            .values('mes_trunc')
+            .annotate(ingreso=Sum('monto'))
+            .order_by('mes_trunc')
+        )
+
+        dict_ingresos = {item['mes_trunc'].strftime('%Y-%m'): float(item['ingreso']) for item in evolucion_mensual}
+
+        for m in range(1, 13):
+            mes_str = f"{anio_int}-{m:02d}"
+            data_grafico.append({
+                "fecha": mes_str,
+                "ingreso": dict_ingresos.get(mes_str, 0.0)
+            })
+
+    # Agrupación por tipo de contrato para gráfico de torta
+    evolucion_contratos = (
         comisiones_qs
-        .annotate(mes=TruncMonth('fecha'))
-        .values('mes')
+        .values(contrato_nombre=F('contrato__tipo_contrato__nombre'))
         .annotate(ingreso=Sum('monto'))
-        .order_by('mes')
+        .order_by('-ingreso')
     )
 
-    data_grafico = [
-        {"fecha": item['mes'].strftime('%Y-%m'), "ingreso": float(item['ingreso'])}
-        for item in evolucion_mensual
+    data_contratos = [
+        {"contrato": item['contrato_nombre'] or 'Desconocido', "ingreso": float(item['ingreso'])}
+        for item in evolucion_contratos
     ]
 
-    # KPIs extra
-    total_pagos_exitosos = Pago.objects.filter(estado='completado').count()
-    contratos_activos = Contrato.objects.filter(estado='activo').count()
+    # Detalles para la tabla dinámica (últimos 100 registros)
+    detalles = (
+        comisiones_qs
+        .select_related('contrato__inmueble__direccion', 'contrato__tipo_contrato', 'pago__usuario')
+        .order_by('-fecha')[:100]
+    )
+    
+    tabla_detalles = []
+    for c in detalles:
+        try:
+            ciudad = c.contrato.inmueble.direccion.ciudad if c.contrato and c.contrato.inmueble and hasattr(c.contrato.inmueble, 'direccion') and c.contrato.inmueble.direccion else 'N/A'
+        except Exception:
+            ciudad = 'N/A'
+            
+        tabla_detalles.append({
+            "id": c.id,
+            "fecha": c.fecha.strftime('%Y-%m-%d'),
+            "monto": float(c.monto),
+            "ciudad": ciudad,
+            "tipo_contrato": c.contrato.tipo_contrato.nombre if c.contrato and c.contrato.tipo_contrato else 'N/A',
+            "inmueble": c.contrato.inmueble.titulo if c.contrato and c.contrato.inmueble else 'Desconocido',
+            "inquilino": c.pago.usuario.first_name + " " + c.pago.usuario.last_name if hasattr(c, 'pago') and c.pago and c.pago.usuario else 'N/A'
+        })
+
+    # KPIs extra con filtros aplicados (USAMOS LA VARIABLE 'ciudad' DEL FILTRO)
+    from django.db.models import Q
+    from pagos.models import Pago
+    from inmuebles.models import Contrato
+    
+    pagos_qs = Pago.objects.filter(estado='completado')
+    contratos_qs = Contrato.objects.all()
+
+    if fecha_inicio:
+        pagos_qs = pagos_qs.filter(fecha__gte=fecha_inicio)
+        contratos_qs = contratos_qs.filter(Q(fin__isnull=True) | Q(fin__gte=fecha_inicio))
+    if fecha_fin:
+        pagos_qs = pagos_qs.filter(fecha__lte=fecha_fin)
+        contratos_qs = contratos_qs.filter(inicio__lte=fecha_fin)
+        
+    if tipo_contrato:
+        pagos_qs = pagos_qs.filter(contrato__tipo_contrato__id=tipo_contrato)
+        contratos_qs = contratos_qs.filter(tipo_contrato__id=tipo_contrato)
+    if ciudad_filtro:
+        pagos_qs = pagos_qs.filter(contrato__inmueble__direccion__ciudad__icontains=ciudad_filtro)
+        contratos_qs = contratos_qs.filter(inmueble__direccion__ciudad__icontains=ciudad_filtro)
 
     return {
         "kpis": {
             "total_ingreso_comisiones": float(total_comisiones),
-            "total_pagos_exitosos": total_pagos_exitosos,
-            "contratos_activos": contratos_activos
+            "total_pagos_exitosos": pagos_qs.count(),
+            "contratos_activos": contratos_qs.filter(estado='activo').count()
         },
-        "grafico_evolucion": data_grafico
+        "grafico_evolucion": data_grafico,
+        "grafico_contratos": data_contratos,
+        "tabla_detalles": tabla_detalles
     }
 
 def obtener_balance_propietario(usuario, filtros: dict) -> dict:

@@ -23,7 +23,7 @@ const FinanzasPropietario = () => {
 
   useEffect(() => {
     fetchData();
-  }, [filtros]);
+  }, [filtros]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
@@ -53,11 +53,12 @@ const FinanzasPropietario = () => {
   const handleDownloadPDF = () => {
     const element = document.querySelector('.print-container');
     const opt = {
-      margin:       [3, 3],
+      margin:       [8, 8],
       filename:     `reporte_financiero_${filtros.anio || 'anual'}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 1.8, useCORS: true, logging: false },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      html2canvas:  { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak:    { mode: ['css', 'legacy'] }
     };
 
     setExporting(true);
@@ -525,9 +526,9 @@ const FinanzasPropietario = () => {
         .is-exporting .no-print { display: none !important; }
         .is-exporting {
           background: white !important;
-          width: 1000px !important;
+          width: 1050px !important;
           margin: 0 auto !important;
-          padding: 16px 20px !important;
+          padding: 0 16px 16px 16px !important;
           font-family: 'Inter', 'Segoe UI', sans-serif !important;
           box-sizing: border-box !important;
           overflow: visible !important;
@@ -546,7 +547,7 @@ const FinanzasPropietario = () => {
           display: grid !important;
           grid-template-columns: repeat(3, 1fr) !important;
           gap: 10px !important;
-          margin-bottom: 10px !important;
+          margin-bottom: 12px !important;
         }
         .is-exporting .kpi-grid > div {
           padding: 8px 12px !important;
@@ -561,42 +562,36 @@ const FinanzasPropietario = () => {
           margin-bottom: 10px !important;
         }
 
-        /* Gráficos: layout 2fr / 1fr lado a lado */
+        /* Gráficos: columna única en PDF */
         .is-exporting .charts-grid {
-          display: grid !important;
-          grid-template-columns: 2fr 1fr !important;
+          display: flex !important;
+          flex-direction: column !important;
           gap: 12px !important;
         }
 
         /* Altura de contenedores de gráfico */
         .is-exporting .chart-wrapper {
-          height: 280px !important;
-          max-height: 280px !important;
+          height: 220px !important;
+          max-height: 220px !important;
           overflow: visible !important;
         }
 
         /* Compactar chart-box */
         .is-exporting .chart-box {
           padding: 10px 14px !important;
-          border-radius: 12px !important;
+          border-radius: 10px !important;
           overflow: visible !important;
-        }
-        .is-exporting .chart-box h2 { font-size: 1rem !important; margin-bottom: 4px !important; }
-        .is-exporting .chart-box > div:first-child { margin-bottom: 6px !important; gap: 8px !important; }
-
-        /* Tamaño de gráficos Recharts */
-        .is-exporting .recharts-responsive-container {
-          width: 100% !important;
-          height: 270px !important;
-          min-height: 270px !important;
-        }
-
-        /* Evitar cortes entre páginas */
-        .is-exporting .chart-box,
-        .is-exporting .kpi-grid,
-        .is-exporting .print-table {
           break-inside: avoid !important;
           page-break-inside: avoid !important;
+        }
+        .is-exporting .chart-box h2 { font-size: 0.9rem !important; margin-bottom: 4px !important; }
+        .is-exporting .chart-box > div:first-child { margin-bottom: 6px !important; gap: 8px !important; }
+
+        /* Recharts */
+        .is-exporting .recharts-responsive-container {
+          width: 100% !important;
+          height: 210px !important;
+          min-height: 210px !important;
         }
       `}</style>
     </div>

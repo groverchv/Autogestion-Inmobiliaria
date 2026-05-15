@@ -589,6 +589,7 @@ class ReportesAPIView(APIView):
             'tipo_contrato': request.query_params.get('tipo_contrato'),
             'inmueble_id': request.query_params.get('inmueble_id'),
             'anio': request.query_params.get('anio'),
+            'ciudad': request.query_params.get('ciudad'),
         }
 
         if request.user.rol == 'admin' or request.user.is_staff:

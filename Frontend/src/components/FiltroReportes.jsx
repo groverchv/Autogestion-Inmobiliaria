@@ -5,20 +5,38 @@ import './FiltroReportes.css';
 const FiltroReportes = ({ onFilterChange, showInmuebleFilter = true }) => {
   const [tiposContrato, setTiposContrato] = useState([]);
   const [inmuebles, setInmuebles] = useState([]);
+  const [ciudades, setCiudades] = useState([]);
   
   const currentYear = new Date().getFullYear();
   const years = Array.from({length: 5}, (_, i) => currentYear - i);
 
   const [filtros, setFiltros] = useState({
     anio: currentYear.toString(),
+    mes: '',
     tipo_contrato: '',
-    inmueble_id: ''
+    inmueble_id: '',
+    ciudad: ''
   });
 
+  const meses = [
+    { id: '1', nombre: 'Enero' }, { id: '2', nombre: 'Febrero' }, { id: '3', nombre: 'Marzo' },
+    { id: '4', nombre: 'Abril' }, { id: '5', nombre: 'Mayo' }, { id: '6', nombre: 'Junio' },
+    { id: '7', nombre: 'Julio' }, { id: '8', nombre: 'Agosto' }, { id: '9', nombre: 'Septiembre' },
+    { id: '10', nombre: 'Octubre' }, { id: '11', nombre: 'Noviembre' }, { id: '12', nombre: 'Diciembre' }
+  ];
+
   useEffect(() => {
+    // Sincronizar filtros iniciales con el padre
+    onFilterChange(filtros);
+
     // Cargar tipos de contrato
     api.get('/inmuebles/tipos-contrato/')
       .then(res => setTiposContrato(res.data.results || res.data))
+      .catch(console.error);
+
+    // Cargar ciudades únicas
+    api.get('/inmuebles/lista/ciudades/')
+      .then(res => setCiudades(res.data.results || res.data))
       .catch(console.error);
 
     // Cargar inmuebles
@@ -27,7 +45,7 @@ const FiltroReportes = ({ onFilterChange, showInmuebleFilter = true }) => {
         .then(res => setInmuebles(res.data.results || res.data))
         .catch(console.error);
     }
-  }, [showInmuebleFilter]);
+  }, [showInmuebleFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,7 +54,7 @@ const FiltroReportes = ({ onFilterChange, showInmuebleFilter = true }) => {
     
     // Limpiar campos vacíos antes de enviar
     const filtrosActivos = Object.fromEntries(
-      Object.entries(newFiltros).filter(([_, v]) => v !== '')
+      Object.entries(newFiltros).filter((entry) => entry[1] !== '')
     );
     onFilterChange(filtrosActivos);
   };
@@ -48,6 +66,26 @@ const FiltroReportes = ({ onFilterChange, showInmuebleFilter = true }) => {
         <select name="anio" value={filtros.anio} onChange={handleChange} className="filter-select">
           {years.map(y => (
             <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="filtro-group">
+        <label>Mes:</label>
+        <select name="mes" value={filtros.mes} onChange={handleChange} className="filter-select">
+          <option value="">Todos los meses</option>
+          {meses.map(m => (
+            <option key={m.id} value={m.id}>{m.nombre}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="filtro-group">
+        <label>Ciudad:</label>
+        <select name="ciudad" value={filtros.ciudad} onChange={handleChange} className="filter-select">
+          <option value="">Todas las ciudades</option>
+          {ciudades.map((c, idx) => (
+            <option key={idx} value={c}>{c}</option>
           ))}
         </select>
       </div>
