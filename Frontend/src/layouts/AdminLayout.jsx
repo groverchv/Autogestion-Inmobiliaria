@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, Users, Home, Archive, FileText, Banknote, 
-  CreditCard, History, Calendar, Bell, Heart, ChevronRight, ChevronLeft 
+import {
+  LayoutDashboard, Users, Home, Archive, FileText, Banknote,
+  CreditCard, History, Calendar, Bell, Heart, ChevronRight, ChevronLeft, LineChart
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import './AdminLayout.css';
@@ -16,6 +16,7 @@ const AdminLayout = () => {
 
   const menuItems = [
     { to: '/panel/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { to: '/panel/finanzas', label: 'Finanzas', icon: <LineChart size={20} /> },
     { to: '/panel/usuarios', label: 'Usuarios', icon: <Users size={20} /> },
     { to: '/panel/inmuebles', label: 'Inmuebles', icon: <Home size={20} /> },
     { to: '/panel/categorias', label: 'Categorías', icon: <Archive size={20} /> },
@@ -37,9 +38,9 @@ const AdminLayout = () => {
             <Home className="admin-layout__brand-icon" size={collapsed ? 24 : 20} />
             {!collapsed && <h3>Panel Admin</h3>}
           </div>
-          <button 
-            className="admin-layout__toggle" 
-            onClick={() => setCollapsed(!collapsed)} 
+          <button
+            className="admin-layout__toggle"
+            onClick={() => setCollapsed(!collapsed)}
             title={collapsed ? 'Expandir' : 'Colapsar'}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}

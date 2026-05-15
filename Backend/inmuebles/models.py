@@ -254,10 +254,18 @@ class Comision(models.Model):
         on_delete=models.CASCADE,
         related_name='comisiones',
     )
+    pago = models.ForeignKey(
+        'pagos.Pago',
+        on_delete=models.CASCADE,
+        related_name='comisiones',
+        null=True,
+        blank=True,
+        help_text='Pago transaccional del cual se generó la comisión'
+    )
     porcentaje = models.DecimalField(max_digits=5, decimal_places=2)
     monto = models.DecimalField(max_digits=12, decimal_places=2)
     fecha = models.DateField(auto_now_add=True)
-    pagada = models.BooleanField(default=False)
+    pagada = models.BooleanField(default=True, help_text='Las comisiones transaccionales se asumen descontadas/pagadas al instante')
     descripcion = models.TextField(blank=True)
 
     class Meta:

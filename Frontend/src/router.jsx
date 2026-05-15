@@ -35,6 +35,8 @@ import ManageHistorialPagos from './pages/Admin/ManageHistorialPagos';
 import ManageAgenda from './pages/Admin/ManageAgenda';
 import ManageNotificaciones from './pages/Admin/ManageNotificaciones';
 import ManageFavoritos from './pages/Admin/ManageFavoritos';
+import FinanzasAdmin from './pages/Admin/FinanzasAdmin';
+import FinanzasPropietario from './pages/Public/FinanzasPropietario';
 
 /**
  * Enrutador principal de la aplicación.
@@ -70,6 +72,10 @@ const router = createBrowserRouter([
   {
     path: '/mis-pagos',
     element: <ProtectedRoute><MisPagos /></ProtectedRoute>,
+  },
+  {
+    path: '/mis-finanzas',
+    element: <ProtectedRoute><FinanzasPropietario /></ProtectedRoute>,
   },
   {
     path: '/favoritos',
@@ -115,6 +121,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: 'dashboard', element: <DashboardAdmin /> },
+      { path: 'finanzas', element: <FinanzasAdmin /> },
       { path: 'usuarios', element: <ManageUsers /> },
       { path: 'inmuebles', element: <ManageInmuebles /> },
       { path: 'categorias', element: <ManageCategorias /> },

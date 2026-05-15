@@ -33,15 +33,15 @@ const Propiedades = () => {
     const delayDebounceFn = setTimeout(() => {
       setLoading(true);
       const filters = {};
-      if (searchTerm) filters.search = searchTerm; 
+      if (searchTerm) filters.search = searchTerm;
       if (filtroCategoria) filters.tipo = categorias.find(c => c.nombre === filtroCategoria)?.id || '';
       if (filtroCiudad) filters.ciudad = filtroCiudad;
       if (filtroPrecioMax) filters.precio_max = filtroPrecioMax;
       if (filtroHabitaciones) filters.habitaciones_min = filtroHabitaciones;
       if (filtroBanos) filters.banos_min = filtroBanos;
       if (filtroGaraje) filters.garaje = true;
-      
-      inmuebleService.getAll(filters)
+
+      inmuebleService.listarInmuebles(filters)
         .then(data => {
           setInmuebles(data.results || data);
         })
@@ -61,7 +61,7 @@ const Propiedades = () => {
 
     try {
       const res = await api.post('/inmuebles/favoritos/toggle/', { inmueble: inmId });
-      setInmuebles(prev => prev.map(inm => 
+      setInmuebles(prev => prev.map(inm =>
         inm.id === inmId ? { ...inm, is_favorito: res.data.is_favorito } : inm
       ));
     } catch (err) {
@@ -143,10 +143,10 @@ const Propiedades = () => {
             <option value="3">3 o más</option>
           </select>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-            <input 
-              type="checkbox" 
-              checked={filtroGaraje} 
-              onChange={e => setFiltroGaraje(e.target.checked)} 
+            <input
+              type="checkbox"
+              checked={filtroGaraje}
+              onChange={e => setFiltroGaraje(e.target.checked)}
             />
             Con Garaje
           </label>
@@ -168,7 +168,7 @@ const Propiedades = () => {
                       <img src={inm.imagen_principal} alt={inm.titulo} />
                     ) : (
                       <div className="propiedad-card__placeholder">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
                       </div>
                     )}
                     <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color }}>
@@ -177,12 +177,12 @@ const Propiedades = () => {
                     {inm.tipo_nombre && (
                       <span className="propiedad-card__category">{inm.tipo_nombre}</span>
                     )}
-                    <button 
+                    <button
                       className={`propiedad-card__fav-btn ${inm.is_favorito ? 'propiedad-card__fav-btn--active' : ''}`}
                       onClick={(e) => toggleFavorite(inm.id, e)}
                     >
                       <svg width="20" height="20" fill={inm.is_favorito ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                       </svg>
                     </button>
                   </div>

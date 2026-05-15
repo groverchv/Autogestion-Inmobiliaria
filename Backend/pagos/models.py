@@ -227,3 +227,32 @@ class TransaccionStripe(models.Model):
     def __str__(self):
         return f'Tx #{self.id} — {self.monto} {self.moneda.upper()} ({self.estado})'
 
+
+class ConfiguracionSistema(models.Model):
+    """Configuración global del sistema. Implementa el patrón Singleton."""
+    porcentaje_comision_plataforma = models.DecimalField(
+        max_digits=5, decimal_places=2, default=5.00,
+        help_text='Porcentaje de comisión por transacción (ej. 5.00 para 5%)'
+    )
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'pagos_configuracion_sistema'
+        verbose_name = 'Configuración del Sistema'
+        verbose_name_plural = 'Configuraciones del Sistema'
+
+    def save(self, *args, **kwargs):
+        """Asegura que solo exista un registro de configuración."""
+        if self.__class__.objects.count() > 0 and not self.pk:
+            # Si ya existe un registro y se está intentando crear otro, se cancela
+            return None
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_config(cls):
+        """Devuelve la instancia única o la crea si no existe."""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return 'Configuración Global del Sistema'

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe
+from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe, ConfiguracionSistema
 
 
 class TipoPagoSerializer(serializers.ModelSerializer):
@@ -74,3 +74,8 @@ class TransaccionStripeSerializer(serializers.ModelSerializer):
         if obj.contrato:
             return f'Contrato #{obj.contrato.id} — {obj.contrato.inmueble.titulo}'
         return None
+
+class ConfiguracionSistemaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConfiguracionSistema
+        fields = '__all__'
