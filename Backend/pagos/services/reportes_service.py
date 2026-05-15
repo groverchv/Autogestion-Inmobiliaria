@@ -240,71 +240,122 @@ def obtener_balance_propietario(usuario, filtros: dict) -> dict:
     total_comisiones = comisiones_qs.aggregate(total=Sum('monto'))['total'] or 0.0
     ingreso_neto = float(ingreso_bruto) - float(total_comisiones)
 
-    # Evolución por mes de pagos
-    evolucion_mensual = (
-        pagos_qs
-        .annotate(mes=TruncMonth('fecha'))
-        .values('mes')
-        .annotate(ingreso_bruto=Sum('monto'))
-        .order_by('mes')
-    )
-    
-    # Mapeo rápido de comisiones por mes
-    comisiones_mensual = (
-        comisiones_qs
-        .annotate(mes=TruncMonth('fecha'))
-        .values('mes')
-        .annotate(comision=Sum('monto'))
-    )
-    
-    dict_pagos = {item['mes'].strftime('%Y-%m'): float(item['ingreso_bruto']) for item in evolucion_mensual}
-    
+    # Evolución temporal: diaria (si hay mes) o mensual (si hay año)
     data_grafico = []
     anio = filtros.get('anio')
-    
-    if anio:
+    mes_filtro = filtros.get('mes')
+
+    # Determinar si es vista diaria o mensual desde las fechas parseadas
+    es_vista_diaria = False
+    if fecha_inicio and fecha_fin:
+        es_vista_diaria = (
+            fecha_inicio.month == fecha_fin.month
+            and (fecha_fin - fecha_inicio).days < 32
+        )
+
+    if es_vista_diaria:
+        # Vista MENSUAL DETALLADA (agrupada por inmueble en lugar de por día)
+        pagos_por_inmueble = (
+            pagos_qs
+            .values('contrato__inmueble__titulo')
+            .annotate(ingreso_bruto=Sum('monto'))
+            .order_by('contrato__inmueble__titulo')
+        )
+        comisiones_por_inmueble = (
+            comisiones_qs
+            .values('pago__contrato__inmueble__titulo')
+            .annotate(comision=Sum('monto'))
+        )
+
+        dict_comisiones_inm = {
+            item['pago__contrato__inmueble__titulo']: float(item['comision'])
+            for item in comisiones_por_inmueble
+            if item['pago__contrato__inmueble__titulo']
+        }
+
+        for item in pagos_por_inmueble:
+            inmueble = item['contrato__inmueble__titulo'] or 'Desconocido'
+            bruto = float(item['ingreso_bruto'])
+            comision = dict_comisiones_inm.get(inmueble, 0.0)
+            data_grafico.append({
+                "fecha": inmueble, # Reutilizamos la clave para mantener compatibilidad en el frontend
+                "label": inmueble,
+                "ingreso_bruto": bruto,
+                "comision_descontada": comision,
+                "ingreso_neto": bruto - comision
+            })
+    elif anio:
+        # Vista MENSUAL de un año completo
         try:
             anio_int = int(anio)
+            evolucion_mensual_pagos = (
+                pagos_qs
+                .annotate(mes=TruncMonth('fecha'))
+                .values('mes')
+                .annotate(ingreso_bruto=Sum('monto'))
+                .order_by('mes')
+            )
+            comisiones_mensual = (
+                comisiones_qs
+                .annotate(mes=TruncMonth('fecha'))
+                .values('mes')
+                .annotate(comision=Sum('monto'))
+            )
+
+            dict_pagos_mes = {
+                item['mes'].strftime('%Y-%m'): float(item['ingreso_bruto'])
+                for item in evolucion_mensual_pagos
+            }
+            dict_comisiones_mes = {
+                item['mes'].strftime('%Y-%m'): float(item['comision'])
+                for item in comisiones_mensual
+            }
+
             for mes in range(1, 13):
                 mes_str = f"{anio_int}-{mes:02d}"
-                bruto = dict_pagos.get(mes_str, 0.0)
-                # Since we don't have datetime objects as keys anymore, we use the string
-                # Wait, dict_comisiones keys are datetime, let's change it
-                
-                # dict_comisiones mapped by YYYY-MM
-                comision = 0.0
-                for c_item in comisiones_mensual:
-                    if c_item['mes'].strftime('%Y-%m') == mes_str:
-                        comision = float(c_item['comision'])
-                        break
-                        
-                neto = bruto - comision
+                bruto = dict_pagos_mes.get(mes_str, 0.0)
+                comision = dict_comisiones_mes.get(mes_str, 0.0)
                 data_grafico.append({
                     "fecha": mes_str,
                     "ingreso_bruto": bruto,
                     "comision_descontada": comision,
-                    "ingreso_neto": neto
+                    "ingreso_neto": bruto - comision
                 })
         except ValueError:
             pass
-    
-    # Si no es por año, mantener el comportamiento original
-    if not data_grafico:
-        dict_comisiones = {item['mes'].strftime('%Y-%m'): float(item['comision']) for item in comisiones_mensual}
+    else:
+        # Fallback: agrupar por los datos existentes sin año fijo
+        evolucion_mensual = (
+            pagos_qs
+            .annotate(mes=TruncMonth('fecha'))
+            .values('mes')
+            .annotate(ingreso_bruto=Sum('monto'))
+            .order_by('mes')
+        )
+        comisiones_mensual = (
+            comisiones_qs
+            .annotate(mes=TruncMonth('fecha'))
+            .values('mes')
+            .annotate(comision=Sum('monto'))
+        )
+        dict_comisiones = {
+            item['mes'].strftime('%Y-%m'): float(item['comision'])
+            for item in comisiones_mensual
+        }
         for item in evolucion_mensual:
             mes_str = item['mes'].strftime('%Y-%m')
             bruto = float(item['ingreso_bruto'])
             comision = dict_comisiones.get(mes_str, 0.0)
-            neto = bruto - comision
             data_grafico.append({
                 "fecha": mes_str,
                 "ingreso_bruto": bruto,
                 "comision_descontada": comision,
-                "ingreso_neto": neto
+                "ingreso_neto": bruto - comision
             })
 
     # Calcular promedio mensual
-    promedio_mensual = ingreso_neto / 12 if anio else (ingreso_neto / len(data_grafico) if data_grafico else 0.0)
+    divisor = len(data_grafico) if data_grafico else 1
+    promedio_mensual = float(ingreso_neto) / divisor if ingreso_neto else 0.0
 
     # Distribución por inmueble (Gráfico de Anillo)
     distribucion_qs = (
@@ -315,78 +366,55 @@ def obtener_balance_propietario(usuario, filtros: dict) -> dict:
     
     dist_data = {item['nombre']: {"name": item['nombre'], "value": float(item['valor'])} for item in distribucion_qs}
 
+    # --- EXTRACTO BANCARIO: Registros individuales de pagos reales ---
+    pagos_detalle = (
+        pagos_qs
+        .select_related('contrato__inmueble', 'contrato__tipo_contrato', 'usuario')
+        .order_by('fecha')
+    )
+
+    extracto_pagos: list[dict] = []
+    for pago in pagos_detalle:
+        # Buscar la comisión asociada a este pago específico
+        comision_pago = pago.comisiones.filter(pagada=True).aggregate(
+            total=Sum('monto')
+        )['total'] or 0.0
+
+        inmueble_titulo = (
+            pago.contrato.inmueble.titulo
+            if pago.contrato and pago.contrato.inmueble
+            else 'Sin inmueble'
+        )
+        inquilino_nombre = (
+            f"{pago.usuario.first_name} {pago.usuario.last_name}".strip()
+            if pago.usuario
+            else 'N/A'
+        )
+        tipo_contrato_nombre = (
+            pago.contrato.tipo_contrato.nombre
+            if pago.contrato and pago.contrato.tipo_contrato
+            else 'N/A'
+        )
+
+        extracto_pagos.append({
+            "fecha": pago.fecha.strftime('%Y-%m-%d'),
+            "inmueble": inmueble_titulo,
+            "inquilino": inquilino_nombre,
+            "tipo_contrato": tipo_contrato_nombre,
+            "ingreso_bruto": float(pago.monto),
+            "comision": float(comision_pago),
+            "ingreso_neto": float(pago.monto) - float(comision_pago),
+        })
+
     return {
         'kpis': {
             'ingreso_bruto': float(ingreso_bruto),
             'total_comisiones': float(total_comisiones),
             'ingreso_neto': float(ingreso_neto),
-            'promedio_mensual': float(ingreso_neto) / 12,
+            'promedio_mensual': promedio_mensual,
         },
         'grafico_evolucion': data_grafico,
-        'distribucion_inmuebles': list(dist_data.values())
+        'distribucion_inmuebles': list(dist_data.values()),
+        'extracto_pagos': extracto_pagos,
     }
 
-def obtener_comparativa_propietario(usuario, inmueble_id=None, tipo_contrato=None, num_anios=3, anio_referencia=None):
-    """
-    Retorna datos comparativos de ingresos netos agrupados por mes para los últimos N años
-    contados desde el anio_referencia.
-    """
-    if anio_referencia:
-        anio_actual = int(anio_referencia)
-    else:
-        hoy = timezone.now().date()
-        anio_actual = hoy.year
-        
-    anios = range(anio_actual - num_anios + 1, anio_actual + 1)
-    
-    # Query base
-    pagos_qs = Pago.objects.filter(
-        estado='completado',
-        contrato__inmueble__propietario=usuario
-    )
-    comisiones_qs = Comision.objects.filter(
-        pagada=True,
-        contrato__inmueble__propietario=usuario
-    )
-
-    if inmueble_id:
-        pagos_qs = pagos_qs.filter(contrato__inmueble_id=inmueble_id)
-        comisiones_qs = comisiones_qs.filter(contrato__inmueble_id=inmueble_id)
-    if tipo_contrato:
-        pagos_qs = pagos_qs.filter(contrato__tipo_contrato__id=tipo_contrato)
-        comisiones_qs = comisiones_qs.filter(contrato__tipo_contrato__id=tipo_contrato)
-
-    # Agrupar por mes y año
-    pagos_data = (
-        pagos_qs
-        .annotate(year=TruncYear('fecha'), month=TruncMonth('fecha'))
-        .values('year', 'month')
-        .annotate(total=Sum('monto'))
-    )
-    
-    comisiones_data = (
-        comisiones_qs
-        .annotate(year=TruncYear('fecha'), month=TruncMonth('fecha'))
-        .values('year', 'month')
-        .annotate(total=Sum('monto'))
-    )
-
-    # Mapear a dict para acceso rápido: {(anio, mes): monto}
-    map_pagos = {(p['year'].year, p['month'].month): float(p['total']) for p in pagos_data}
-    map_comisiones = {(c['year'].year, c['month'].month): float(c['total']) for c in comisiones_data}
-
-    MESES_NOMBRES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    
-    comparativa = []
-    for mes_idx in range(1, 13):
-        item = {'mes': MESES_NOMBRES[mes_idx - 1]}
-        for a in anios:
-            bruto = map_pagos.get((a, mes_idx), 0.0)
-            comision = map_comisiones.get((a, mes_idx), 0.0)
-            item[str(a)] = bruto - comision
-        comparativa.append(item)
-
-    return {
-        'anios': list(anios),
-        'data': comparativa
-    }

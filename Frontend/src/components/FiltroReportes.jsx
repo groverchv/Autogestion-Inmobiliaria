@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import './FiltroReportes.css';
 
-const FiltroReportes = ({ onFilterChange, showInmuebleFilter = true }) => {
+const FiltroReportes = ({ onFilterChange, showInmuebleFilter = true, showCiudadFilter = true }) => {
   const [tiposContrato, setTiposContrato] = useState([]);
   const [inmuebles, setInmuebles] = useState([]);
   const [ciudades, setCiudades] = useState([]);
@@ -80,15 +80,17 @@ const FiltroReportes = ({ onFilterChange, showInmuebleFilter = true }) => {
         </select>
       </div>
 
-      <div className="filtro-group">
-        <label>Ciudad:</label>
-        <select name="ciudad" value={filtros.ciudad} onChange={handleChange} className="filter-select">
-          <option value="">Todas las ciudades</option>
-          {ciudades.map((c, idx) => (
-            <option key={idx} value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
+      {showCiudadFilter && (
+        <div className="filtro-group">
+          <label>Ciudad:</label>
+          <select name="ciudad" value={filtros.ciudad} onChange={handleChange} className="filter-select">
+            <option value="">Todas las ciudades</option>
+            {ciudades.map((c, idx) => (
+              <option key={idx} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {showInmuebleFilter && (
         <div className="filtro-group">

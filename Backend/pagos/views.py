@@ -589,6 +589,7 @@ class ReportesAPIView(APIView):
             'tipo_contrato': request.query_params.get('tipo_contrato'),
             'inmueble_id': request.query_params.get('inmueble_id'),
             'anio': request.query_params.get('anio'),
+            'mes': request.query_params.get('mes'),
             'ciudad': request.query_params.get('ciudad'),
         }
 
@@ -598,12 +599,5 @@ class ReportesAPIView(APIView):
             return Response(data)
         else:
             # Vista Propietario
-            from .services.reportes_service import obtener_comparativa_propietario
             data = obtener_balance_propietario(request.user, filtros)
-            data['comparativa'] = obtener_comparativa_propietario(
-                request.user, 
-                inmueble_id=filtros.get('inmueble_id'),
-                tipo_contrato=filtros.get('tipo_contrato'),
-                anio_referencia=filtros.get('anio')
-            )
             return Response(data)

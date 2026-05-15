@@ -17,7 +17,6 @@ const FinanzasPropietario = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
-  const [hiddenYears, setHiddenYears] = useState({}); // Para togglear años en la comparativa
   const currentYear = new Date().getFullYear();
   const [filtros, setFiltros] = useState({ anio: currentYear.toString() });
 
@@ -30,8 +29,6 @@ const FinanzasPropietario = () => {
       setLoading(true);
       const data = await reportesService.obtenerReportes(filtros);
       setReportData(data);
-      // Resetear años ocultos al cambiar de filtros para mostrar todo al inicio
-      setHiddenYears({});
     } catch (error) {
       console.error("Error fetching propietario finances:", error);
     } finally {
@@ -111,15 +108,20 @@ const FinanzasPropietario = () => {
 
   const formatterMonto = (value) => new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' }).format(value);
 
-  // Mapear meses numéricos a nombres para la gráfica
   const mesesNombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
   const chartData = reportData?.grafico_evolucion?.map(item => {
-    // item.fecha viene como "YYYY-MM"
-    const mesIdx = parseInt(item.fecha.split('-')[1]) - 1;
+    if (item.label) {
+      // Si el backend envía 'label' (nombre de inmueble), lo usamos directamente
+      return { ...item, mesLabel: item.label };
+    }
+    const partes = item.fecha.split('-');
+    const mesLabel = partes.length === 3
+      ? `${parseInt(partes[2])}`
+      : mesesNombres[parseInt(partes[1]) - 1];
     return {
       ...item,
-      mesLabel: mesesNombres[mesIdx]
+      mesLabel
     };
   }) || [];
 
@@ -182,7 +184,7 @@ const FinanzasPropietario = () => {
         </header>
 
         <div className="no-print">
-          <FiltroReportes onFilterChange={setFiltros} showInmuebleFilter={true} />
+          <FiltroReportes onFilterChange={setFiltros} showInmuebleFilter={true} showCiudadFilter={false} />
         </div>
 
         {/* --- ENCABEZADO EXCLUSIVO PARA PDF --- */}
@@ -271,14 +273,14 @@ const FinanzasPropietario = () => {
 
             </div>
 
-            <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+            <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
 
               {/* Curva de Ingreso Neto */}
-              <div className="chart-box" style={{ background: '#fff', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div className="chart-box" style={{ background: '#fff', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', gridColumn: 'span 2' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                   <TrendingUp size={24} color="#6366f1" />
                   <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
-                    Curva de Ingreso Neto
+                    {filtros.mes ? 'Ingreso Neto por Inmueble' : 'Curva de Ingreso Neto'}
                   </h2>
                 </div>
 
@@ -371,128 +373,69 @@ const FinanzasPropietario = () => {
 
             </div>
 
-            {/* === COMPARATIVA INTERANUAL (solo pantalla, no PDF) === */}
-            <div id="comparativa-interanual" className="chart-box no-print" style={{
-              background: '#fff',
-              padding: '32px',
-              borderRadius: '24px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-              marginTop: '20px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <TrendingUp size={24} color="#6366f1" />
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
-                  Comparativa de Ingresos Interanual
-                </h2>
+
+            {/* --- EXTRACTO BANCARIO --- */}
+            <div className="chart-box" style={{ marginTop: '24px', padding: '24px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', pageBreakBefore: 'always' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '3px solid #1e293b', paddingBottom: '12px', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Activity size={20} className="no-print" style={{ color: '#6366f1' }} />
+                    Extracto de Movimientos
+                  </h2>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
+                    Registro detallado de ingresos — {obtenerNombreInmuebleFiltrado()}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                  <div className="no-print" style={{ background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>
+                    {(reportData?.extracto_pagos || []).length} registro(s)
+                  </div>
+                  <p className="print-only" style={{ fontSize: '12px', color: '#1e293b', fontWeight: 700, margin: 0 }}>
+                    Año Fiscal: {filtros.anio || new Date().getFullYear()}
+                  </p>
+                </div>
               </div>
 
-              {/* Solo mostrar si hay datos reales en algún año de la comparativa */}
-              {reportData?.comparativa?.data?.some(item =>
-                Object.keys(item).some(k => k !== 'mes' && item[k] > 0)
-              ) ? (
-                <div style={{ height: 400, width: '100%' }}>
-                  <ResponsiveContainer>
-                    <BarChart
-                      data={reportData?.comparativa?.data || []}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="mes" stroke="#94a3b8" />
-                      <YAxis
-                        stroke="#94a3b8"
-                        tickFormatter={(value) => `Bs ${value}`}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        cursor={{ fill: '#f8fafc' }}
-                        formatter={(value) => [formatterMonto(value), 'Ingreso Neto']}
-                      />
-                      <RechartsLegend
-                        onClick={(o) => {
-                          const { dataKey } = o;
-                          setHiddenYears(prev => ({ ...prev, [dataKey]: !prev[dataKey] }));
-                        }}
-                        formatter={(value, entry) => (
-                          <span style={{
-                            color: hiddenYears[entry.dataKey] ? '#cbd5e1' : '#1e293b',
-                            textDecoration: hiddenYears[entry.dataKey] ? 'line-through' : 'none',
-                            cursor: 'pointer',
-                            fontWeight: hiddenYears[entry.dataKey] ? 400 : 700
-                          }}>
-                            {value}
-                          </span>
-                        )}
-                      />
-                      {(reportData?.comparativa?.anios || []).map((anio, idx) => {
-                        const colors = ['#f59e0b', '#10b981', '#6366f1']; // Ámbar, Esmeralda, Índigo
-                        const dataKey = anio.toString();
-                        return (
-                          <Bar
-                            key={anio}
-                            dataKey={dataKey}
-                            name={`Año ${anio}`}
-                            fill={colors[idx % colors.length]}
-                            radius={[4, 4, 0, 0]}
-                            hide={!!hiddenYears[dataKey]}
-                          />
-                        );
-                      })}
-                    </BarChart>
-                  </ResponsiveContainer>
+              {(reportData?.extracto_pagos || []).length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="print-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left' }}>Fecha</th>
+                        <th style={{ textAlign: 'left' }}>Inmueble</th>
+                        <th style={{ textAlign: 'left' }}>Inquilino</th>
+                        <th style={{ textAlign: 'right' }}>Ingreso Bruto</th>
+                        <th style={{ textAlign: 'right' }}>Comisión</th>
+                        <th style={{ textAlign: 'right' }}>Ingreso Neto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(reportData?.extracto_pagos || []).map((row, idx) => (
+                        <tr key={idx}>
+                          <td>{row.fecha}</td>
+                          <td>{row.inmueble}</td>
+                          <td>{row.inquilino}</td>
+                          <td style={{ textAlign: 'right' }}>{formatterMonto(row.ingreso_bruto)}</td>
+                          <td style={{ textAlign: 'right', color: '#d97706' }}>{formatterMonto(row.comision)}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{formatterMonto(row.ingreso_neto)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th colSpan={3} style={{ textAlign: 'left' }}>TOTAL PERIODO</th>
+                        <th style={{ textAlign: 'right' }}>{formatterMonto(reportData?.kpis?.ingreso_bruto || 0)}</th>
+                        <th style={{ textAlign: 'right', color: '#d97706' }}>{formatterMonto(reportData?.kpis?.total_comisiones || 0)}</th>
+                        <th style={{ textAlign: 'right', color: '#16a34a' }}>{formatterMonto(reportData?.kpis?.ingreso_neto || 0)}</th>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               ) : (
                 <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
-                  No hay datos suficientes para mostrar en este periodo.
+                  No se registraron movimientos en el periodo seleccionado.
                 </div>
               )}
-            </div>
-
-            {/* --- TABLA DE DATOS - PÁGINA 2 DEL PDF --- */}
-            <div className="print-only" style={{ pageBreakBefore: 'always', marginTop: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '3px solid #1e293b', paddingBottom: '12px', marginBottom: '20px' }}>
-                <div>
-                  <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', margin: 0 }}>
-                    Detalle Mensual de Ingresos
-                  </h2>
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
-                    Desglose financiero por periodo — {obtenerNombreInmuebleFiltrado()}
-                  </p>
-                </div>
-                <p style={{ fontSize: '12px', color: '#1e293b', fontWeight: 700, margin: 0 }}>
-                  Año Fiscal: {filtros.anio || new Date().getFullYear()}
-                </p>
-              </div>
-
-              <table className="print-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left' }}>Mes</th>
-                    <th style={{ textAlign: 'right' }}>Ingreso Bruto</th>
-                    <th style={{ textAlign: 'right' }}>Comisión Retenida</th>
-                    <th style={{ textAlign: 'right' }}>Ingreso Neto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {chartData.map((row, idx) => (
-                    <tr key={idx}>
-                      <td>{row.mesLabel}</td>
-                      <td style={{ textAlign: 'right' }}>{formatterMonto(row.ingreso_bruto)}</td>
-                      <td style={{ textAlign: 'right', color: '#d97706' }}>{formatterMonto(row.comision_descontada)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{formatterMonto(row.ingreso_neto)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th style={{ textAlign: 'left' }}>TOTAL ANUAL</th>
-                    <th style={{ textAlign: 'right' }}>{formatterMonto(reportData?.kpis?.ingreso_bruto || 0)}</th>
-                    <th style={{ textAlign: 'right', color: '#d97706' }}>{formatterMonto(reportData?.kpis?.total_comisiones || 0)}</th>
-                    <th style={{ textAlign: 'right', color: '#16a34a' }}>{formatterMonto(reportData?.kpis?.ingreso_neto || 0)}</th>
-                  </tr>
-                </tfoot>
-              </table>
             </div>
 
           </>
