@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Q
 
-from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe
+from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe, ConfiguracionSistema
 from .serializers import (
     TipoPagoSerializer,
     PagoSerializer,
@@ -23,6 +23,7 @@ from .serializers import (
 )
 from inmuebles.models import Contrato, Inmueble
 from usuarios.models import Mensaje, Chat, Notificacion
+from .services.comisiones_service import calcular_y_generar_comision
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -301,6 +302,9 @@ class ConfirmarPagoStripeView(APIView):
                 observaciones=f'Pago procesado por Stripe. Transacción #{transaccion.id}. {transaccion.descripcion}',
             )
 
+            # Generar comisión transaccional de forma automática
+            calcular_y_generar_comision(pago)
+
             # RF-26: Crear historial de pago
             HistorialPago.objects.create(
                 pago=pago,
@@ -514,6 +518,8 @@ def stripe_webhook(request):
                     estado='completado',
                     observaciones=f'Webhook Stripe. Transacción #{transaccion.id}.',
                 )
+                # Generar comisión transaccional de forma automática
+                calcular_y_generar_comision(pago)
                 HistorialPago.objects.create(
                     pago=pago,
                     anterior='pendiente',
@@ -561,3 +567,37 @@ def stripe_webhook(request):
             pass
 
     return HttpResponse(status=200)
+
+class ConfiguracionSistemaViewSet(viewsets.ModelViewSet):
+    """CRUD para la configuración global del sistema (Porcentaje de Comisión)."""
+    queryset = ConfiguracionSistema.objects.all()
+    from .serializers import ConfiguracionSistemaSerializer
+    serializer_class = ConfiguracionSistemaSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class ReportesAPIView(APIView):
+    """API para obtener reportes y métricas dinámicas."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .services.reportes_service import obtener_estadisticas_admin, obtener_balance_propietario
+        
+        filtros = {
+            'rango': request.query_params.get('rango'),
+            'fecha_inicio': request.query_params.get('fecha_inicio'),
+            'fecha_fin': request.query_params.get('fecha_fin'),
+            'tipo_contrato': request.query_params.get('tipo_contrato'),
+            'inmueble_id': request.query_params.get('inmueble_id'),
+            'anio': request.query_params.get('anio'),
+            'mes': request.query_params.get('mes'),
+            'ciudad': request.query_params.get('ciudad'),
+        }
+
+        if request.user.rol == 'admin' or request.user.is_staff:
+            # Vista Administrador
+            data = obtener_estadisticas_admin(filtros)
+            return Response(data)
+        else:
+            # Vista Propietario
+            data = obtener_balance_propietario(request.user, filtros)
+            return Response(data)

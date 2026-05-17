@@ -109,6 +109,16 @@ class InmuebleViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(propietario=self.request.user)
 
+    @action(detail=False, methods=['get'])
+    def ciudades(self, request):
+        """Retorna una lista de ciudades únicas disponibles."""
+        ciudades_qs = Inmueble.objects.exclude(direccion__isnull=True).values_list('direccion__ciudad', flat=True).distinct()
+        # Filtrar valores vacíos o nulos
+        ciudades = [c.strip() for c in ciudades_qs if c and c.strip()]
+        # Eliminar duplicados generados por mayúsculas/minúsculas o espacios extra
+        ciudades_unicas = sorted(list(set(c.title() for c in ciudades)))
+        return Response(ciudades_unicas)
+
 
 class MultimediaViewSet(viewsets.ModelViewSet):
     """CRUD para multimedia de inmuebles."""

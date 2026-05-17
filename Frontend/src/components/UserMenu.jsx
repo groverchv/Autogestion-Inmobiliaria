@@ -61,6 +61,7 @@ const UserMenu = () => {
         <Link to="/mi-agenda" style={getStyle('/mi-agenda')}>Mi Agenda</Link>
         <Link to="/mis-contratos" style={getStyle('/mis-contratos')}>Mis Contratos</Link>
         <Link to="/mis-pagos" style={getStyle('/mis-pagos')}>Mis Pagos</Link>
+        <Link to="/mis-finanzas" style={getStyle('/mis-finanzas')}>Mis Finanzas</Link>
         <Link to="/favoritos" style={getStyle('/favoritos')}>Favorito</Link>
         <Link to="/notificaciones" style={getStyle('/notificaciones')}>
           Notificaciones

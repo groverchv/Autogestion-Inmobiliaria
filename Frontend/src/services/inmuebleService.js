@@ -6,10 +6,11 @@ import api from './api';
  */
 const inmuebleService = {
   /**
+   *
    * Obtiene la lista de inmuebles del usuario autenticado.
    * @returns {Promise<Array>} Lista de inmuebles
    */
-  getAll: async (filters = {}) => {
+  listarInmuebles: async (filters = {}) => {
     const { data } = await api.get('/inmuebles/lista/', { params: filters });
     return data;
   },
@@ -83,7 +84,7 @@ const inmuebleService = {
     const { data } = await api.get('/inmuebles/tipos-contrato/');
     return data;
   },
-  
+
   createTipoContrato: async (payload) => {
     const { data } = await api.post('/inmuebles/tipos-contrato/', payload);
     return data;

@@ -6,7 +6,7 @@ import useStore from '../store/store';
  * Hook personalizado de autenticación
  */
 const useAuth = () => {
-  const { user, isAuthenticated, isLoading, login, logout, fetchUser, updateUser } = useStore();
+  const { user, isAuthenticated, isLoading, login, logout: storeLogout, fetchUser, updateUser } = useStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,8 +28,8 @@ const useAuth = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    storeLogout();
+    navigate('/propiedades');
   };
 
   return {

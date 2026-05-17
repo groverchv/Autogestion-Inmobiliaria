@@ -1,0 +1,161 @@
+.finanzas-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.finanzas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.finanzas-title {
+  font-size: 2rem;
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.finanzas-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-color);
+  font-size: 1rem;
+  outline: none;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 4px solid var(--primary-color);
+}
+
+.kpi-card.neto {
+  border-top-color: #10b981; /* Green */
+}
+
+.kpi-card.comision {
+  border-top-color: #f59e0b; /* Orange */
+}
+
+.kpi-title {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.kpi-value.positivo {
+  color: #10b981;
+}
+
+.kpi-value.negativo {
+  color: #ef4444;
+}
+
+.charts-container {
+  background: var(--bg-card);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+}
+
+.chart-title {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.config-section {
+  background: var(--bg-card);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.config-info h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.config-info p {
+  color: var(--text-muted);
+}
+
+.config-form {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.config-input {
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  width: 100px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.btn-guardar {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-guardar:hover {
+  background: var(--primary-hover);
+}
+
+.btn-guardar:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}

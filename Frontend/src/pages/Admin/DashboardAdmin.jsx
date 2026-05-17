@@ -2,21 +2,24 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, Home, FileText, Banknote, Archive, Calendar, Bell, 
-  MapPin, TrendingUp, Clock, CheckCircle 
+  MapPin, TrendingUp, Clock, CheckCircle, LineChart 
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 
 const DashboardAdmin = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ usuarios: 0, inmuebles: 0, contratos: 0, pagos: 0, categorias: 0, notificaciones: 0, agenda: 0 });
+  const [stats, setStats] = useState({ 
+    usuarios: 0, inmuebles: 0, contratos: 0, pagos: 0, 
+    categorias: 0, notificaciones: 0, agenda: 0, ingresos: 0 
+  });
   const [recentInmuebles, setRecentInmuebles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usuarios, inmuebles, contratos, pagos, categorias, notificaciones, agenda] = await Promise.all([
+        const [usuarios, inmuebles, contratos, pagos, categorias, notificaciones, agenda, reportes] = await Promise.all([
           api.get('/usuarios/lista/').then(r => r.data).catch(() => []),
           api.get('/inmuebles/lista/').then(r => r.data).catch(() => []),
           api.get('/inmuebles/contratos/').then(r => r.data).catch(() => []),
@@ -24,6 +27,7 @@ const DashboardAdmin = () => {
           api.get('/inmuebles/tipos/').then(r => r.data).catch(() => []),
           api.get('/usuarios/notificaciones/').then(r => r.data).catch(() => []),
           api.get('/usuarios/agenda/').then(r => r.data).catch(() => []),
+          api.get('/pagos/reportes/').then(r => r.data).catch(() => ({})),
         ]);
         
         setStats({
@@ -34,6 +38,7 @@ const DashboardAdmin = () => {
           categorias: Array.isArray(categorias) ? categorias.length : categorias?.count || 0,
           notificaciones: Array.isArray(notificaciones) ? notificaciones.length : notificaciones?.count || 0,
           agenda: Array.isArray(agenda) ? agenda.length : agenda?.count || 0,
+          ingresos: reportes?.kpis?.total_ingreso_comisiones || 0,
         });
         
         setRecentInmuebles(Array.isArray(inmuebles) ? inmuebles.slice(0, 5) : []);
@@ -52,6 +57,7 @@ const DashboardAdmin = () => {
     { icon: <Home size={24} />, label: 'Inmuebles', value: stats.inmuebles, color: '#0284c7', bg: '#e0f2fe', link: '/panel/inmuebles' },
     { icon: <FileText size={24} />, label: 'Contratos', value: stats.contratos, color: '#16a34a', bg: '#dcfce7', link: '/panel/contratos' },
     { icon: <Banknote size={24} />, label: 'Pagos', value: stats.pagos, color: '#f59e0b', bg: '#fef3c7', link: '/panel/pagos' },
+    { icon: <LineChart size={24} />, label: 'Finanzas', value: `Bs. ${stats.ingresos.toLocaleString()}`, color: '#6366f1', bg: '#f5f3ff', link: '/panel/finanzas' },
     { icon: <Archive size={24} />, label: 'Categorías', value: stats.categorias, color: '#ec4899', bg: '#fce7f3', link: '/panel/categorias' },
     { icon: <Calendar size={24} />, label: 'Agenda', value: stats.agenda, color: '#06b6d4', bg: '#cffafe', link: '/panel/agenda' },
     { icon: <Bell size={24} />, label: 'Notificaciones', value: stats.notificaciones, color: '#ef4444', bg: '#fee2e2', link: '/panel/notificaciones' },

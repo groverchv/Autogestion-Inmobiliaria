@@ -1,5 +1,5 @@
 import os
-import django
+import django # type: ignore
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
