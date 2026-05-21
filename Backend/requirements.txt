@@ -10,3 +10,6 @@ django-cloudinary-storage>=0.3.0
 django-filter>=23.5
 channels>=4.0.0
 daphne>=4.0.0
+pytesseract>=0.3.10
+pdf2image>=1.16.3
+

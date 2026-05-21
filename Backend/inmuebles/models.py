@@ -218,6 +218,18 @@ class Contrato(models.Model):
         blank=True,
         help_text='Restricciones (mascotas, subarriendo, etc.)'
     )
+    antecedentes = models.TextField(
+        blank=True,
+        help_text='Contexto previo, situación legal y antecedentes del inmueble'
+    )
+    uso_exclusivo = models.TextField(
+        blank=True,
+        help_text='Uso permitido del inmueble (vivienda, comercial, mixto, etc.)'
+    )
+    clausulas_especiales = models.TextField(
+        blank=True,
+        help_text='Cláusulas especiales adicionales pactadas entre las partes'
+    )
 
     # ─── Estado y seguimiento ────────────────────────────────
     estado = models.CharField(
@@ -372,3 +384,48 @@ class HorarioDisponible(models.Model):
 
     def __str__(self):
         return f'{self.get_dia_semana_display()} {self.hora_inicio}-{self.hora_fin}'
+
+
+class VerificacionTitulo(models.Model):
+    """Verificación legal de título de propiedad de un inmueble mediante IA (OCR + NLP)."""
+
+    class EstadoVerificacion(models.TextChoices):
+        PENDIENTE   = 'pendiente',   'Pendiente'
+        PROCESANDO  = 'procesando',  'Procesando'
+        VERIFICADO  = 'verificado',  'Verificado'
+        OBSERVADO   = 'observado',   'Con Observaciones'
+        RECHAZADO   = 'rechazado',   'No Válido'
+        ERROR       = 'error',       'Error de Procesamiento'
+
+    inmueble = models.OneToOneField(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='verificacion_titulo',
+    )
+    solicitado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='verificaciones_solicitadas',
+    )
+    archivo_titulo = models.CharField(max_length=500, help_text='URL de Cloudinary del documento subido')
+    texto_ocr = models.TextField(blank=True, help_text='Texto extraído del documento')
+    resultado_ia = models.JSONField(null=True, blank=True, help_text='Resultado del análisis legal de Groq en formato JSON')
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoVerificacion.choices,
+        default=EstadoVerificacion.PENDIENTE,
+    )
+    score_confianza = models.PositiveIntegerField(null=True, blank=True, help_text='Puntaje de confianza de 0 a 100')
+    resumen_publico = models.TextField(blank=True, help_text='Resumen corto visible al público')
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'inmuebles_verificacion_titulo'
+        verbose_name = 'Verificación de Título'
+        verbose_name_plural = 'Verificaciones de Títulos'
+        ordering = ['-creado']
+
+    def __str__(self):
+        return f'Verificación {self.estado} — {self.inmueble.titulo}'
+

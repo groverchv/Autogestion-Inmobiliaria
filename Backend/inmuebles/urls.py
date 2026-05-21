@@ -40,6 +40,7 @@ from .views import (
     FavoritoViewSet,
     CitaViewSet,
     HorarioDisponibleViewSet,
+    VerificacionTituloViewSet,
 )
 
 router = DefaultRouter()
@@ -54,6 +55,8 @@ router.register(r'comisiones',      ComisionViewSet)
 router.register(r'favoritos',       FavoritoViewSet,        basename='favoritos')
 router.register(r'citas',           CitaViewSet,            basename='citas')
 router.register(r'horarios',        HorarioDisponibleViewSet, basename='horarios')
+router.register(r'verificacion',    VerificacionTituloViewSet, basename='verificacion')
+
 
 # ─── Rutas del panel admin ────────────────────────────────────────────────────
 router.register(r'panel/tipos',     TipoInmuebleViewSet,    basename='panel-tipos')

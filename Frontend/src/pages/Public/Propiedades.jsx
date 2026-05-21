@@ -171,9 +171,39 @@ const Propiedades = () => {
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
                       </div>
                     )}
-                    <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color }}>
-                      {inm.estado}
-                    </span>
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 2 }}>
+                      <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color, position: 'static' }}>
+                        {inm.estado}
+                      </span>
+                      {inm.verificacion_estado && inm.verificacion_estado !== 'no_solicitado' && (
+                        <span 
+                          className="propiedad-card__badge" 
+                          style={{ 
+                            background: inm.verificacion_estado === 'verificado' ? '#dcfce7' : 
+                                        inm.verificacion_estado === 'observado' ? '#fef3c7' : 
+                                        inm.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
+                            color: inm.verificacion_estado === 'verificado' ? '#15803d' : 
+                                   inm.verificacion_estado === 'observado' ? '#d97706' : 
+                                   inm.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
+                            position: 'static',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontWeight: 700
+                          }}
+                          title={
+                            inm.verificacion_estado === 'verificado' ? 'Título de propiedad verificado por IA' : 
+                            inm.verificacion_estado === 'observado' ? 'Título observado (advertencias detectadas)' : 
+                            inm.verificacion_estado === 'procesando' ? 'Verificación en proceso por la IA' : 
+                            'Título de propiedad inválido o no reconocido'
+                          }
+                        >
+                          {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
+                           inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : 
+                           inm.verificacion_estado === 'procesando' ? '⌛ Procesando' : '✗ Inválido'}
+                        </span>
+                      )}
+                    </div>
                     {inm.tipo_nombre && (
                       <span className="propiedad-card__category">{inm.tipo_nombre}</span>
                     )}

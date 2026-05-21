@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Check, X, Clock, Trash2 } from 'lucide-react';
+import { MapPin, Check, X, Clock, Trash2, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw } from 'lucide-react';
+import tituloService from '../../services/tituloService';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -69,6 +70,13 @@ const MisInmuebles = () => {
   const [nuevoHorario, setNuevoHorario] = useState({ dia_semana: 0, hora_inicio: '09:00', hora_fin: '18:00' });
   const [guardandoHorario, setGuardandoHorario] = useState(false);
 
+  const [showVerificacionModal, setShowVerificacionModal] = useState(false);
+  const [inmuebleVerificacionId, setInmuebleVerificacionId] = useState(null);
+  const [verificacionLoading, setVerificacionLoading] = useState(false);
+  const [verificacionData, setVerificacionData] = useState(null);
+  const [archivoVerificacion, setArchivoVerificacion] = useState(null);
+  const [verificando, setVerificando] = useState(false);
+
   const DIAS_NOMBRES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
   const abrirHorarios = async (inmId) => {
@@ -103,6 +111,39 @@ const MisInmuebles = () => {
       await api.delete(`/inmuebles/horarios/${horarioId}/`);
       setHorarios(prev => prev.filter(h => h.id !== horarioId));
     } catch { alert('Error al eliminar horario'); }
+  };
+
+  const abrirVerificacion = async (inmId) => {
+    setInmuebleVerificacionId(inmId);
+    setVerificacionLoading(true);
+    setVerificacionData(null);
+    setArchivoVerificacion(null);
+    setShowVerificacionModal(true);
+    try {
+      const data = await tituloService.getResultado(inmId);
+      setVerificacionData(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setVerificacionLoading(false);
+    }
+  };
+
+  const handleSubirTitulo = async (e) => {
+    e.preventDefault();
+    if (!archivoVerificacion) return;
+    setVerificando(true);
+    try {
+      const data = await tituloService.subirTitulo(inmuebleVerificacionId, archivoVerificacion);
+      setVerificacionData(data);
+      alert('¡Análisis legal completado con éxito!');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || 'Error al verificar el documento.');
+    } finally {
+      setVerificando(false);
+    }
   };
 
   useEffect(() => {
@@ -375,7 +416,7 @@ const MisInmuebles = () => {
                 const estadoStyle = estadoColors[inm.estado] || estadoColors.disponible;
                 return (
                   <div key={inm.id} className="propiedad-card">
-                    <div className="propiedad-card__image" style={{ height: '200px' }}>
+                    <div className="propiedad-card__image" style={{ height: '200px', position: 'relative' }}>
                       {inm.imagen_principal ? (
                         <img src={inm.imagen_principal} alt={inm.titulo} />
                       ) : (
@@ -383,9 +424,30 @@ const MisInmuebles = () => {
                           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
                         </div>
                       )}
-                      <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color }}>
-                        {inm.estado}
-                      </span>
+                      <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 2 }}>
+                        <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color, position: 'static' }}>
+                          {inm.estado}
+                        </span>
+                        {inm.verificacion_estado && (
+                          <span 
+                            className="propiedad-card__badge" 
+                            style={{ 
+                              background: inm.verificacion_estado === 'verificado' ? '#dcfce7' : 
+                                          inm.verificacion_estado === 'observado' ? '#fef3c7' : '#fee2e2',
+                              color: inm.verificacion_estado === 'verificado' ? '#15803d' : 
+                                     inm.verificacion_estado === 'observado' ? '#d97706' : '#dc2626',
+                              position: 'static',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: 700
+                            }}
+                          >
+                            {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
+                             inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : '✗ Inválido'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="propiedad-card__body">
                       <h3 className="propiedad-card__title">{inm.titulo}</h3>
@@ -394,6 +456,24 @@ const MisInmuebles = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
                         <span className="propiedad-card__price">Bs. {parseFloat(inm.precio).toLocaleString()}</span>
                         <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => abrirVerificacion(inm.id)}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '6px',
+                              padding: '6px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              color: inm.verificacion_estado === 'verificado' ? '#10b981' : 
+                                     inm.verificacion_estado === 'observado' ? '#eab308' :
+                                     inm.verificacion_estado === 'rechazado' ? '#ef4444' : 'var(--color-text-secondary)'
+                            }}
+                            title="Verificación Legal de Título (IA)"
+                          >
+                            {inm.verificacion_estado === 'verificado' ? <ShieldCheck size={18} /> : <FileText size={18} />}
+                          </button>
                           <button
                             onClick={() => abrirHorarios(inm.id)}
                             style={{
@@ -799,6 +879,279 @@ const MisInmuebles = () => {
                   padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
                 }}>
                 Listo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVerificacionModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', zIndex: 1002,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px',
+            maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid var(--color-border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              background: '#f8fafc'
+            }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={22} style={{ color: 'var(--color-primary)' }} /> Verificación de Título con IA
+                </h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                  Análisis legal automático de escrituras y folios reales usando OCR y NLP (Llama 3)
+                </p>
+              </div>
+              <button onClick={() => setShowVerificacionModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
+                &times;
+              </button>
+            </div>
+
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              {verificacionLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '12px' }}>
+                  <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
+                  <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Obteniendo estado de verificación...</p>
+                </div>
+              ) : verificando ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '16px' }}>
+                  <div className="spinner" style={{
+                    border: '4px solid #f3f3f3',
+                    borderTop: '4px solid var(--color-primary)',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  <style>{`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}</style>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>Procesando documento...</p>
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>Extrayendo texto con OCR y ejecutando análisis legal con IA. Esto puede tomar unos segundos.</p>
+                  </div>
+                </div>
+              ) : (!verificacionData || verificacionData.estado === 'no_solicitado' || verificacionData.estado === 'error') ? (
+                <form onSubmit={handleSubirTitulo} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {verificacionData?.estado === 'error' && (
+                    <div style={{
+                      background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px',
+                      padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: '10px'
+                    }}>
+                      <ShieldAlert size={20} style={{ color: '#dc2626', flexShrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <p style={{ margin: 0, fontWeight: 700, color: '#991b1b', fontSize: '0.9rem' }}>
+                          Error al procesar el documento anterior
+                        </p>
+                        <p style={{ margin: '4px 0 0', color: '#b91c1c', fontSize: '0.82rem' }}>
+                          {verificacionData.resumen_publico || 'No se pudo leer el documento. Sube un archivo PDF o imagen legible e inténtalo de nuevo.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{
+                    border: '2px dashed #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '30px 20px',
+                    textAlign: 'center',
+                    background: '#f8fafc',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}>
+                    <input 
+                      type="file" 
+                      required 
+                      accept="application/pdf,image/*"
+                      onChange={(e) => setArchivoVerificacion(e.target.files[0])}
+                      style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        opacity: 0, cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                      <UploadCloud size={40} style={{ color: '#94a3b8' }} />
+                      <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>
+                        {archivoVerificacion ? archivoVerificacion.name : 'Arrastra o selecciona el documento del título'}
+                      </p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
+                        Formatos soportados: PDF, JPG, PNG (máx. 10MB)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '12px', border: '1px solid #bfdbfe' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#1e40af', lineHeight: 1.4 }}>
+                      💡 <strong>Recomendación:</strong> Para obtener la mejor precisión, sube un documento escaneado con buena iluminación y resolución, de preferencia la matrícula computarizada (Folio Real) o testimonio notarial de propiedad.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!archivoVerificacion}
+                    style={{
+                      background: archivoVerificacion ? 'var(--color-primary)' : '#cbd5e1',
+                      color: '#fff', border: 'none', padding: '12px', borderRadius: '8px',
+                      fontWeight: 600, cursor: archivoVerificacion ? 'pointer' : 'not-allowed',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    Iniciar Verificación Inteligente
+                  </button>
+                </form>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '16px', borderRadius: '12px',
+                    background: verificacionData.estado === 'verificado' ? '#dcfce7' : 
+                                verificacionData.estado === 'observado' ? '#fef3c7' : 
+                                verificacionData.estado === 'rechazado' ? '#fee2e2' : '#f1f5f9',
+                    border: '1px solid ' + (
+                                verificacionData.estado === 'verificado' ? '#bbf7d0' : 
+                                verificacionData.estado === 'observado' ? '#fef08a' : 
+                                verificacionData.estado === 'rechazado' ? '#fecaca' : '#cbd5e1'
+                             ),
+                    color: verificacionData.estado === 'verificado' ? '#14532d' : 
+                           verificacionData.estado === 'observado' ? '#713f12' : 
+                           verificacionData.estado === 'rechazado' ? '#7f1d1d' : '#334155'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {verificacionData.estado === 'verificado' ? <ShieldCheck size={32} /> : <ShieldAlert size={32} />}
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
+                          {verificacionData.estado_display}
+                        </h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', opacity: 0.85 }}>
+                          Analizado el {new Date(verificacionData.creado).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    {verificacionData.score_confianza !== null && (
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>{verificacionData.score_confianza}</span>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>/100</span>
+                        <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', tracking: '0.05em', fontWeight: 600 }}>Confianza</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', borderLeft: '4px solid var(--color-primary)' }}>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#475569', textTransform: 'uppercase' }}>Resumen de la IA</h4>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b', fontWeight: 500, fontStyle: 'italic' }}>
+                      "{verificacionData.resumen_publico}"
+                    </p>
+                  </div>
+
+                  {verificacionData.resultado_ia && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <h4 style={{ margin: '0 0 4px', fontSize: '0.9rem', color: '#334155', fontWeight: 700 }}>Datos Registrales Detectados</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Tipo de Documento</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.tipo_documento || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Matrícula Inmobiliaria</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.matricula_inmobiliaria || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Propietario Registrado</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.propietario_registrado || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Documento Identidad</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.documento_identidad || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Superficie Registrada</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.superficie_registrada_m2 ? `${verificacionData.resultado_ia.superficie_registrada_m2} m²` : 'No detectada'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Ubicación Registrada</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>
+                            {verificacionData.resultado_ia.municipio ? `${verificacionData.resultado_ia.municipio}, ` : ''}
+                            {verificacionData.resultado_ia.departamento || ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <h5 style={{ margin: 0, fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>Gravámenes e Hipotecas</h5>
+                        {(!verificacionData.resultado_ia.gravamenes || verificacionData.resultado_ia.gravamenes.length === 0) ? (
+                          <div style={{ background: '#f0fdf4', color: '#166534', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Check size={16} /> Libre de gravámenes. No se detectaron hipotecas ni cargas legales vigentes.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {verificacionData.resultado_ia.gravamenes.map((grav, i) => (
+                              <div key={i} style={{ background: '#fffbeb', color: '#92400e', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #fef08a', display: 'flex', gap: '8px' }}>
+                                <span style={{ fontWeight: 'bold' }}>•</span>
+                                <span>{grav}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {verificacionData.resultado_ia.alertas && verificacionData.resultado_ia.alertas.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <h5 style={{ margin: 0, fontSize: '0.85rem', color: '#b91c1c', fontWeight: 700 }}>Observaciones / Irregularidades</h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {verificacionData.resultado_ia.alertas.map((alerta, i) => (
+                              <div key={i} style={{ background: '#fef2f2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #fecaca', display: 'flex', gap: '8px' }}>
+                                <span style={{ fontWeight: 'bold' }}>⚠</span>
+                                <span>{alerta}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <a href={verificacionData.archivo_titulo} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                      Ver documento original subido
+                    </a>
+                    <button
+                      onClick={() => {
+                        setVerificacionData(null);
+                        setArchivoVerificacion(null);
+                      }}
+                      style={{
+                        background: 'transparent', border: '1px solid var(--color-border)',
+                        color: 'var(--color-text-secondary)', borderRadius: '8px', padding: '8px 16px',
+                        fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer'
+                      }}
+                    >
+                      Volver a Subir Documento
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              padding: '16px 24px', borderTop: '1px solid var(--color-border)',
+              background: '#f8fafc', display: 'flex', justifyContent: 'flex-end',
+            }}>
+              <button onClick={() => setShowVerificacionModal(false)}
+                style={{
+                  background: 'var(--color-primary)', color: '#fff', border: 'none',
+                  padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
+                }}>
+                Cerrar
               </button>
             </div>
           </div>
