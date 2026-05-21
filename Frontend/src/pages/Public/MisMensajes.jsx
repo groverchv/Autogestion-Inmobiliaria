@@ -44,6 +44,7 @@ const MisMensajes = () => {
   const [blockedByOther, setBlockedByOther] = useState(false);
   const [showWhatsappModal, setShowWhatsappModal] = useState(false);
   const [whatsappNumero, setWhatsappNumero] = useState('');
+  const [activePub, setActivePub] = useState(null);
 
   // ─── Estado de pago Stripe ─────────────────────────────────
   const [showPagoModal, setShowPagoModal] = useState(false);
@@ -170,6 +171,26 @@ const MisMensajes = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
+  const fetchActivePub = useCallback(async (inmuebleId) => {
+    if (!inmuebleId) {
+      setActivePub(null);
+      return;
+    }
+    try {
+      const res = await api.get('/inmuebles/publicaciones/', {
+        params: { inmueble: inmuebleId, estado: 'activa' }
+      });
+      const data = res.data.results || res.data;
+      if (data && data.length > 0) {
+        setActivePub(data[0]);
+      } else {
+        setActivePub(null);
+      }
+    } catch {
+      setActivePub(null);
+    }
+  }, []);
+
   useEffect(() => {
     if (!selectedChat || !isAuthenticated) return;
     
@@ -177,6 +198,7 @@ const MisMensajes = () => {
     checkBloqueo(selectedChat);
     checkOwnership(selectedChat);
     fetchTiposContrato();
+    fetchActivePub(selectedChat.inmueble);
     
     // Auto-refresh mensajes cada 3 segundos
     const interval = setInterval(() => {
@@ -184,7 +206,7 @@ const MisMensajes = () => {
     }, 3000);
     
     return () => clearInterval(interval);
-  }, [selectedChat?.id, isAuthenticated]);
+  }, [selectedChat?.id, isAuthenticated, fetchActivePub]);
 
   useEffect(() => {
     scrollToBottom();
@@ -898,6 +920,139 @@ const MisMensajes = () => {
                     </button>
                   </div>
                 </div>
+
+                {activePub && (
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+                      padding: '12px 24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '16px',
+                      animation: 'slideDown 0.3s ease',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          background:
+                            activePub.tipo_oferta === 'alquiler'
+                              ? 'hsla(210, 100%, 96%, 1)'
+                              : activePub.tipo_oferta === 'venta'
+                              ? 'hsla(140, 100%, 95%, 1)'
+                              : 'hsla(280, 100%, 96%, 1)',
+                          color:
+                            activePub.tipo_oferta === 'alquiler'
+                              ? 'hsla(210, 100%, 45%, 1)'
+                              : activePub.tipo_oferta === 'venta'
+                              ? 'hsla(140, 90%, 30%, 1)'
+                              : 'hsla(280, 90%, 40%, 1)',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          border: `1px solid ${
+                            activePub.tipo_oferta === 'alquiler'
+                              ? 'hsla(210, 100%, 90%, 1)'
+                              : activePub.tipo_oferta === 'venta'
+                              ? 'hsla(140, 100%, 85%, 1)'
+                              : 'hsla(280, 100%, 90%, 1)'
+                          }`,
+                        }}
+                      >
+                        {activePub.tipo_oferta === 'alquiler' && 'Alquiler'}
+                        {activePub.tipo_oferta === 'venta' && 'Venta'}
+                        {activePub.tipo_oferta === 'anticretico' && 'Anticrético'}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Precio:</span>
+                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                          Bs. {parseFloat(activePub.precio).toLocaleString('es-BO')}
+                        </span>
+                        {activePub.tipo_oferta === 'alquiler' && (
+                          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>/mes</span>
+                        )}
+                      </div>
+                      <span style={{ color: '#cbd5e1' }}>|</span>
+                      <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin size={14} color="#64748b" />
+                        {activePub.inmueble_direccion || selectedChat.inmueble_titulo}
+                      </span>
+                    </div>
+                    <Link
+                      to={`/propiedades/${selectedChat.inmueble}`}
+                      style={{
+                        background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+                        color: '#fff',
+                        padding: '8px 16px',
+                        borderRadius: '24px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 10px rgba(14, 165, 233, 0.25)',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 14px rgba(14, 165, 233, 0.35)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 10px rgba(14, 165, 233, 0.25)';
+                      }}
+                    >
+                      Ver Inmueble
+                      <ExternalLink size={14} />
+                    </Link>
+                  </div>
+                )}
+
+                {!activePub && selectedChat?.inmueble && (
+                  <div
+                    style={{
+                      background: 'rgba(254, 243, 199, 0.4)',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      borderBottom: '1px solid rgba(251, 191, 36, 0.2)',
+                      padding: '8px 24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '16px',
+                      fontSize: '0.8rem',
+                      color: '#b45309',
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <AlertCircle size={14} />
+                      Este inmueble no cuenta con una oferta comercial activa en este momento.
+                    </span>
+                    <Link
+                      to={`/propiedades/${selectedChat.inmueble}`}
+                      style={{
+                        color: '#b45309',
+                        fontWeight: 700,
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      Ver detalles físicos
+                    </Link>
+                  </div>
+                )}
 
                 <div
                   style={{

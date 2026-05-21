@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Users, Home, FileText, Banknote, Archive, Calendar, Bell, 
-  MapPin, TrendingUp, Clock, CheckCircle, LineChart 
+import {
+  Users, Home, FileText, Banknote, Archive, Calendar, Bell,
+  MapPin, TrendingUp, Clock, CheckCircle, LineChart
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 
 const DashboardAdmin = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ 
-    usuarios: 0, inmuebles: 0, contratos: 0, pagos: 0, 
-    categorias: 0, notificaciones: 0, agenda: 0, ingresos: 0 
+  const [stats, setStats] = useState({
+    usuarios: 0, inmuebles: 0, contratos: 0, pagos: 0,
+    categorias: 0, notificaciones: 0, agenda: 0, ingresos: 0
   });
   const [recentInmuebles, setRecentInmuebles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ const DashboardAdmin = () => {
           api.get('/usuarios/agenda/').then(r => r.data).catch(() => []),
           api.get('/pagos/reportes/').then(r => r.data).catch(() => ({})),
         ]);
-        
+
         setStats({
           usuarios: Array.isArray(usuarios) ? usuarios.length : usuarios?.count || 0,
           inmuebles: Array.isArray(inmuebles) ? inmuebles.length : inmuebles?.count || 0,
@@ -40,7 +40,7 @@ const DashboardAdmin = () => {
           agenda: Array.isArray(agenda) ? agenda.length : agenda?.count || 0,
           ingresos: reportes?.kpis?.total_ingreso_comisiones || 0,
         });
-        
+
         setRecentInmuebles(Array.isArray(inmuebles) ? inmuebles.slice(0, 5) : []);
       } catch (error) {
         console.error('Error cargando estadísticas:', error);
@@ -48,7 +48,7 @@ const DashboardAdmin = () => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -64,7 +64,7 @@ const DashboardAdmin = () => {
   ];
 
   const s = {
-    page: { },
+    page: {},
     greeting: { fontSize: '1.6rem', fontWeight: 800, color: '#1e293b', marginBottom: '4px' },
     subtitle: { color: '#64748b', fontSize: '0.9rem', marginBottom: '28px' },
     grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' },

@@ -1,17 +1,20 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions, status, filters
+# pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
 from .models import (
-    TipoInmueble, Inmueble, Multimedia, TipoContrato,
+    TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato,
     Contrato, Comision, Favorito, Cita, HorarioDisponible,
 )
 from .serializers import (
     TipoInmuebleSerializer,
     InmuebleSerializer,
     InmuebleListSerializer,
+    PublicacionSerializer,
     MultimediaSerializer,
     TipoContratoSerializer,
     ContratoSerializer,
@@ -47,10 +50,17 @@ class UnaccentSearchFilter(filters.SearchFilter):
             lookup = 'unaccent__icontains'
         return "__".join([field_name, lookup])
 
+    def get_search_terms(self, request):
+        terms = super().get_search_terms(request)
+        # Omitir conectores/preposiciones muy comunes en español para búsquedas naturales tipo "casa en alquiler" o "departamento con garaje"
+        conectores = {'en', 'de', 'y', 'la', 'el', 'un', 'una', 'con', 'para', 'del', 'los', 'las', 'a', 'al'}
+        return [t for t in terms if t.lower() not in conectores]
+
 
 class InmuebleFilter(django_filters.FilterSet):
-    precio_min = django_filters.NumberFilter(field_name="precio", lookup_expr='gte')
-    precio_max = django_filters.NumberFilter(field_name="precio", lookup_expr='lte')
+    precio_min = django_filters.NumberFilter(method='filter_precio_min')
+    precio_max = django_filters.NumberFilter(method='filter_precio_max')
+    tipo_oferta = django_filters.CharFilter(method='filter_tipo_oferta')
     superficie_min = django_filters.NumberFilter(field_name="superficie", lookup_expr='gte')
     superficie_max = django_filters.NumberFilter(field_name="superficie", lookup_expr='lte')
     ciudad = django_filters.CharFilter(field_name="direccion__ciudad", lookup_expr='icontains')
@@ -62,6 +72,16 @@ class InmuebleFilter(django_filters.FilterSet):
     class Meta:
         model = Inmueble
         fields = ['estado', 'tipo', 'habitaciones', 'banos']
+
+    # Filtros avanzados con relacion cruzada usando distinct() para evitar duplicados en la consulta
+    def filter_precio_min(self, queryset, name, value):
+        return queryset.filter(publicaciones__precio__gte=value, publicaciones__estado='activa').distinct()
+
+    def filter_precio_max(self, queryset, name, value):
+        return queryset.filter(publicaciones__precio__lte=value, publicaciones__estado='activa').distinct()
+
+    def filter_tipo_oferta(self, queryset, name, value):
+        return queryset.filter(publicaciones__tipo_oferta=value, publicaciones__estado='activa').distinct()
 
 class TipoInmuebleViewSet(viewsets.ModelViewSet):
     """CRUD para tipos de inmueble."""
@@ -79,7 +99,16 @@ class InmuebleViewSet(viewsets.ModelViewSet):
     queryset = Inmueble.objects.select_related('tipo', 'propietario').prefetch_related('multimedia').all()
     filter_backends = [DjangoFilterBackend, UnaccentSearchFilter]
     filterset_class = InmuebleFilter
-    search_fields = ['titulo', 'descripcion', 'direccion__ciudad', 'direccion__zona', 'direccion__calle', 'direccion__referencia']
+    search_fields = [
+        'titulo',
+        'descripcion',
+        'direccion__ciudad',
+        'direccion__zona',
+        'direccion__calle',
+        'direccion__referencia',
+        'tipo__nombre',
+        'publicaciones__tipo_oferta'
+    ]
 
     def get_permissions(self):
         # Permitir ver inmuebles de forma pública
@@ -605,3 +634,35 @@ class CitaViewSet(viewsets.ModelViewSet):
             dj_models.Q(cliente=request.user) | dj_models.Q(propietario=request.user)
         ).select_related('inmueble', 'cliente', 'propietario').order_by('fecha', 'hora_inicio')
         return Response(self.get_serializer(citas, many=True).data)
+
+
+class PublicacionViewSet(viewsets.ModelViewSet):
+    """CRUD para ofertas comerciales (publicaciones)."""
+    queryset = Publicacion.objects.select_related('inmueble').all()
+    serializer_class = PublicacionSerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = Publicacion.objects.select_related('inmueble')
+        
+        # Filtros opcionales
+        inmueble_id = self.request.query_params.get('inmueble')
+        if inmueble_id:
+            qs = qs.filter(inmueble_id=inmueble_id)
+            
+        estado = self.request.query_params.get('estado')
+        if estado:
+            qs = qs.filter(estado=estado)
+            
+        return qs
+
+    def perform_create(self, serializer):
+        # Asegurar que el usuario que crea la publicación sea el propietario del inmueble
+        inmueble = serializer.validated_data['inmueble']
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise ValidationError("No eres el propietario de este inmueble.")
+        serializer.save()

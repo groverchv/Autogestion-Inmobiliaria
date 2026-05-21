@@ -57,24 +57,28 @@ const PropiedadDetalle = () => {
       return;
     }
 
+    const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
+    const pubIdQuery = activePub ? `&publicacionId=${activePub.id}` : '';
     // Flujo normal de usuario - navega a mensajes con el propietario
-    navigate(`/mensajes?inmuebleId=${inmueble.id}&propietarioId=${inmueble.propietario}&inmuebleTitulo=${encodeURIComponent(inmueble.titulo)}`);
+    navigate(`/mensajes?inmuebleId=${inmueble.id}&propietarioId=${inmueble.propietario}&inmuebleTitulo=${encodeURIComponent(inmueble.titulo)}${pubIdQuery}`);
   };
 
   const confirmAdminContact = async () => {
     // Aquí el admin confirma que ya habló con el usuario
     try {
-      // Opcional: Registrar la interacción en el backend
-      // await api.post('/usuarios/notificaciones/', { ... });
       setShowConfirmModal(false);
-      navigate(`/mensajes?inmuebleId=${inmueble.id}&propietarioId=${inmueble.propietario}`);
+      const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
+      const pubIdQuery = activePub ? `&publicacionId=${activePub.id}` : '';
+      navigate(`/mensajes?inmuebleId=${inmueble.id}&propietarioId=${inmueble.propietario}${pubIdQuery}`);
     } catch (err) {
       console.error(err);
     }
   };
 
   const shareWhatsApp = () => {
-    const text = `Mira este inmueble: ${inmueble.titulo} - Bs. ${inmueble.precio}. ${window.location.href}`;
+    const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
+    const precioTexto = activePub ? `Bs. ${parseFloat(activePub.precio).toLocaleString()} (${activePub.tipo_oferta})` : 'Sin oferta';
+    const text = `Mira este inmueble: ${inmueble.titulo} - ${precioTexto}. ${window.location.href}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -143,108 +147,164 @@ const PropiedadDetalle = () => {
         </Link>
 
         <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', gap: '12px', background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
-            {/* Imagen Principal */}
-            <div style={{ flex: 1, height: '400px', position: 'relative', background: '#f0f9ff' }}>
-              {principalMedia ? (
-                principalMedia.tipo === 'video' ? (
-                  <video src={principalMedia.archivo} controls style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setSelectedMediaIndex(0)} />
-                ) : (
-                  <img src={principalMedia.archivo} alt={inmueble.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setSelectedMediaIndex(0)} />
-                )
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-primary)', opacity: 0.4 }}>
-                  <Home size={80} strokeWidth={1.5} />
-                </div>
-              )}
-              <span style={{ position: 'absolute', top: '24px', left: '24px', background: estadoStyle.bg, color: estadoStyle.color, padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>
-                {inmueble.estado}
-              </span>
-              {inmueble.tipo_nombre && (
-                <span style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,255,255,0.9)', color: 'var(--color-text-secondary)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
-                  {inmueble.tipo_nombre}
-                </span>
-              )}
-            </div>
+          {(() => {
+            const offerColors = {
+              alquiler: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Alquiler', border: '1px solid rgba(16, 185, 129, 0.2)' },
+              venta: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Venta', border: '1px solid rgba(99, 102, 241, 0.2)' },
+              anticretico: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Anticrético', border: '1px solid rgba(245, 158, 11, 0.2)' },
+            };
+            const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
+            const offerStyle = activePub ? offerColors[activePub.tipo_oferta] : null;
 
-            {/* Galería de Miniaturas */}
-            {thumbMedia.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px', width: '120px', minWidth: '120px', background: 'rgba(255,255,255,0.5)' }}>
-                {thumbMedia.map((media, idx) => (
-                  <div
-                    key={media.id}
-                    onClick={() => setSelectedMediaIndex(idx + 1)}
-                    style={{
-                      width: '100%',
-                      height: '100px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      cursor: 'pointer',
-                      border: selectedMediaIndex === idx + 1 ? '2px solid var(--color-primary)' : '1px solid rgba(0,0,0,0.1)',
-                      transition: 'all 0.2s',
-                      background: '#f0f9ff'
-                    }}
-                  >
-                    {media.tipo === 'video' ? (
-                      <video src={media.archivo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            return (
+              <>
+                <div style={{ display: 'flex', gap: '12px', background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)', borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
+                  {/* Imagen Principal */}
+                  <div style={{ flex: 1, height: '400px', position: 'relative', background: '#f0f9ff' }}>
+                    {principalMedia ? (
+                      principalMedia.tipo === 'video' ? (
+                        <video src={principalMedia.archivo} controls style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setSelectedMediaIndex(0)} />
+                      ) : (
+                        <img src={principalMedia.archivo} alt={inmueble.titulo} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setSelectedMediaIndex(0)} />
+                      )
                     ) : (
-                      <img src={media.archivo} alt={`Thumbnail ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-primary)', opacity: 0.4 }}>
+                        <Home size={80} strokeWidth={1.5} />
+                      </div>
+                    )}
+                    <span style={{ position: 'absolute', top: '24px', left: '24px', background: estadoStyle.bg, color: estadoStyle.color, padding: '6px 14px', border: estadoStyle.border, borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>
+                      {inmueble.estado}
+                    </span>
+                    {offerStyle && (
+                      <span style={{ position: 'absolute', top: '64px', left: '24px', background: offerStyle.bg, color: offerStyle.color, border: offerStyle.border, padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
+                        {offerStyle.label}
+                      </span>
+                    )}
+                    {inmueble.tipo_nombre && (
+                      <span style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,255,255,0.9)', color: 'var(--color-text-secondary)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
+                        {inmueble.tipo_nombre}
+                      </span>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div style={{ padding: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
-              <div>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>{inmueble.titulo}</h1>
-                <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1.1rem', color: 'var(--color-text-muted)' }}>
-                  <MapPin size={18} /> {inmueble.direccion?.calle} - {inmueble.direccion?.zona && `${inmueble.direccion.zona}, `}{inmueble.direccion?.ciudad}
-                </p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                  Bs. {parseFloat(inmueble.precio).toLocaleString()}
+                  {/* Galería de Miniaturas */}
+                  {thumbMedia.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px', width: '120px', minWidth: '120px', background: 'rgba(255,255,255,0.5)' }}>
+                      {thumbMedia.map((media, idx) => (
+                        <div
+                          key={media.id}
+                          onClick={() => setSelectedMediaIndex(idx + 1)}
+                          style={{
+                            width: '100%',
+                            height: '100px',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                            border: selectedMediaIndex === idx + 1 ? '2px solid var(--color-primary)' : '1px solid rgba(0,0,0,0.1)',
+                            transition: 'all 0.2s',
+                            background: '#f0f9ff'
+                          }}
+                        >
+                          {media.tipo === 'video' ? (
+                            <video src={media.archivo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <img src={media.archivo} alt={`Thumbnail ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '32px', background: 'var(--color-bg)', padding: '24px', borderRadius: '12px' }}>
-              {inmueble.habitaciones > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bed size={20} /></div>
-                  <div>
-                    <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Habitaciones</strong>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.habitaciones}</span>
+                <div style={{ padding: '32px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', marginBottom: '24px' }}>
+                    <div>
+                      <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>{inmueble.titulo}</h1>
+                      <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1.1rem', color: 'var(--color-text-muted)' }}>
+                        <MapPin size={18} /> {inmueble.direccion?.calle} - {inmueble.direccion?.zona && `${inmueble.direccion.zona}, `}{inmueble.direccion?.ciudad}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                        {activePub ? (
+                          <>
+                            Bs. {parseFloat(activePub.precio).toLocaleString()}
+                            {activePub.tipo_oferta === 'alquiler' && <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)', marginLeft: '6px' }}>/ mes</span>}
+                            {activePub.tipo_oferta === 'anticretico' && <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)', marginLeft: '6px' }}> (Anticrético)</span>}
+                          </>
+                        ) : (
+                          'Sin oferta activa'
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-              {inmueble.banos > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bath size={20} /></div>
-                  <div>
-                    <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Baños</strong>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.banos}</span>
-                  </div>
-                </div>
-              )}
-              {inmueble.superficie > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Maximize2 size={20} /></div>
-                  <div>
-                    <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Superficie</strong>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.superficie} m²</span>
-                  </div>
-                </div>
-              )}
-            </div>
 
-            <div style={{ marginBottom: '32px' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Descripción</h2>
-              <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{inmueble.descripcion}</p>
-            </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '32px', background: 'var(--color-bg)', padding: '24px', borderRadius: '12px' }}>
+                    {inmueble.habitaciones > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bed size={20} /></div>
+                        <div>
+                          <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Habitaciones</strong>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.habitaciones}</span>
+                        </div>
+                      </div>
+                    )}
+                    {inmueble.banos > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bath size={20} /></div>
+                        <div>
+                          <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Baños</strong>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.banos}</span>
+                        </div>
+                      </div>
+                    )}
+                    {inmueble.superficie > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Maximize2 size={20} /></div>
+                        <div>
+                          <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Superficie</strong>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.superficie} m²</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginBottom: '32px' }}>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Descripción</h2>
+                    <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{inmueble.descripcion}</p>
+                  </div>
+
+                  {inmueble.publicaciones && inmueble.publicaciones.length > 0 && (
+                    <div style={{ marginBottom: '32px' }}>
+                      <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Historial de Ofertas Comerciales</h2>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {inmueble.publicaciones.map(pub => {
+                          const pubStyle = offerColors[pub.tipo_oferta] || { label: pub.tipo_oferta, color: '#333', bg: '#eee' };
+                          const isActiva = pub.estado === 'activa';
+                          return (
+                            <div key={pub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: isActiva ? 'rgba(16, 185, 129, 0.03)' : '#f8fafc', borderRadius: '12px', border: isActiva ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--color-border)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, background: pubStyle.bg, color: pubStyle.color, border: pubStyle.border }}>
+                                  {pubStyle.label}
+                                </span>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                                  Creada el {new Date(pub.creado).toLocaleDateString('es-BO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>
+                                  Bs. {parseFloat(pub.precio).toLocaleString()} {pub.tipo_oferta === 'alquiler' ? '/ mes' : pub.tipo_oferta === 'anticretico' ? '(Anticrético)' : ''}
+                                </span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isActiva ? '#10b981' : '#64748b', textTransform: 'capitalize' }}>
+                                  {pub.estado}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
             {inmueble.gps && (
               <div style={{ marginBottom: '32px' }}>
@@ -289,8 +349,11 @@ const PropiedadDetalle = () => {
 
             <ResenaSection inmuebleId={id} isAuthenticated={isAuthenticated} userId={user?.id} />
           </div>
-        </div>
-      </div>
+        </>
+      );
+    })()}
+  </div>
+</div>
 
       {/* Modal de Confirmación para Admin */}
       {showConfirmModal && (

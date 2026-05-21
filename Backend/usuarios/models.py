@@ -127,6 +127,7 @@ class Chat(models.Model):
     participante1 = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='chats_iniciados')
     participante2 = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='chats_recibidos')
     inmueble = models.ForeignKey('inmuebles.Inmueble', on_delete=models.SET_NULL, null=True, blank=True, related_name='chats')
+    publicacion = models.ForeignKey('inmuebles.Publicacion', on_delete=models.SET_NULL, null=True, blank=True, related_name='chats')
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
@@ -140,6 +141,8 @@ class Chat(models.Model):
         desc = f"Chat: {self.participante1.email} - {self.participante2.email}"
         if self.inmueble:
             desc += f" (Inm: {self.inmueble.id})"
+        if self.publicacion:
+            desc += f" (Pub: {self.publicacion.id})"
         return desc
 
 

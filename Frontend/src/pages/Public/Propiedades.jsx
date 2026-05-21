@@ -17,6 +17,7 @@ const Propiedades = () => {
   const [filtroHabitaciones, setFiltroHabitaciones] = useState('');
   const [filtroBanos, setFiltroBanos] = useState('');
   const [filtroGaraje, setFiltroGaraje] = useState(false);
+  const [filtroTipoOferta, setFiltroTipoOferta] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   const { isAuthenticated, user } = useAuth();
@@ -40,6 +41,7 @@ const Propiedades = () => {
       if (filtroHabitaciones) filters.habitaciones_min = filtroHabitaciones;
       if (filtroBanos) filters.banos_min = filtroBanos;
       if (filtroGaraje) filters.garaje = true;
+      if (filtroTipoOferta) filters.tipo_oferta = filtroTipoOferta;
 
       inmuebleService.listarInmuebles(filters)
         .then(data => {
@@ -50,7 +52,7 @@ const Propiedades = () => {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, filtroCategoria, filtroCiudad, filtroPrecioMax, filtroHabitaciones, filtroBanos, filtroGaraje, categorias]);
+  }, [searchTerm, filtroCategoria, filtroCiudad, filtroPrecioMax, filtroHabitaciones, filtroBanos, filtroGaraje, filtroTipoOferta, categorias]);
 
   const toggleFavorite = async (inmId, e) => {
     e.preventDefault();
@@ -70,10 +72,16 @@ const Propiedades = () => {
   };
 
   const estadoColors = {
-    disponible: { bg: '#dcfce7', color: '#15803d' },
-    ocupado: { bg: '#fee2e2', color: '#dc2626' },
-    mantenimiento: { bg: '#fef3c7', color: '#d97706' },
-    reservado: { bg: '#dbeafe', color: '#2563eb' },
+    disponible: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' },
+    ocupado: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' },
+    mantenimiento: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)' },
+    reservado: { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)' },
+  };
+
+  const offerColors = {
+    alquiler: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Alquiler', border: '1px solid rgba(16, 185, 129, 0.2)' },
+    venta: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Venta', border: '1px solid rgba(99, 102, 241, 0.2)' },
+    anticretico: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Anticrético', border: '1px solid rgba(245, 158, 11, 0.2)' },
   };
 
   return (
@@ -102,6 +110,16 @@ const Propiedades = () => {
             {categorias.map(cat => (
               <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
             ))}
+          </select>
+          <select
+            value={filtroTipoOferta}
+            onChange={e => setFiltroTipoOferta(e.target.value)}
+            className="propiedades-filter__select"
+          >
+            <option value="">Tipo de oferta: Todos</option>
+            <option value="alquiler">Alquiler</option>
+            <option value="venta">Venta</option>
+            <option value="anticretico">Anticrético</option>
           </select>
           <input
             type="text"
@@ -142,7 +160,7 @@ const Propiedades = () => {
             <option value="2">2 o más</option>
             <option value="3">3 o más</option>
           </select>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+          <label className="propiedades-filter__checkbox-label">
             <input
               type="checkbox"
               checked={filtroGaraje}
@@ -159,8 +177,9 @@ const Propiedades = () => {
           <div className="propiedades-grid">
             {inmuebles.map(inm => {
               const estadoStyle = estadoColors[inm.estado] || estadoColors.disponible;
-              const ciudad = inm.direccion_fk?.ciudad || 'N/A';
-              const zona = inm.direccion_fk?.zona || '';
+              const offerStyle = offerColors[inm.tipo_oferta];
+              const ciudad = inm.direccion?.ciudad || 'N/A';
+              const zona = inm.direccion?.zona || '';
               return (
                 <div key={inm.id} className="propiedad-card">
                   <div className="propiedad-card__image">
@@ -171,9 +190,14 @@ const Propiedades = () => {
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
                       </div>
                     )}
-                    <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color }}>
+                    <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color, border: estadoStyle.border }}>
                       {inm.estado}
                     </span>
+                    {offerStyle && (
+                      <span className="propiedad-card__offer-badge" style={{ background: offerStyle.bg, color: offerStyle.color, border: offerStyle.border }}>
+                        {offerStyle.label}
+                      </span>
+                    )}
                     {inm.tipo_nombre && (
                       <span className="propiedad-card__category">{inm.tipo_nombre}</span>
                     )}
@@ -194,7 +218,17 @@ const Propiedades = () => {
                       {inm.banos > 0 && <span>{inm.banos} baños</span>}
                     </div>
                     <div className="propiedad-card__footer">
-                      <span className="propiedad-card__price">Bs. {parseFloat(inm.precio).toLocaleString()}</span>
+                      <span className="propiedad-card__price">
+                        {inm.precio ? (
+                          <>
+                            Bs. {parseFloat(inm.precio).toLocaleString()}
+                            {inm.tipo_oferta === 'alquiler' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-muted)', marginLeft: '4px' }}>/ mes</small>}
+                            {inm.tipo_oferta === 'anticretico' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-muted)', marginLeft: '4px' }}> (Anticrético)</small>}
+                          </>
+                        ) : (
+                          'Sin oferta activa'
+                        )}
+                      </span>
                       <Link to={`/propiedades/${inm.id}`} className="propiedad-card__cta">Ver detalles</Link>
                     </div>
                   </div>

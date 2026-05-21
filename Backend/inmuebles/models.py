@@ -64,10 +64,6 @@ class Inmueble(models.Model):
     )
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
-    precio = models.DecimalField(
-        max_digits=12, decimal_places=2, db_index=True,
-        validators=[MinValueValidator(0)]
-    )
     largo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     ancho = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     superficie = models.DecimalField(
@@ -75,6 +71,11 @@ class Inmueble(models.Model):
         help_text='Superficie en metros cuadrados',
         null=True, blank=True,
         db_index=True
+    )
+    valor_activo = models.DecimalField(
+        max_digits=14, decimal_places=2,
+        null=True, blank=True,
+        help_text='Valor catastral o de referencia del activo físico (DDRR). Interno, no se publica.'
     )
     habitaciones = models.PositiveIntegerField(default=0, db_index=True)
     banos = models.PositiveIntegerField(default=0, db_index=True)
@@ -136,6 +137,69 @@ class Multimedia(models.Model):
 
     def __str__(self):
         return f'{self.tipo} — {self.inmueble.titulo}'
+
+
+class Publicacion(models.Model):
+    """Oferta comercial de un inmueble en el catálogo."""
+
+    class TipoOferta(models.TextChoices):
+        ALQUILER = 'alquiler', 'Alquiler'
+        VENTA = 'venta', 'Venta'
+        ANTICRETICO = 'anticretico', 'Anticrético'
+
+    class EstadoPublicacion(models.TextChoices):
+        BORRADOR = 'borrador', 'Borrador'
+        ACTIVA = 'activa', 'Activa'
+        PAUSADA = 'pausada', 'Pausada'
+        FINALIZADA = 'finalizada', 'Finalizada'
+
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='publicaciones',
+    )
+    tipo_oferta = models.CharField(
+        max_length=20,
+        choices=TipoOferta.choices,
+        default=TipoOferta.ALQUILER,
+        db_index=True
+    )
+    precio = models.DecimalField(
+        max_digits=12, decimal_places=2, db_index=True,
+        validators=[MinValueValidator(0)]
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoPublicacion.choices,
+        default=EstadoPublicacion.BORRADOR,
+        db_index=True
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'inmuebles_publicacion'
+        verbose_name = 'Publicación'
+        verbose_name_plural = 'Publicaciones'
+        ordering = ['-creado']
+
+    def save(self, *args, **kwargs):
+        # Si esta publicación se activa, debemos desactivar cualquier otra activa para este inmueble
+        if self.estado == self.EstadoPublicacion.ACTIVA:
+            Publicacion.objects.filter(
+                inmueble=self.inmueble,
+                estado=self.EstadoPublicacion.ACTIVA
+            ).exclude(pk=self.pk).update(estado=self.EstadoPublicacion.FINALIZADA)
+            
+            # Opcionalmente, actualizamos el estado del inmueble físico a disponible
+            if self.inmueble.estado != Inmueble.EstadoInmueble.DISPONIBLE:
+                self.inmueble.estado = Inmueble.EstadoInmueble.DISPONIBLE
+                self.inmueble.save(update_fields=['estado'])
+                
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.get_tipo_oferta_display()} — {self.inmueble.titulo} ({self.precio} USD)'
 
 
 class TipoContrato(models.Model):

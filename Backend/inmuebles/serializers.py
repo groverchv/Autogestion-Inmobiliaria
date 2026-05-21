@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion
+from .models import TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion
 
 
 class TipoInmuebleSerializer(serializers.ModelSerializer):
@@ -21,6 +21,17 @@ class DireccionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class PublicacionSerializer(serializers.ModelSerializer):
+    tipo_oferta_display = serializers.CharField(source='get_tipo_oferta_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+
+    class Meta:
+        model = Publicacion
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'actualizado']
+
+
 class InmuebleSerializer(serializers.ModelSerializer):
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
     propietario_nombre = serializers.CharField(
@@ -28,11 +39,22 @@ class InmuebleSerializer(serializers.ModelSerializer):
     )
     multimedia = MultimediaSerializer(many=True, read_only=True)
     direccion = DireccionSerializer()
+    precio = serializers.SerializerMethodField(read_only=True)
+    tipo_oferta = serializers.SerializerMethodField(read_only=True)
+    publicaciones = PublicacionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Inmueble
         fields = '__all__'
         read_only_fields = ['id', 'propietario', 'creado', 'actualizado', 'superficie']
+
+    def get_precio(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.precio if pub_activa else None
+
+    def get_tipo_oferta(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.tipo_oferta if pub_activa else None
 
     def create(self, validated_data):
         direccion_data = validated_data.pop('direccion', None)
@@ -58,15 +80,25 @@ class InmuebleListSerializer(serializers.ModelSerializer):
     is_favorito = serializers.SerializerMethodField()
     imagen_principal = serializers.SerializerMethodField()
     direccion = DireccionSerializer(read_only=True)
+    precio = serializers.SerializerMethodField(read_only=True)
+    tipo_oferta = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Inmueble
         fields = [
             'id', 'titulo', 'tipo_nombre', 'direccion',
-            'precio', 'estado', 'habitaciones', 'banos',
+            'precio', 'tipo_oferta', 'estado', 'habitaciones', 'banos',
             'imagen_principal', 'creado', 'is_favorito',
             'largo', 'ancho', 'superficie'
         ]
+
+    def get_precio(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.precio if pub_activa else None
+
+    def get_tipo_oferta(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.tipo_oferta if pub_activa else None
 
     def get_is_favorito(self, obj):
         request = self.context.get('request')

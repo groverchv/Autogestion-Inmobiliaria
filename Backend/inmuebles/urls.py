@@ -33,6 +33,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     TipoInmuebleViewSet,
     InmuebleViewSet,
+    PublicacionViewSet,
     MultimediaViewSet,
     TipoContratoViewSet,
     ContratoViewSet,
@@ -47,6 +48,7 @@ router = DefaultRouter()
 # ─── Rutas públicas / generales ──────────────────────────────────────────────
 router.register(r'tipos',           TipoInmuebleViewSet)
 router.register(r'lista',           InmuebleViewSet)
+router.register(r'publicaciones',   PublicacionViewSet,     basename='publicaciones')
 router.register(r'multimedia',      MultimediaViewSet)
 router.register(r'tipos-contrato',  TipoContratoViewSet, basename='tipos-contrato')
 router.register(r'contratos',       ContratoViewSet,     basename='contratos')
@@ -58,6 +60,7 @@ router.register(r'horarios',        HorarioDisponibleViewSet, basename='horarios
 # ─── Rutas del panel admin ────────────────────────────────────────────────────
 router.register(r'panel/tipos',     TipoInmuebleViewSet,    basename='panel-tipos')
 router.register(r'panel/lista',     InmuebleViewSet,        basename='panel-inmuebles')
+router.register(r'panel/publicaciones', PublicacionViewSet, basename='panel-publicaciones')
 router.register(r'panel/contratos', ContratoViewSet,        basename='panel-contratos')
 router.register(r'panel/tipos-contrato', TipoContratoViewSet, basename='panel-tipos-contrato')
 router.register(r'panel/citas',     CitaViewSet,            basename='panel-citas')

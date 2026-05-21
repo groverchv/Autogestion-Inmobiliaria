@@ -4,8 +4,9 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from inmuebles.models import Direccion, Inmueble, TipoInmueble
+from inmuebles.models import Direccion, Inmueble, TipoInmueble, Publicacion
 from django.contrib.auth import get_user_model
+from decimal import Decimal
 
 Usuario = get_user_model()
 
@@ -57,14 +58,32 @@ def run():
             titulo=f"{tipo_nombre} en {item['zona']}",
             descripcion=f"Ubicado en {item['calle']}. {item['referencia']}. Ideal para vivir comodamente.",
             tipo=tipoAsignado,
-            direccion_fk=direccion,
+            direccion=direccion,
             propietario=user,
-            precio=item['precio'],
             largo=item['largo'],
             ancho=item['ancho'],
             habitaciones=3,
             banos=2,
             estado='disponible'
+        )
+        
+        # Crear publicacion activa con precio realista
+        tipo_oferta = 'venta' if item['precio'] > 200000 else 'alquiler'
+        if tipo_oferta == 'alquiler':
+            # Precio de alquiler realista basado en un porcentaje chico o valor fijo
+            precio_comercial = Decimal(str(int(item['precio'] * 0.02) if item['precio'] > 50000 else 2500))
+            if precio_comercial > 10000:
+                precio_comercial = Decimal('4500.00')
+            elif precio_comercial < 1000:
+                precio_comercial = Decimal('1500.00')
+        else:
+            precio_comercial = Decimal(str(item['precio']))
+
+        Publicacion.objects.create(
+            inmueble=inmueble,
+            tipo_oferta=tipo_oferta,
+            precio=precio_comercial,
+            estado=Publicacion.EstadoPublicacion.ACTIVA
         )
         # El hook save de inmueble ya calculará la superficie por su cuenta basandose en largo x ancho,
         # esto pondrá a prueba la característica que implementamos.
