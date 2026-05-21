@@ -180,6 +180,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
   const [chatInput, setChatInput] = useState('');
   const [chatCargando, setChatCargando] = useState(false);
   const [chatIniciado, setChatIniciado] = useState(false);
+  const [temasClickeados, setTemasClickeados] = useState([]);
   const chatEndRef = useRef(null);
 
   // Scroll al fondo del chat cuando llegan nuevos mensajes
@@ -212,31 +213,9 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
     { id: 'antecedentes', emoji: '📄', label: 'Antecedentes',       pregunta: '¿Qué antecedentes del inmueble debo incluir en el contrato?' },
   ];
 
-  // Detecta qué temas ya se mencionaron en la conversación
-  const getTemasDiscutidos = () => {
-    // Excluye el saludo inicial (índice 0) para evitar que sus palabras clave ("cláusulas", "restricciones", etc.) oculten los chips
-    const textoConversacion = chatMensajes
-      .slice(1)
-      .map(m => m.content.toLowerCase())
-      .join(' ');
-    return {
-      clausulas:     textoConversacion.includes('cláusula') || textoConversacion.includes('clausula'),
-      restricciones: textoConversacion.includes('restricción') || textoConversacion.includes('restriccion') || textoConversacion.includes('prohib'),
-      garantias:     textoConversacion.includes('garantía') || textoConversacion.includes('garantia') || textoConversacion.includes('depósito'),
-      penalizaciones:textoConversacion.includes('penalidad') || textoConversacion.includes('penalización') || textoConversacion.includes('multa'),
-      servicios:     textoConversacion.includes('servicio') || textoConversacion.includes('agua') || textoConversacion.includes('luz'),
-      cancelacion:   textoConversacion.includes('cancelación') || textoConversacion.includes('cancelacion') || textoConversacion.includes('rescisión'),
-      renovacion:    textoConversacion.includes('renovación') || textoConversacion.includes('renovacion') || textoConversacion.includes('prórroga'),
-      riesgos:       textoConversacion.includes('riesgo') || textoConversacion.includes('legal') || textoConversacion.includes('vacío'),
-      uso:           textoConversacion.includes('uso del inmueble') || textoConversacion.includes('condiciones de uso') || textoConversacion.includes('uso exclusivo'),
-      antecedentes:  textoConversacion.includes('antecedente') || textoConversacion.includes('historial'),
-    };
-  };
-
-  // Retorna los temas que AUN NO se han discutido
+  // Retorna los temas que AUN NO se han discutido (se filtra por click del usuario)
   const getChipsPendientes = () => {
-    const discutidos = getTemasDiscutidos();
-    return TEMAS_CONTRATO.filter(t => !discutidos[t.id]);
+    return TEMAS_CONTRATO.filter(t => !temasClickeados.includes(t.id));
   };
 
   const enviarMensaje = async (textoOverride) => {
@@ -416,7 +395,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             </div>
           </div>
           <button
-            onClick={() => { setChatMensajes([]); setChatIniciado(false); }}
+            onClick={() => { setChatMensajes([]); setChatIniciado(false); setTemasClickeados([]); }}
             title="Reiniciar conversación"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}
           >
@@ -529,7 +508,10 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                 {pendientes.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => enviarMensaje(t.pregunta)}
+                    onClick={() => {
+                      setTemasClickeados(prev => [...prev, t.id]);
+                      enviarMensaje(t.pregunta);
+                    }}
                     style={{
                       background: '#f5f3ff', color: '#6d28d9',
                       border: '1.5px solid #ddd6fe',
