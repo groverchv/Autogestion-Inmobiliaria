@@ -97,7 +97,7 @@ const Visor360 = ({ panoramas = [] }) => {
 
       viewerInstanceRef.current = pannellum.viewer(viewerRef.current, {
         type: 'equirectangular',
-        panorama: escenaActiva.archivo,
+        panorama: escenaActiva.archivo ? `${escenaActiva.archivo}?cb=${new Date().getTime()}` : '',
         autoLoad: true,
         crossOrigin: 'anonymous',
         autoRotate: -2,

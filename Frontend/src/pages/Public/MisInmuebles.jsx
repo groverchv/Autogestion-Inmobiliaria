@@ -1010,7 +1010,7 @@ const MisInmuebles = () => {
                               border: '1px solid var(--color-border)',
                               boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                             }}>
-                              <img src={media.archivo} style={{ width: '120px', height: '90px', objectFit: 'cover' }} alt={`existing-360-${i}`} />
+                              <img src={media.archivo} crossOrigin="anonymous" style={{ width: '120px', height: '90px', objectFit: 'cover' }} alt={`existing-360-${i}`} />
                               <div style={{
                                 padding: '4px 6px',
                                 background: 'rgba(255, 255, 255, 0.95)',
