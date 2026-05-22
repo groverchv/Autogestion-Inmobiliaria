@@ -11,6 +11,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import ResenaSection from '../../components/ResenaSection';
 import ModalAgendarCita from '../../components/ModalAgendarCita';
+import Visor360 from '../../components/Visor360';
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
@@ -90,8 +91,12 @@ const PropiedadDetalle = () => {
     reservado: { bg: '#dbeafe', color: '#2563eb' },
   };
 
-  const principalMedia = inmueble?.multimedia?.find(m => m.principal) || inmueble?.multimedia?.[0];
-  const restoMedia = inmueble?.multimedia?.filter(m => m.id !== principalMedia?.id) || [];
+  // Separar multimedia normal de panoramas 360°
+  const mediaNormal = inmueble?.multimedia?.filter(m => m.tipo !== 'panorama360') || [];
+  const panoramas360 = inmueble?.multimedia?.filter(m => m.tipo === 'panorama360') || [];
+
+  const principalMedia = mediaNormal.find(m => m.principal) || mediaNormal[0];
+  const restoMedia = mediaNormal.filter(m => m.id !== principalMedia?.id) || [];
   const allMedia = principalMedia ? [principalMedia, ...restoMedia] : restoMedia;
   const thumbMedia = restoMedia.slice(0, 3);
 
@@ -268,6 +273,11 @@ const PropiedadDetalle = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* ─── Visor 360° ────────────────────────────── */}
+                  {panoramas360.length > 0 && (
+                    <Visor360 panoramas={panoramas360} />
+                  )}
 
                   <div style={{ marginBottom: '32px' }}>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Descripción</h2>

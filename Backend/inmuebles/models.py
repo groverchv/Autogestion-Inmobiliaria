@@ -113,6 +113,7 @@ class Multimedia(models.Model):
     class TipoArchivo(models.TextChoices):
         IMAGEN = 'imagen', 'Imagen'
         VIDEO = 'video', 'Video'
+        PANORAMA360 = 'panorama360', 'Panorama 360°'
 
     inmueble = models.ForeignKey(
         Inmueble,
@@ -120,7 +121,7 @@ class Multimedia(models.Model):
         related_name='multimedia',
     )
     tipo = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=TipoArchivo.choices,
         default=TipoArchivo.IMAGEN,
     )

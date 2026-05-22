@@ -43,6 +43,14 @@ const MisInmuebles = () => {
   const [existingMedia, setExistingMedia] = useState([]);
   const [mediaToDelete, setMediaToDelete] = useState([]);
 
+  // ─── Estado para panoramas 360° ─────────────────────────────────────
+  const [archivos360, setArchivos360] = useState([]);
+  const [preview360, setPreview360] = useState([]);
+  const [existing360, setExisting360] = useState([]);
+  const [meta360, setMeta360] = useState([]); // [{piso: 'Piso 1', habitacion: 'Sala'}, ...]
+  const [showGuiaModal, setShowGuiaModal] = useState(false);
+  const [guiaPasoActivo, setGuiaPasoActivo] = useState(1);
+
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -242,6 +250,69 @@ const MisInmuebles = () => {
     setPreviewUrls(prev => prev.filter((_, i) => i !== indexToRemove));
   };
 
+  const validarDimensionesPano = (file) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        const ancho = img.naturalWidth;
+        const alto = img.naturalHeight;
+        const relacion = ancho / alto;
+
+        // El estándar equirectangular 360° perfecto es 2:1.
+        // Damos un margen de tolerancia entre 1.75 y 2.25 para panorámicas de smartphones.
+        if (relacion >= 1.75 && relacion <= 2.25) {
+          resolve({ valido: true, relacion, ancho, alto });
+        } else {
+          resolve({ valido: false, relacion, ancho, alto });
+        }
+      };
+      img.onerror = () => {
+        resolve({ valido: false, error: true });
+      };
+    });
+  };
+
+  const handleFile360Change = async (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    const archivosValidos = [];
+    const previewsValidos = [];
+    const metasValidas = [];
+
+    for (const file of selectedFiles) {
+      const check = await validarDimensionesPano(file);
+      if (check.valido) {
+        archivosValidos.push(file);
+        previewsValidos.push(URL.createObjectURL(file));
+        metasValidas.push({ piso: 'Piso 1', habitacion: '' });
+      } else {
+        alert(
+          `⚠️ Archivo inválido: "${file.name}"\n\n` +
+          `Para que el visor 360° funcione correctamente sin distorsiones, la foto debe ser panorámica (proporción cercana a 2:1, es decir, el doble de ancho que de alto).\n\n` +
+          `• Proporción detectada: ${(check.relacion || 0).toFixed(2)}:1 (${check.ancho}x${check.alto}px).\n` +
+          `• Por favor, captura la foto usando el modo "Panorámica" (PANO) de tu móvil y vuelve a intentarlo.`
+        );
+      }
+    }
+
+    if (archivosValidos.length > 0) {
+      setArchivos360(prev => [...prev, ...archivosValidos]);
+      setPreview360(prev => [...prev, ...previewsValidos]);
+      setMeta360(prev => [...prev, ...metasValidas]);
+    }
+  };
+
+  const handleMeta360Change = (index, field, value) => {
+    setMeta360(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+  };
+
+  const removeFile360 = (indexToRemove) => {
+    setArchivos360(prev => prev.filter((_, i) => i !== indexToRemove));
+    setPreview360(prev => prev.filter((_, i) => i !== indexToRemove));
+    setMeta360(prev => prev.filter((_, i) => i !== indexToRemove));
+  };
+
   const handleEdit = async (inm) => {
     try {
       setLoading(true);
@@ -269,7 +340,13 @@ const MisInmuebles = () => {
       });
       setArchivos([]);
       setPreviewUrls([]);
-      setExistingMedia(detailedInm.multimedia || []);
+      // Separar multimedia normal de panoramas 360°
+      const allMultimedia = detailedInm.multimedia || [];
+      setExistingMedia(allMultimedia.filter(m => m.tipo !== 'panorama360'));
+      setExisting360(allMultimedia.filter(m => m.tipo === 'panorama360'));
+      setArchivos360([]);
+      setPreview360([]);
+      setMeta360([]);
       setMediaToDelete([]);
       setShowModal(true);
     } catch (err) {
@@ -334,9 +411,30 @@ const MisInmuebles = () => {
         await Promise.all(uploadPromises);
       }
 
+      // Subir panoramas 360° a Cloudinary vía el backend
+      if (archivos360.length > 0) {
+        const upload360Promises = archivos360.map(async (file, i) => {
+          const mediaForm = new FormData();
+          mediaForm.append('inmueble', nuevoInmuebleId);
+          mediaForm.append('archivo', file);
+          mediaForm.append('principal', 'false');
+          mediaForm.append('tipo', 'panorama360');
+          const metaItem = meta360[i] || {};
+          const piso = metaItem.piso || 'Piso 1';
+          const habitacion = metaItem.habitacion || 'Vista 360°';
+          mediaForm.append('descripcion', `${piso} | ${habitacion}`);
+
+          return api.post('/inmuebles/multimedia/', mediaForm, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        });
+        await Promise.all(upload360Promises);
+      }
+
       setShowModal(false);
       setEditingId(null);
       setExistingMedia([]);
+      setExisting360([]);
       setMediaToDelete([]);
       setFormData({
         titulo: '', descripcion: '', tipo: tipos.length > 0 ? tipos[0].id : '',
@@ -346,6 +444,9 @@ const MisInmuebles = () => {
       });
       setArchivos([]);
       setPreviewUrls([]);
+      setArchivos360([]);
+      setPreview360([]);
+      setMeta360([]);
       fetchData(); // Recargar
     } catch (err) {
       console.error(err);
@@ -407,6 +508,10 @@ const MisInmuebles = () => {
                 setArchivos([]);
                 setPreviewUrls([]);
                 setExistingMedia([]);
+                setExisting360([]);
+                setArchivos360([]);
+                setPreview360([]);
+                setMeta360([]);
                 setMediaToDelete([]);
                 setShowModal(true);
               }}
@@ -810,6 +915,260 @@ const MisInmuebles = () => {
                     </div>
                   )}
                 </div>
+
+                {/* ─── Sección de Fotos Panorámicas 360° (RF-40) ─── */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                  padding: '20px',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(99, 102, 241, 0.2)',
+                  marginTop: '16px',
+                  boxShadow: '0 4px 20px rgba(99, 102, 241, 0.05)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                        color: '#fff',
+                        borderRadius: '50%',
+                        width: '36px',
+                        height: '36px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)'
+                      }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                          <path d="M2 12h20" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)' }}>Fotos Panorámicas 360°</h3>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>Agrega un recorrido interactivo a tu propiedad</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGuiaPasoActivo(1);
+                        setShowGuiaModal(true);
+                      }}
+                      style={{
+                        background: 'rgba(99, 102, 241, 0.1)',
+                        color: '#6366f1',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        borderRadius: '20px',
+                        padding: '6px 14px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                      ¿Cómo capturar con mi móvil?
+                    </button>
+                  </div>
+
+                  {/* Panoramas existentes */}
+                  {existing360.length > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Panoramas 360° actuales:</p>
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        {existing360.map((media, i) => {
+                          let labelPiso = 'Piso 1';
+                          let labelHab = 'Vista 360°';
+                          if (media.descripcion && media.descripcion.includes('|')) {
+                            const partes = media.descripcion.split('|');
+                            labelPiso = partes[0].trim();
+                            labelHab = partes[1]?.trim() || 'Vista 360°';
+                          }
+                          return (
+                            <div key={media.id} style={{
+                              width: '120px',
+                              position: 'relative',
+                              borderRadius: '10px',
+                              overflow: 'hidden',
+                              border: '1px solid var(--color-border)',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                            }}>
+                              <img src={media.archivo} style={{ width: '120px', height: '90px', objectFit: 'cover' }} alt={`existing-360-${i}`} />
+                              <div style={{
+                                padding: '4px 6px',
+                                background: 'rgba(255, 255, 255, 0.95)',
+                                fontSize: '0.7rem',
+                                color: 'var(--color-text)',
+                                borderTop: '1px solid var(--color-border)'
+                              }}>
+                                <div style={{ fontWeight: 700, color: '#4f46e5' }}>{labelPiso}</div>
+                                <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{labelHab}</div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMediaToDelete(prev => [...prev, media.id]);
+                                  setExisting360(prev => prev.filter(m => m.id !== media.id));
+                                }}
+                                style={{
+                                  position: 'absolute', top: '4px', right: '4px',
+                                  background: 'rgba(239, 68, 68, 0.9)', color: '#fff',
+                                  border: 'none', borderRadius: '50%',
+                                  width: '22px', height: '22px',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                  transition: 'background 0.2s'
+                                }}
+                                title="Eliminar panorama existente"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '12px', lineHeight: '1.4' }}>
+                    Sube imágenes en formato <strong>equirectangular (panorámicas 360°)</strong>. Especifica el piso y el nombre de la habitación para que los usuarios puedan navegar entre ellas.
+                  </p>
+
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFile360Change}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                      background: '#fff',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      marginBottom: '16px'
+                    }}
+                  />
+
+                  {/* Previews de nuevos panoramas con edición de metadatos */}
+                  {preview360.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', margin: 0 }}>Nuevos panoramas a subir:</p>
+                      {preview360.map((url, i) => {
+                        const meta = meta360[i] || { piso: 'Piso 1', habitacion: '' };
+                        return (
+                          <div key={i} style={{
+                            display: 'flex',
+                            gap: '12px',
+                            background: '#fff',
+                            padding: '12px',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(99, 102, 241, 0.15)',
+                            alignItems: 'center',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                          }}>
+                            {/* Miniatura */}
+                            <div style={{ width: '80px', height: '60px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                              <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`new-360-preview-${i}`} />
+                              <span style={{
+                                position: 'absolute', top: '2px', left: '2px',
+                                background: 'rgba(99, 102, 241, 0.9)', color: '#fff',
+                                fontSize: '0.6rem', padding: '1px 4px', borderRadius: '4px', fontWeight: 600
+                              }}>360°</span>
+                            </div>
+
+                            {/* Controles de metadatos */}
+                            <div style={{ flex: 1, display: 'flex', gap: '10px' }}>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Piso *</label>
+                                <select
+                                  value={meta.piso}
+                                  onChange={(e) => handleMeta360Change(i, 'piso', e.target.value)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '6px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--color-border)',
+                                    fontSize: '0.8rem',
+                                    outline: 'none',
+                                    background: '#fff'
+                                  }}
+                                >
+                                  <option value="Piso 1">Piso 1</option>
+                                  <option value="Piso 2">Piso 2</option>
+                                  <option value="Piso 3">Piso 3</option>
+                                  <option value="Piso 4">Piso 4</option>
+                                  <option value="Piso 5">Piso 5</option>
+                                  <option value="Piso 6">Piso 6</option>
+                                  <option value="Piso 7">Piso 7</option>
+                                  <option value="Piso 8">Piso 8</option>
+                                </select>
+                              </div>
+                              <div style={{ flex: 2 }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Habitación / Zona *</label>
+                                <input
+                                  type="text"
+                                  placeholder="Ej: Sala, Cocina, Terraza"
+                                  required
+                                  value={meta.habitacion}
+                                  onChange={(e) => handleMeta360Change(i, 'habitacion', e.target.value)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '6px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--color-border)',
+                                    fontSize: '0.8rem',
+                                    outline: 'none'
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Botón eliminar */}
+                            <button
+                              type="button"
+                              onClick={() => removeFile360(i)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-danger, #ef4444)',
+                                cursor: 'pointer',
+                                padding: '6px',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'background 0.2s'
+                              }}
+                              title="Remover"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -832,6 +1191,232 @@ const MisInmuebles = () => {
           </div>
         </div>
       )}
+
+      {/* ─── Modal Asistente de Captura Móvil (Guía 360°) ─── */}
+      {showGuiaModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', zIndex: 2000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            borderRadius: '24px', width: '100%', maxWidth: '520px',
+            boxShadow: '0 25px 50px -12px rgba(99, 102, 241, 0.25)',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            border: '1px solid rgba(99, 102, 241, 0.1)',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid rgba(99, 102, 241, 0.1)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(168, 85, 247, 0.03) 100%)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" />
+                </svg>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#1e293b' }}>Guía de Captura Móvil 360°</h3>
+              </div>
+              <button
+                onClick={() => setShowGuiaModal(false)}
+                style={{
+                  background: 'rgba(99, 102, 241, 0.05)', border: 'none',
+                  fontSize: '1.2rem', cursor: 'pointer', color: '#64748b',
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)'}
+              >&times;</button>
+            </div>
+
+            {/* Progreso en la cabecera */}
+            <div style={{ display: 'flex', height: '4px', background: '#e2e8f0' }}>
+              {[1, 2, 3, 4].map(step => (
+                <div key={step} style={{
+                  flex: 1,
+                  background: step <= guiaPasoActivo ? 'linear-gradient(90deg, #6366f1, #a855f7)' : 'transparent',
+                  transition: 'background 0.3s ease'
+                }} />
+              ))}
+            </div>
+
+            {/* Contenido del Paso */}
+            <div style={{ padding: '30px 24px', flex: 1, overflowY: 'auto' }}>
+              
+              {guiaPasoActivo === 1 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '70px', height: '70px', borderRadius: '50%',
+                    background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.1)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                      <line x1="12" y1="18" x2="12.01" y2="18" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 10px', color: '#1e293b' }}>Paso 1: Usa la Cámara de tu Celular</h4>
+                  <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
+                    Para obtener la mejor resolución y evitar distorsiones en el visor esférico, utiliza la <strong>aplicación de cámara oficial</strong> que viene instalada en tu smartphone (iPhone o Android).
+                  </p>
+                </div>
+              )}
+
+              {guiaPasoActivo === 2 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '70px', height: '70px', borderRadius: '50%',
+                    background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(168, 85, 247, 0.1)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 10px', color: '#1e293b' }}>Paso 2: Activa el Modo "Panorámica"</h4>
+                  <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
+                    Abre tu cámara y desliza los modos de captura hasta encontrar <strong>"PANO" o "Panorámica"</strong>.<br/>
+                    Sujeta el teléfono en <strong>posición vertical (retrato)</strong>. Esto te dará un campo de visión vertical mucho más amplio y detallado del espacio.
+                  </p>
+                </div>
+              )}
+
+              {guiaPasoActivo === 3 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '70px', height: '70px', borderRadius: '50%',
+                    background: 'rgba(16, 185, 129, 0.1)', color: '#10b981',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(16, 185, 129, 0.1)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 10px', color: '#1e293b' }}>Paso 3: Gira despacio sobre tu propio Eje</h4>
+                  <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
+                    Párate en el centro de la habitación. Presiona el botón de captura y <strong>gira lentamente en círculo 360 grados</strong>.<br/>
+                    Intenta mantener el teléfono al mismo nivel y sigue la línea guía en pantalla para evitar costuras desalineadas o curvas.
+                  </p>
+                </div>
+              )}
+
+              {guiaPasoActivo === 4 && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: '70px', height: '70px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.3)'
+                  }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                  </div>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 10px', color: '#1e293b' }}>Paso 4: Guarda y Sube el archivo</h4>
+                  <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
+                    Tu celular procesará la imagen guardándola en tu galería con la proporción perfecta <strong>(proporción panorámica 2:1)</strong>.<br/>
+                    Presiona el botón de selección de fotos en esta pantalla, selecciónala y ¡listo! Nuestro motor 360° se encargará del resto de forma automática.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer / Controles */}
+            <div style={{
+              padding: '16px 24px',
+              borderTop: '1px solid rgba(99, 102, 241, 0.1)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              background: '#f8fafc'
+            }}>
+              {/* Botón Atrás */}
+              <button
+                type="button"
+                onClick={() => setGuiaPasoActivo(p => Math.max(1, p - 1))}
+                disabled={guiaPasoActivo === 1}
+                style={{
+                  background: 'transparent',
+                  color: guiaPasoActivo === 1 ? '#cbd5e1' : '#64748b',
+                  border: 'none',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: guiaPasoActivo === 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '4px'
+                }}
+              >
+                &larr; Atrás
+              </button>
+
+              {/* Indicadores de puntos */}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[1, 2, 3, 4].map(step => (
+                  <div
+                    key={step}
+                    onClick={() => setGuiaPasoActivo(step)}
+                    style={{
+                      width: guiaPasoActivo === step ? '20px' : '8px',
+                      height: '8px',
+                      borderRadius: '4px',
+                      background: guiaPasoActivo === step ? '#6366f1' : '#cbd5e1',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Botón Siguiente / Entendido */}
+              {guiaPasoActivo < 4 ? (
+                <button
+                  type="button"
+                  onClick={() => setGuiaPasoActivo(p => Math.min(4, p + 1))}
+                  style={{
+                    background: 'var(--color-primary, #6366f1)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 6px rgba(99, 102, 241, 0.15)'
+                  }}
+                >
+                  Siguiente &rarr;
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowGuiaModal(false)}
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)'
+                  }}
+                >
+                  ¡Entendido!
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showHorarioModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
