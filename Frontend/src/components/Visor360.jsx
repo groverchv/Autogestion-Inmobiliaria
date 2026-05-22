@@ -99,6 +99,7 @@ const Visor360 = ({ panoramas = [] }) => {
         type: 'equirectangular',
         panorama: escenaActiva.archivo,
         autoLoad: true,
+        crossOrigin: 'anonymous',
         autoRotate: -2,
         autoRotateInactivityDelay: 3000,
         compass: false,

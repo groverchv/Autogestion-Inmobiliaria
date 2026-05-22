@@ -182,12 +182,15 @@ class MultimediaViewSet(viewsets.ModelViewSet):
         )
         url = upload_data.get('secure_url')
 
+        descripcion = request.data.get('descripcion', '')
+
         # Crear el registro en base de datos con la URL absoluta
         media = Multimedia.objects.create(
             inmueble_id=inmueble_id,
             tipo=tipo,
             principal=es_principal,
-            archivo=url
+            archivo=url,
+            descripcion=descripcion
         )
         
         serializer = self.get_serializer(media)
