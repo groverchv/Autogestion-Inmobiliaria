@@ -276,7 +276,7 @@ const PropiedadDetalle = () => {
 
                   {/* ─── Visor 360° ────────────────────────────── */}
                   {panoramas360.length > 0 && (
-                    <Visor360 panoramas={panoramas360} />
+                    <Visor360 panoramas={panoramas360} tituloPropiedad={inmueble.titulo} />
                   )}
 
                   <div style={{ marginBottom: '32px' }}>

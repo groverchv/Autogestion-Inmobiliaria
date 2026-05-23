@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion
+from .models import TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion, Hotspot
 
 
 class TipoInmuebleSerializer(serializers.ModelSerializer):
@@ -8,10 +8,18 @@ class TipoInmuebleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class HotspotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hotspot
+        fields = ['id', 'inmueble', 'escena_origen', 'escena_destino', 'pitch', 'yaw', 'texto_ayuda']
+
+
 class MultimediaSerializer(serializers.ModelSerializer):
+    hotspots = HotspotSerializer(many=True, source='hotspots_salida', read_only=True)
+
     class Meta:
         model = Multimedia
-        fields = '__all__'
+        fields = ['id', 'inmueble', 'tipo', 'archivo', 'descripcion', 'principal', 'orden', 'subido', 'hotspots']
         read_only_fields = ['id', 'subido']
 
 

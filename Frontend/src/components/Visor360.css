@@ -352,3 +352,54 @@
     padding: 8px 12px;
   }
 }
+
+/* ─── Botón premium de inicio de recorrido ──────────────────────────── */
+.visor360__start-tour-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.visor360__start-tour-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+  background: linear-gradient(135deg, #5558e6, #7c4fe0);
+}
+
+.visor360__start-tour-btn:active {
+  transform: translateY(0);
+}
+
+.visor360__start-tour-icon {
+  animation: visor360-compass-wiggle 3s ease-in-out infinite;
+}
+
+@keyframes visor360-compass-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(15deg); }
+}
+
+@media (max-width: 600px) {
+  .visor360__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  
+  .visor360__start-tour-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

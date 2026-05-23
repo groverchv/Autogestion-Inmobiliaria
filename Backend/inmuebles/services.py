@@ -346,4 +346,5 @@ Usa un tono formal, legal y estructurado en p√°rrafos claros. Separa cada secci√
     buffer.close()
     return pdf_bytes
 
+
 

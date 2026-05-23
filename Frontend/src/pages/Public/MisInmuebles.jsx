@@ -20,6 +20,7 @@ import UserMenu from '../../components/UserMenu';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
+import EditorRecorrido from '../../components/EditorRecorrido';
 
 const LocationPicker = ({ position, setPosition }) => {
   useMapEvents({
@@ -50,6 +51,8 @@ const MisInmuebles = () => {
   const [meta360, setMeta360] = useState([]); // [{piso: 'Piso 1', habitacion: 'Sala'}, ...]
   const [showGuiaModal, setShowGuiaModal] = useState(false);
   const [guiaPasoActivo, setGuiaPasoActivo] = useState(1);
+  const [showEditorRecorrido, setShowEditorRecorrido] = useState(false);
+  const [editorInmueble, setEditorInmueble] = useState(null);
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -604,6 +607,26 @@ const MisInmuebles = () => {
                           title="Gestionar horarios de visita"
                         >
                           <Clock size={14} /> Horarios
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditorInmueble(inm);
+                            setShowEditorRecorrido(true);
+                          }}
+                          style={{
+                            background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)',
+                            borderRadius: '8px', padding: '8px 6px', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                            color: '#6366f1', fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s',
+                          }}
+                          title="Gestionar recorrido virtual 3D y hotspots con IA"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                            <path d="M2 12h20" />
+                          </svg>
+                          Recorrido 3D
                         </button>
                         <button
                           onClick={() => handleEdit(inm)}
@@ -1715,6 +1738,17 @@ const MisInmuebles = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showEditorRecorrido && editorInmueble && (
+        <EditorRecorrido
+          inmuebleId={editorInmueble.id}
+          tituloPropiedad={editorInmueble.titulo}
+          onClose={() => {
+            setShowEditorRecorrido(false);
+            setEditorInmueble(null);
+          }}
+        />
       )}
     </div>
   );

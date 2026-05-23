@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Maximize2, Layers } from 'lucide-react';
+import { Maximize2, Layers, Compass } from 'lucide-react';
+import 'pannellum/build/pannellum.css';
+import 'pannellum';
+import ModalRecorrido3D from './ModalRecorrido3D';
 import './Visor360.css';
-
 /**
  * Visor360 — Componente de exploración inmersiva con panoramas 360°.
  *
@@ -15,7 +17,8 @@ import './Visor360.css';
  *
  * @param {{ panoramas: Array<{id: number, archivo: string, descripcion: string}> }} props
  */
-const Visor360 = ({ panoramas = [] }) => {
+const Visor360 = ({ panoramas = [], tituloPropiedad = '' }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const viewerRef = useRef(null);
   const viewerInstanceRef = useRef(null);
   const [pisoActivo, setPisoActivo] = useState('');
@@ -71,6 +74,9 @@ const Visor360 = ({ panoramas = [] }) => {
     }
   }, [habitacionesDelPiso]);
 
+  // ─── Referencia para el ObjectURL del Blob ───────────────────────────
+  const objectUrlRef = useRef(null);
+
   // ─── Inicializar / Actualizar Pannellum ──────────────────────────────
   const inicializarVisor = useCallback(async () => {
     if (!escenaActiva || !viewerRef.current) return;
@@ -87,17 +93,46 @@ const Visor360 = ({ panoramas = [] }) => {
       viewerInstanceRef.current = null;
     }
 
+    // Liberar ObjectURL previo
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+
     try {
-      // Importar Pannellum dinámicamente (evita problemas SSR)
-      const pannellumModule = await import('pannellum');
-      const pannellum = pannellumModule.default || pannellumModule;
+      // 1. Descargar la imagen como Blob para evadir la caché restrictiva (CORS) de Chrome
+      // Se fuerza 'reload' para ignorar respuestas de caché sin headers CORS
+      const imageUrl = escenaActiva.archivo;
+      let panoramaUrl = '';
 
-      // Importar CSS de Pannellum
-      await import('pannellum/build/pannellum.css');
+      if (imageUrl) {
+        try {
+          const response = await fetch(imageUrl, {
+            cache: 'reload',
+            mode: 'cors'
+          });
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          objectUrlRef.current = objectUrl;
+          panoramaUrl = objectUrl;
+        } catch (fetchError) {
+          console.warn('Fallo el fetch con CORS estricto, intentando URL directa:', fetchError);
+          // Fallback a la URL directa con timestamp si el fetch estricto falla (ej. problemas de red locales)
+          panoramaUrl = `${imageUrl}?cb=${new Date().getTime()}`;
+        }
+      }
 
-      viewerInstanceRef.current = pannellum.viewer(viewerRef.current, {
+      // 4. Inicializar Visor
+      // Pannellum se inyecta globalmente en window.pannellum
+      if (!window.pannellum) {
+        throw new Error('Pannellum no se inicializó correctamente en el objeto window');
+      }
+      
+      if (!viewerRef.current) return;
+
+      viewerInstanceRef.current = window.pannellum.viewer(viewerRef.current, {
         type: 'equirectangular',
-        panorama: escenaActiva.archivo ? `${escenaActiva.archivo}?cb=${new Date().getTime()}` : '',
+        panorama: panoramaUrl,
         autoLoad: true,
         crossOrigin: 'anonymous',
         autoRotate: -2,
@@ -139,6 +174,10 @@ const Visor360 = ({ panoramas = [] }) => {
         }
         viewerInstanceRef.current = null;
       }
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
     };
   }, [inicializarVisor]);
 
@@ -178,11 +217,27 @@ const Visor360 = ({ panoramas = [] }) => {
             <path d="M2 12h20" />
           </svg>
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <h2>Recorrido Virtual 360°</h2>
           <p>Explora el inmueble arrastrando la imagen con el mouse o tocando la pantalla</p>
         </div>
+        <button
+          className="visor360__start-tour-btn"
+          onClick={() => setIsModalOpen(true)}
+          type="button"
+        >
+          <Compass size={16} className="visor360__start-tour-icon" />
+          Iniciar recorrido virtual
+        </button>
       </div>
+
+      {isModalOpen && (
+        <ModalRecorrido3D
+          panoramas={panoramas}
+          tituloPropiedad={tituloPropiedad}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
 
       {/* Selector de pisos (solo si hay más de 1) */}
       {tieneMasDeUnPiso && (

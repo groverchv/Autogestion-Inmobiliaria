@@ -41,6 +41,7 @@ from .views import (
     FavoritoViewSet,
     CitaViewSet,
     HorarioDisponibleViewSet,
+    HotspotViewSet,
 )
 
 router = DefaultRouter()
@@ -56,6 +57,7 @@ router.register(r'comisiones',      ComisionViewSet)
 router.register(r'favoritos',       FavoritoViewSet,        basename='favoritos')
 router.register(r'citas',           CitaViewSet,            basename='citas')
 router.register(r'horarios',        HorarioDisponibleViewSet, basename='horarios')
+router.register(r'hotspots',        HotspotViewSet,         basename='hotspots')
 
 # ─── Rutas del panel admin ────────────────────────────────────────────────────
 router.register(r'panel/tipos',     TipoInmuebleViewSet,    basename='panel-tipos')
@@ -65,6 +67,7 @@ router.register(r'panel/contratos', ContratoViewSet,        basename='panel-cont
 router.register(r'panel/tipos-contrato', TipoContratoViewSet, basename='panel-tipos-contrato')
 router.register(r'panel/citas',     CitaViewSet,            basename='panel-citas')
 router.register(r'panel/horarios',  HorarioDisponibleViewSet, basename='panel-horarios')
+router.register(r'panel/hotspots',  HotspotViewSet,         basename='panel-hotspots')
 
 urlpatterns = [
     path('', include(router.urls)),

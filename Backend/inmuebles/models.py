@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 
 class TipoInmueble(models.Model):
@@ -128,16 +129,81 @@ class Multimedia(models.Model):
     archivo = models.CharField(max_length=500, help_text='URL de Cloudinary o ruta')
     descripcion = models.CharField(max_length=200, blank=True)
     principal = models.BooleanField(default=False)
+    orden = models.PositiveIntegerField(default=0, help_text="Orden de visualización")
     subido = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'inmuebles_multimedia'
         verbose_name = 'Multimedia'
         verbose_name_plural = 'Multimedia'
-        ordering = ['-principal', '-subido']
+        ordering = ['orden', '-principal', '-subido']
 
     def __str__(self):
         return f'{self.tipo} — {self.inmueble.titulo}'
+
+
+class Hotspot(models.Model):
+    """
+    Define un punto de transición espacial interactivo (hotspot)
+    desde un panorama de origen hacia otro panorama de destino.
+    """
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='hotspots',
+        help_text="Inmueble al que pertenece el recorrido"
+    )
+    escena_origen = models.ForeignKey(
+        Multimedia,
+        on_delete=models.CASCADE,
+        related_name='hotspots_salida',
+        help_text="Panorama de origen donde se dibuja el hotspot (debe ser tipo panorama360)"
+    )
+    escena_destino = models.ForeignKey(
+        Multimedia,
+        on_delete=models.CASCADE,
+        related_name='hotspots_entrada',
+        help_text="Panorama destino al cual viajará el visor al hacer clic"
+    )
+
+    # Coordenadas esféricas de Pannellum
+    pitch = models.FloatField(
+        help_text="Ángulo vertical (-90 a 90 grados)"
+    )
+    yaw = models.FloatField(
+        help_text="Ángulo horizontal (-180 a 180 grados)"
+    )
+
+    # Metadatos del hotspot
+    texto_ayuda = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Texto informativo que aparece al pasar el cursor (tooltip), ej: 'Ir a Cocina'"
+    )
+
+    class Meta:
+        db_table = 'inmuebles_hotspot'
+        verbose_name = 'Punto de Transición (Hotspot)'
+        verbose_name_plural = 'Puntos de Transición (Hotspots)'
+        unique_together = ('escena_origen', 'escena_destino')
+
+    def clean(self):
+        # Regla de Integridad de Dominio (SOLID / Validación Temprana)
+        if self.escena_origen.tipo != Multimedia.TipoArchivo.PANORAMA360:
+            raise ValidationError("La escena de origen debe ser un panorama 360°.")
+        if self.escena_destino.tipo != Multimedia.TipoArchivo.PANORAMA360:
+            raise ValidationError("La escena de destino debe ser un panorama 360°.")
+        if self.escena_origen.inmueble != self.inmueble or self.escena_destino.inmueble != self.inmueble:
+            raise ValidationError("Ambos panoramas deben pertenecer al mismo inmueble.")
+        if self.escena_origen == self.escena_destino:
+            raise ValidationError("No se puede crear un hotspot que apunte a la misma escena de origen.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"Hotspot: {self.escena_origen.descripcion} -> {self.escena_destino.descripcion}"
 
 
 class Publicacion(models.Model):

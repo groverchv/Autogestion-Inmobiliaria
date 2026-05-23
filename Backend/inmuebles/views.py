@@ -3,12 +3,12 @@ from rest_framework import viewsets, permissions, status, filters
 # pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
 from .models import (
     TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato,
-    Contrato, Comision, Favorito, Cita, HorarioDisponible,
+    Contrato, Comision, Favorito, Cita, HorarioDisponible, Hotspot,
 )
 from .serializers import (
     TipoInmuebleSerializer,
@@ -22,6 +22,7 @@ from .serializers import (
     FavoritoSerializer,
     CitaSerializer,
     HorarioDisponibleSerializer,
+    HotspotSerializer,
 )
 from django.db import models as dj_models
 from .services import (
@@ -153,7 +154,7 @@ class MultimediaViewSet(viewsets.ModelViewSet):
     """CRUD para multimedia de inmuebles."""
     queryset = Multimedia.objects.all()
     serializer_class = MultimediaSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
         import cloudinary
@@ -195,6 +196,47 @@ class MultimediaViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(media)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class HotspotViewSet(viewsets.ModelViewSet):
+    """CRUD para puntos de transición (hotspots) entre panoramas."""
+    queryset = Hotspot.objects.select_related('inmueble', 'escena_origen', 'escena_destino').all()
+    serializer_class = HotspotSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_permissions(self):
+        # Permitir leer de forma pública
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        # Permitir filtrar por inmueble en consultas públicas
+        inmueble_id = self.request.query_params.get('inmueble')
+        if inmueble_id:
+            return Hotspot.objects.filter(inmueble_id=inmueble_id)
+        return Hotspot.objects.all()
+
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        inmueble = serializer.validated_data['inmueble']
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise DRFValidationError("No tienes autorización para editar el recorrido de este inmueble.")
+        serializer.save()
+
+    def perform_update(self, serializer):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        inmueble = serializer.instance.inmueble
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise DRFValidationError("No tienes autorización para editar el recorrido de este inmueble.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        if instance.inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise DRFValidationError("No tienes autorización para eliminar este punto de transición.")
+        instance.delete()
 
 
 class TipoContratoViewSet(viewsets.ModelViewSet):
