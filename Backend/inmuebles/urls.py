@@ -41,6 +41,8 @@ from .views import (
     CitaViewSet,
     HorarioDisponibleViewSet,
     VerificacionTituloViewSet,
+    BlockchainHistorialView,
+    BlockchainStatsView,
 )
 
 router = DefaultRouter()
@@ -67,5 +69,7 @@ router.register(r'panel/citas',     CitaViewSet,            basename='panel-cita
 router.register(r'panel/horarios',  HorarioDisponibleViewSet, basename='panel-horarios')
 
 urlpatterns = [
+    path('blockchain/stats/', BlockchainStatsView.as_view(), name='blockchain-stats'),
+    path('blockchain/historial/<str:asset_id>/', BlockchainHistorialView.as_view(), name='blockchain-historial'),
     path('', include(router.urls)),
 ]

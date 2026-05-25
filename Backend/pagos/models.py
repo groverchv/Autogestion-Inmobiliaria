@@ -62,6 +62,27 @@ class Pago(models.Model):
         verbose_name_plural = 'Pagos'
         ordering = ['-fecha']
 
+    def save(self, *args, **kwargs):
+        # Primero guardamos en la base de datos local
+        super().save(*args, **kwargs)
+        
+        # Sincronización asíncrona a Blockchain si fue completado
+        if self.estado == 'completado':
+            try:
+                from inmuebles.blockchain_service import BlockchainService
+                BlockchainService.registrar_pago(
+                    pago_id=self.id,
+                    contrato_id=self.contrato.id,
+                    monto=self.monto,
+                    fecha_str=self.fecha,
+                    tipo_pago=self.tipo_pago.nombre if self.tipo_pago else "Efectivo",
+                    transaction_id=self.referencia
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Error sincronizando pago {self.id} con Blockchain: {str(e)}")
+
     def __str__(self):
         return f'Pago #{self.id} — {self.monto} Bs'
 

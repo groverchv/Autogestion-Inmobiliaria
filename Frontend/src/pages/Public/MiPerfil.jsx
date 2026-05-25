@@ -1,22 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
 import useAuth from '../../hooks/useAuth';
 import './Propiedades.css';
 
 const MiPerfil = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
 
   // Avatar por defecto incrustado si no hay foto
   const defaultAvatar = `https://ui-avatars.com/api/?name=${user?.first_name || 'U'}+${user?.last_name || 'X'}&background=0ea5e9&color=fff&size=200`;
 
   return (
-    <div className="propiedades-page">
-      <Navbar />
-      {isAuthenticated && user?.rol !== 'admin' && (
-        <UserMenu />
-      )}
+    <div className="propiedades-page" style={{ paddingTop: '20px' }}>
       
       <div className="propiedades-content" style={{ maxWidth: '600px', margin: '0 auto' }}>
         <div className="propiedad-card" style={{ padding: '24px' }}>

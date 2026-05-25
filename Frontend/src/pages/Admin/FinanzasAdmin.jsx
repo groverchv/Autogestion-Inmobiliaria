@@ -415,7 +415,7 @@ const FinanzasAdmin = () => {
       <div className="pdf-charts-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
         
         {/* Main Chart */}
-        <div className="pdf-chart-bar" style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', gridColumn: 'span 2' }}>
+        <div className="pdf-chart-bar" style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', gridColumn: 'span 2', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
             <TrendingUp size={20} color="#0ea5e9" />
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
@@ -423,11 +423,11 @@ const FinanzasAdmin = () => {
             </h2>
           </div>
 
-          <div style={{ height: 300, width: '100%' }}>
+          <div style={{ height: 300, width: '100%', minWidth: 0 }}>
             {loading ? (
               <Skeleton width="100%" height="100%" borderRadius="8px" />
             ) : reportData?.grafico_evolucion?.length > 0 ? (
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={reportData?.grafico_evolucion}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis
@@ -473,21 +473,21 @@ const FinanzasAdmin = () => {
             )}
           </div>
         </div>
-
+ 
         {/* Pie Chart */}
-        <div className="pdf-chart-pie" style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px' }}>
+        <div className="pdf-chart-pie" style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
             <FileText size={20} color="#8b5cf6" />
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
               Ingresos por Tipo de Contrato
             </h2>
           </div>
-
-          <div style={{ height: 300, width: '100%' }}>
+ 
+          <div style={{ height: 300, width: '100%', minWidth: 0 }}>
             {loading ? (
               <Skeleton width="100%" height="100%" borderRadius="8px" />
             ) : reportData?.grafico_contratos?.length > 0 ? (
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart margin={{ top: 0, right: 30, bottom: 0, left: 30 }}>
                   <Pie
                     data={reportData?.grafico_contratos}

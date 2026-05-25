@@ -23,7 +23,7 @@ const DashboardAdmin = () => {
           api.get('/usuarios/lista/').then(r => r.data).catch(() => []),
           api.get('/inmuebles/lista/').then(r => r.data).catch(() => []),
           api.get('/inmuebles/contratos/').then(r => r.data).catch(() => []),
-          api.get('/pagos/pagos/').then(r => r.data).catch(() => []),
+          api.get('/pagos/lista/').then(r => r.data).catch(() => []),
           api.get('/inmuebles/tipos/').then(r => r.data).catch(() => []),
           api.get('/usuarios/notificaciones/').then(r => r.data).catch(() => []),
           api.get('/usuarios/agenda/').then(r => r.data).catch(() => []),

@@ -95,6 +95,8 @@ class InmuebleViewSet(viewsets.ModelViewSet):
         
         if self.request.path.startswith('/api/inmuebles/panel/'):
             if user.is_authenticated:
+                if self.request.query_params.get('personal') == 'true':
+                    return qs.filter(propietario=user)
                 if user.is_staff or user.rol == 'admin':
                     return qs.all()
                 return qs.filter(propietario=user)
@@ -462,7 +464,7 @@ class HorarioDisponibleViewSet(viewsets.ModelViewSet):
                 )
             return qs
 
-        if user.is_staff or user.rol == 'admin':
+        if (user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return HorarioDisponible.objects.all()
         return HorarioDisponible.objects.filter(propietario=user)
 
@@ -547,7 +549,7 @@ class CitaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff or user.rol == 'admin':
+        if (user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return Cita.objects.select_related(
                 'inmueble', 'cliente', 'propietario'
             ).all()
@@ -657,7 +659,7 @@ class VerificacionTituloViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        if self.request.user.is_staff or self.request.user.rol == 'admin':
+        if (self.request.user.is_staff or self.request.user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return VerificacionTitulo.objects.all()
         return VerificacionTitulo.objects.filter(inmueble__propietario=self.request.user)
 
@@ -723,4 +725,41 @@ class VerificacionTituloViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except VerificacionTitulo.DoesNotExist:
             return Response({'estado': 'no_solicitado', 'mensaje': 'No se ha solicitado verificación para este inmueble.'})
+
+
+from rest_framework.views import APIView
+from .blockchain_service import BlockchainService
+
+class BlockchainHistorialView(APIView):
+    """
+    Vista de API para obtener la traza de auditoría inmutable de Blockchain de cualquier activo.
+    Exclusivo para usuarios autenticados.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, asset_id, format=None):
+        try:
+            historial = BlockchainService.obtener_historial(asset_id)
+            return Response(historial, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BlockchainStatsView(APIView):
+    """
+    Vista de API para obtener las estadísticas generales de la Blockchain para el Admin.
+    Exclusivo para administradores.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, format=None):
+        try:
+            if request.user.rol != 'admin':
+                return Response({"error": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
+            stats_data = BlockchainService.obtener_stats()
+            if stats_data:
+                return Response(stats_data, status=status.HTTP_200_OK)
+            return Response({"error": "No se pudo conectar con el Blockchain Gateway."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

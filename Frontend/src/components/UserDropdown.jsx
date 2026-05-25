@@ -43,6 +43,9 @@ const UserDropdown = () => {
           aria-haspopup="true"
           aria-expanded={isOpen}
         >
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', paddingLeft: '6px' }}>
+            {user?.first_name} {user?.last_name}
+          </span>
           <img 
             src={user?.foto || defaultAvatar} 
             alt="Avatar del usuario" 

@@ -74,11 +74,7 @@ const PropiedadDetalle = () => {
     }
   };
 
-  const shareWhatsApp = () => {
-    const text = `Mira este inmueble: ${inmueble.titulo} - Bs. ${inmueble.precio}. ${window.location.href}`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
-  };
+
 
   const estadoColors = {
     disponible: { bg: '#dcfce7', color: '#15803d' },
@@ -134,12 +130,12 @@ const PropiedadDetalle = () => {
     <div className="propiedades-page">
       <Navbar />
 
-      {isAuthenticated && user?.rol !== 'admin' && (
+      {isAuthenticated && (
         <UserMenu />
       )}
 
       <div className="propiedades-content" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        <Link to="/propiedades" style={{ display: 'inline-block', marginBottom: '20px', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Link to="/propiedades" style={{ marginBottom: '20px', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ChevronLeft size={18} /> Volver al catálogo
         </Link>
 

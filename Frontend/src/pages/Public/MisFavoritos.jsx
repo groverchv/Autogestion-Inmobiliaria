@@ -9,7 +9,7 @@ import './Propiedades.css';
 const MisFavoritos = () => {
   const [inmuebles, setInmuebles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -41,12 +41,7 @@ const MisFavoritos = () => {
   };
 
   return (
-    <div className="propiedades-page">
-      <Navbar />
-
-      {isAuthenticated && user?.rol !== 'admin' && (
-        <UserMenu />
-      )}
+    <div className="propiedades-page" style={{ paddingTop: '20px' }}>
 
       <div className="propiedades-content">
         {loading ? (

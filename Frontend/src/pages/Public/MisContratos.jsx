@@ -3,6 +3,8 @@ import { FileText, Eye, ChevronDown, ChevronUp, CheckCircle, XCircle, Clock, Ale
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
 import Modal from '../../components/Modal';
+import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
+import useAlertConfirm from '../../hooks/useAlertConfirm';
 import useAuth from '../../hooks/useAuth';
 import contratoService from '../../services/contratoService';
 import './Propiedades.css';
@@ -20,6 +22,7 @@ const estadoConfig = {
 
 const MisContratos = () => {
   const { isAuthenticated, user } = useAuth();
+  const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
   const [contratos, setContratos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedContrato, setSelectedContrato] = useState(null);
@@ -44,9 +47,7 @@ const MisContratos = () => {
   }
 
   return (
-    <div className="propiedades-page">
-      <Navbar />
-      <UserMenu />
+    <div className="propiedades-page" style={{ paddingTop: '20px' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
@@ -113,13 +114,22 @@ const MisContratos = () => {
 
       {/* Modal de detalle del contrato */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Detalle del Contrato">
-        {selectedContrato && <ContratoDetalle contrato={selectedContrato} user={user} onUpdate={() => { fetchContratos(); setShowModal(false); }} />}
+        {selectedContrato && (
+          <ContratoDetalle 
+            contrato={selectedContrato} 
+            user={user} 
+            onUpdate={() => { fetchContratos(); setShowModal(false); }} 
+            showAlert={showAlert}
+            showConfirm={showConfirm}
+          />
+        )}
       </Modal>
+      {ModalComponent}
     </div>
   );
 };
 
-const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
+const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }) => {
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -146,31 +156,79 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
       }, 2000);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Error al descargar el PDF');
+      showAlert({ title: 'Error de descarga', message: 'No se pudo descargar el contrato en formato PDF.', status: 'error' });
     }
   };
 
   const esCliente = c.inquilino === user?.id;
   const puedeAceptar = esCliente && c.estado === 'enviado';
-  const puedeRechazar = esCliente && c.estado === 'enviado';
 
-  const handleAceptar = async () => {
-    setActionLoading(true);
-    try {
-      await contratoService.aceptar(c.id);
-      onUpdate();
-    } catch (e) { alert(e.response?.data?.error || 'Error'); }
-    finally { setActionLoading(false); }
+  const handleAceptar = () => {
+    showConfirm({
+      title: '¿Aceptar y Firmar Contrato?',
+      message: '¿Estás seguro de que deseas aceptar los términos y condiciones de este contrato? Al aceptar, se registrarán automáticamente tus firmas criptográficas digitales en la Blockchain.',
+      status: 'question',
+      confirmText: 'Sí, aceptar y firmar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          await contratoService.aceptar(c.id);
+          showAlert({
+            title: '¡Contrato Firmado!',
+            message: 'Has firmado y aceptado el contrato exitosamente. Sus bloques e historial digital se han sellado de forma inmutable en la Blockchain.',
+            status: 'success'
+          });
+          onUpdate();
+        } catch (e) {
+          showAlert({
+            title: 'Error al firmar',
+            message: e.response?.data?.error || 'No se pudo firmar el contrato.',
+            status: 'error'
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    });
   };
 
-  const handleRechazar = async () => {
-    if (!motivoRechazo.trim()) { alert('Ingresa un motivo de rechazo'); return; }
-    setActionLoading(true);
-    try {
-      await contratoService.rechazar(c.id, motivoRechazo);
-      onUpdate();
-    } catch (e) { alert(e.response?.data?.error || 'Error'); }
-    finally { setActionLoading(false); }
+  const handleRechazar = () => {
+    if (!motivoRechazo.trim()) {
+      showAlert({
+        title: 'Motivo Requerido',
+        message: 'Por favor, ingresa un motivo para rechazar el borrador de contrato.',
+        status: 'warning'
+      });
+      return;
+    }
+    showConfirm({
+      title: '¿Rechazar Contrato?',
+      message: '¿Estás seguro de que deseas rechazar este borrador? Se notificará al propietario con tus observaciones.',
+      status: 'warning',
+      confirmText: 'Sí, rechazar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          await contratoService.rechazar(c.id, motivoRechazo);
+          showAlert({
+            title: 'Contrato Devuelto',
+            message: 'Has rechazado el contrato. Se ha notificado al propietario con tus observaciones.',
+            status: 'info'
+          });
+          onUpdate();
+        } catch (e) {
+          showAlert({
+            title: 'Error al rechazar',
+            message: e.response?.data?.error || 'No se pudo rechazar el contrato.',
+            status: 'error'
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    });
   };
 
   const [isGeneratingIA, setIsGeneratingIA] = useState(false);
@@ -230,7 +288,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
     try {
       const respuesta = await contratoService.chatIA(c.id, nuevosMensajes);
       setChatMensajes(prev => [...prev, { role: 'assistant', content: respuesta }]);
-    } catch (err) {
+    } catch {
       setChatMensajes(prev => [...prev, {
         role: 'assistant',
         content: '❌ Ocurrió un error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
@@ -274,7 +332,11 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
       }, 2000);
     } catch (error) {
       console.error('Error generando PDF con IA:', error);
-      alert('Hubo un error al contactar a la Inteligencia Artificial. Intenta de nuevo.');
+      showAlert({
+        title: 'Error de Asistente IA',
+        message: 'Hubo un error al contactar a la Inteligencia Artificial para la redacción legal del contrato.',
+        status: 'error'
+      });
     } finally {
       setIsGeneratingIA(false);
     }
@@ -351,6 +413,11 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
       {c.observaciones && <div style={sectionStyle}><div style={titleStyle}>Observaciones</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.observaciones}</div></div>}
       {c.motivo_rechazo && <div style={sectionStyle}><div style={titleStyle}>Motivo de Rechazo</div><div style={{ fontSize: '0.88rem', color: '#dc2626', whiteSpace: 'pre-wrap', background: '#fee2e2', padding: '12px', borderRadius: '8px' }}>{c.motivo_rechazo}</div></div>}
 
+      {/* Trazabilidad inmutable en Blockchain */}
+      <div style={{ marginTop: '24px', borderTop: '2px solid #e2e8f0', paddingTop: '20px', marginBottom: '20px' }}>
+        <BlockchainAuditTrail assetId={`CON-${c.id}`} />
+      </div>
+
       {/* Acciones del cliente */}
       {puedeAceptar && (
         <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '16px', marginTop: '16px' }}>
@@ -425,7 +492,6 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '0.6rem', fontWeight: 800, color: '#fff',
                 boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                flexShrink: 0,
               }}>
                 {msg.role === 'user' ? 'Tú' : <Bot size={13} />}
               </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
+import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
 import { 
   CreditCard, 
   Search, 
@@ -27,7 +28,7 @@ const MisPagos = () => {
 
   const fetchPagos = async () => {
     try {
-      const res = await api.get('/pagos/lista/');
+      const res = await api.get('/pagos/lista/?personal=true');
       setPagos(res.data.results || res.data);
     } catch (err) {
       console.error("Error fetching pagos:", err);
@@ -51,9 +52,7 @@ const MisPagos = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      <Navbar />
-      <UserMenu />
+    <div style={{ paddingTop: '20px' }}>
       
       <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
         <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -181,7 +180,8 @@ const MisPagos = () => {
           <div style={{
             background: '#fff', width: '95%', maxWidth: '720px', borderRadius: '32px',
             overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
-            animation: 'modalSlideUp 0.4s ease-out'
+            animation: 'modalSlideUp 0.4s ease-out',
+            maxHeight: '90vh', display: 'flex', flexDirection: 'column'
           }}>
             <div style={{ 
               padding: '48px 48px 32px', textAlign: 'center', 
@@ -212,7 +212,7 @@ const MisPagos = () => {
               <p style={{ color: '#64748b', margin: '8px 0 0', fontWeight: 500, fontSize: '1.1rem' }}>Autogestión Inmobiliaria - Bolivia</p>
             </div>
 
-            <div style={{ padding: '40px 48px' }}>
+            <div style={{ padding: '40px 48px', overflowY: 'auto', flex: 1 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', borderBottom: '1px solid #f1f5f9', paddingBottom: '24px' }}>
@@ -264,6 +264,11 @@ const MisPagos = () => {
                     Bs {parseFloat(pagoSeleccionado.monto).toLocaleString('es-BO')}
                   </span>
                 </div>
+              </div>
+
+              {/* Trazabilidad inmutable en Blockchain */}
+              <div style={{ marginTop: '24px', borderTop: '1px dashed #cbd5e1', paddingTop: '20px', marginBottom: '10px' }}>
+                <BlockchainAuditTrail assetId={`PAG-${pagoSeleccionado.id}`} />
               </div>
 
               <div style={{ marginTop: '40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>

@@ -93,7 +93,7 @@ class AgendaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff or user.rol == 'admin':
+        if (user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return Agenda.objects.all()
         return Agenda.objects.filter(usuario=user)
 
@@ -111,7 +111,7 @@ class NotificacionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Notificacion.objects.all() if (user.is_staff or user.rol == 'admin') else Notificacion.objects.filter(usuario=user)
+        qs = Notificacion.objects.all() if ((user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true') else Notificacion.objects.filter(usuario=user)
         
         # Filtrar por origen si se especifica
         origen = self.request.query_params.get('origen')

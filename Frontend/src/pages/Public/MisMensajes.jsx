@@ -28,6 +28,7 @@ import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
 import Modal from '../../components/Modal';
 import useAuth from '../../hooks/useAuth';
+import useAlertConfirm from '../../hooks/useAlertConfirm';
 import api from '../../services/api';
 import pagoService from '../../services/pagoService';
 import { API_BASE_URL } from '../../config';
@@ -35,6 +36,7 @@ import './Propiedades.css';
 
 const MisMensajes = () => {
   const { isAuthenticated, user } = useAuth();
+  const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [mensajes, setMensajes] = useState([]);
@@ -51,6 +53,7 @@ const MisMensajes = () => {
   const [pagoForm, setPagoForm] = useState({ contrato_id: '', monto: '', tipo_operacion: 'mensualidad', descripcion: '', moneda: 'usd' });
   const [pagoLoading, setPagoLoading] = useState(false);
   const [esOwner, setEsOwner] = useState(false);
+  const [contratoLoading, setContratoLoading] = useState(false);
 
   // ─── Estado de Contrato ────────────────────────────────────
   const [showContratoModal, setShowContratoModal] = useState(false);
@@ -70,12 +73,10 @@ const MisMensajes = () => {
     incluye_servicios: '',
     dia_pago: '1'
   });
-  const [contratoLoading, setContratoLoading] = useState(false);
   
   // Notificaciones Profesionales (Reemplazo de alert)
-  const [statusModal, setStatusModal] = useState({ show: false, title: '', message: '', type: 'info' });
   const mostrarMensaje = (title, message, type = 'info') => {
-    setStatusModal({ show: true, title, message, type });
+    showAlert({ title, message, status: type === 'success' ? 'success' : type === 'error' ? 'error' : 'info' });
   };
 
   const location = useLocation();
@@ -98,7 +99,7 @@ const MisMensajes = () => {
     }
   }, []);
 
-  const fetchMensajes = useCallback(async (chatId, silent = false) => {
+  const fetchMensajes = useCallback(async (chatId) => {
     if (chatId === 'temp') {
       setMensajes([]);
       return;
@@ -141,7 +142,7 @@ const MisMensajes = () => {
 
   // Crear chat con propietario si viene desde PropiedadDetalle
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
     const searchParams = new URLSearchParams(location.search);
     const propietarioId = searchParams.get('propietarioId');
     const inmuebleId = searchParams.get('inmuebleId');
@@ -161,13 +162,14 @@ const MisMensajes = () => {
       };
       setSelectedChat(tempChat);
     }
-  }, [location.search, isAuthenticated, user?.id]);
+  }, [location.search, isAuthenticated, user]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchChats();
     const interval = setInterval(fetchChats, 5000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -184,6 +186,7 @@ const MisMensajes = () => {
     }, 3000);
     
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChat?.id, isAuthenticated]);
 
   useEffect(() => {
@@ -205,7 +208,7 @@ const MisMensajes = () => {
       setChats((prev) => [newChat, ...prev.filter((c) => c.id !== 'temp')]);
       return newChat.id;
     } catch {
-      alert('Error iniciando chat');
+      showAlert({ title: 'Error de Chat', message: 'No se pudo iniciar la conversación en este momento.', status: 'error' });
       return null;
     }
   };
@@ -227,7 +230,11 @@ const MisMensajes = () => {
       await fetchMensajes(currentChatId);
       await fetchChats();
     } catch (err) {
-      alert(err.response?.data?.error || 'Error enviando mensaje');
+      showAlert({
+        title: 'Error de Envío',
+        message: err.response?.data?.error || 'No se pudo enviar el mensaje. Inténtalo de nuevo.',
+        status: 'error'
+      });
     }
   };
 
@@ -252,36 +259,44 @@ const MisMensajes = () => {
       await fetchMensajes(currentChatId);
       await fetchChats();
     } catch {
-      alert('Error subiendo archivo');
+      showAlert({ title: 'Error de subida', message: 'No se pudo subir el archivo seleccionado.', status: 'error' });
     }
 
     e.target.value = '';
   };
 
-  const handleSendLocation = async () => {
-    if (!window.confirm('¿Deseas compartir tu ubicación actual en este chat?')) return;
-    if (!navigator.geolocation) {
-      alert('Tu navegador no soporta geolocalización');
-      return;
-    }
+  const handleSendLocation = () => {
+    showConfirm({
+      title: '¿Compartir Ubicación?',
+      message: '¿Deseas compartir tu ubicación GPS actual en este chat con la otra parte?',
+      status: 'question',
+      confirmText: 'Compartir',
+      cancelText: 'Cancelar',
+      onConfirm: () => {
+        if (!navigator.geolocation) {
+          showAlert({ title: 'No soportado', message: 'Tu navegador no soporta geolocalización.', status: 'warning' });
+          return;
+        }
 
-    const currentChatId = await ensureChatExists();
-    if (!currentChatId) return;
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const currentChatId = await ensureChatExists();
+            if (!currentChatId) return;
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const gps = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-        await api.post('/usuarios/mensajes/', {
-          chat: currentChatId,
-          tipo: 'ubicacion',
-          contenido: 'Ubicación compartida',
-          ubicacion: gps,
-        });
-        await fetchMensajes(currentChatId);
-        await fetchChats();
-      },
-      () => alert('Error obteniendo ubicación')
-    );
+            const gps = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+            await api.post('/usuarios/mensajes/', {
+              chat: currentChatId,
+              tipo: 'ubicacion',
+              contenido: 'Ubicación compartida',
+              ubicacion: gps,
+            });
+            await fetchMensajes(currentChatId);
+            await fetchChats();
+          },
+          () => showAlert({ title: 'Error GPS', message: 'No se pudo obtener tu ubicación actual.', status: 'error' })
+        );
+      }
+    });
   };
 
   const abrirModalWhatsapp = () => {
@@ -292,7 +307,7 @@ const MisMensajes = () => {
   const confirmarWhatsapp = async () => {
     const limpio = whatsappNumero.replace(/[^\d+]/g, '');
     if (limpio.length < 8) {
-      alert('Ingresa un número de WhatsApp válido.');
+      showAlert({ title: 'Número inválido', message: 'Ingresa un número de WhatsApp válido de al menos 8 dígitos.', status: 'warning' });
       return;
     }
 
@@ -308,22 +323,30 @@ const MisMensajes = () => {
       const res = await api.post('/usuarios/bloqueos/toggle/', { bloqueado: otherUserId });
       setIsBlocked(!!res.data.bloqueado);
       fetchChats();
-      mostrarMensaje('Usuario Bloqueado', 'Se ha actualizado el estado de bloqueo correctamente.', 'success');
+      showAlert({ title: 'Usuario Bloqueado', message: 'Se ha actualizado el estado de bloqueo correctamente.', status: 'success' });
     } catch {
-      mostrarMensaje('Error', 'No se pudo actualizar el estado de bloqueo.', 'error');
+      showAlert({ title: 'Error', message: 'No se pudo actualizar el estado de bloqueo.', status: 'error' });
     }
   };
 
-  const handleDeleteChat = async () => {
-    if (!window.confirm('¿Estás seguro de eliminar este chat para todos?')) return;
-    try {
-      await api.delete(`/usuarios/chats/${selectedChat.id}/`);
-      setSelectedChat(null);
-      fetchChats();
-      mostrarMensaje('Chat Eliminado', 'La conversacion ha sido eliminada exitosamente.', 'success');
-    } catch {
-      mostrarMensaje('Error', 'No se pudo eliminar el chat.', 'error');
-    }
+  const handleDeleteChat = () => {
+    showConfirm({
+      title: '¿Eliminar Chat?',
+      message: '¿Estás seguro de que deseas eliminar este chat para todos? Esta acción es irreversible.',
+      status: 'error',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/usuarios/chats/${selectedChat.id}/`);
+          setSelectedChat(null);
+          fetchChats();
+          showAlert({ title: 'Chat Eliminado', message: 'La conversación ha sido eliminada exitosamente.', status: 'success' });
+        } catch {
+          showAlert({ title: 'Error', message: 'No se pudo eliminar el chat.', status: 'error' });
+        }
+      }
+    });
   };
 
   // ─── Contratos: Cargar tipos y gestionar ───────────────────
@@ -370,7 +393,7 @@ const MisMensajes = () => {
 
   const handleGuardarContrato = async () => {
     if (!contratoForm.tipo_contrato || !contratoForm.monto || !contratoForm.inicio) {
-      alert('Por favor rellena los campos obligatorios (Tipo, Monto e Inicio)');
+      showAlert({ title: 'Campos requeridos', message: 'Por favor rellena los campos obligatorios del contrato (Tipo de Contrato, Monto y Fecha de Inicio).', status: 'warning' });
       return;
     }
     setContratoLoading(true);
@@ -436,7 +459,7 @@ const MisMensajes = () => {
 
   const handleEnviarSolicitudPago = async () => {
     if (!pagoForm.contrato_id || !pagoForm.monto || parseFloat(pagoForm.monto) <= 0) {
-      alert('Selecciona un contrato y un monto válido');
+      showAlert({ title: 'Datos requeridos', message: 'Por favor, selecciona un contrato y un monto válido para generar el cobro.', status: 'warning' });
       return;
     }
     setPagoLoading(true);
@@ -452,8 +475,9 @@ const MisMensajes = () => {
       setShowPagoModal(false);
       await fetchMensajes(selectedChat.id);
       await fetchChats();
+      showAlert({ title: 'Cobro Generado', message: 'La solicitud de pago seguro mediante Stripe ha sido creada y enviada al chat con éxito.', status: 'success' });
     } catch (err) {
-      alert(err.response?.data?.error || 'Error creando solicitud de pago');
+      showAlert({ title: 'Error de cobro', message: err.response?.data?.error || 'No se pudo generar el enlace de pago Stripe.', status: 'error' });
     } finally {
       setPagoLoading(false);
     }
@@ -663,9 +687,7 @@ const MisMensajes = () => {
   }
 
   return (
-    <div className="propiedades-page">
-      <Navbar />
-      <UserMenu />
+    <div className="propiedades-page" style={{ paddingTop: '20px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px', flex: 1 }}>
         <div
           style={{
@@ -1280,13 +1302,16 @@ const MisMensajes = () => {
                 <button onClick={() => setShowContratoModal(false)} style={{ padding: '10px 20px', border: '1px solid #d1d5db', background: '#fff', borderRadius: '8px', fontWeight: 600 }}>Cancelar</button>
                 <button
                   onClick={handleGuardarContrato}
+                  disabled={contratoLoading}
                   style={{
-                    padding: '10px 24px', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+                    padding: '10px 24px', background: contratoLoading ? '#cbd5e1' : 'linear-gradient(135deg, #0ea5e9, #0284c7)',
                     color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700,
-                    display: 'flex', alignItems: 'center', gap: '8px'
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    cursor: contratoLoading ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <FileCheck size={18} /> Guardar y Enviar al Cliente
+                  {contratoLoading ? <Loader2 className="animate-spin" size={18} /> : <FileCheck size={18} />}
+                  {contratoLoading ? 'Enviando...' : 'Guardar y Enviar al Cliente'}
                 </button>
               </div>
         </div>
@@ -1381,73 +1406,8 @@ const MisMensajes = () => {
           )}
         </div>
       </Modal>
-      {/* ─── Modal de Notificaciones (Reemplazo de alert) ────────── */}
-      <Modal 
-        isOpen={statusModal.show} 
-        onClose={() => setStatusModal({ ...statusModal, show: false })}
-        title={statusModal.title}
-      >
-        <div style={{ textAlign: 'center', padding: '10px' }}>
-          <div style={{ 
-            width: '60px', height: '60px', borderRadius: '50%', 
-            background: statusModal.type === 'error' ? '#fee2e2' : '#f0f9ff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
-          }}>
-            {statusModal.type === 'error' ? (
-              <AlertCircle size={32} color="#ef4444" />
-            ) : (
-              <CheckCircle2 size={32} color="#0ea5e9" />
-            )}
-          </div>
-          <p style={{ color: '#374151', fontSize: '1rem', lineHeight: '1.5', marginBottom: '20px' }}>
-            {statusModal.message}
-          </p>
-          <button 
-            onClick={() => setStatusModal({ ...statusModal, show: false })}
-            style={{
-              width: '100%', padding: '12px', borderRadius: '8px', border: 'none',
-              background: statusModal.type === 'error' ? '#ef4444' : '#0ea5e9',
-              color: '#fff', fontWeight: 700, cursor: 'pointer'
-            }}
-          >
-            Entendido
-          </button>
-        </div>
-      </Modal>
 
-      {/* ─── Modal de Notificaciones (Reemplazo de alert) ────────── */}
-      <Modal 
-        isOpen={statusModal.show} 
-        onClose={() => setStatusModal({ ...statusModal, show: false })}
-        title={statusModal.title}
-      >
-        <div style={{ textAlign: 'center', padding: '10px' }}>
-          <div style={{ 
-            width: '60px', height: '60px', borderRadius: '50%', 
-            background: statusModal.type === 'error' ? '#fee2e2' : '#f0f9ff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
-          }}>
-            {statusModal.type === 'error' ? (
-              <AlertCircle size={32} color="#ef4444" />
-            ) : (
-              <CheckCircle2 size={32} color="#0ea5e9" />
-            )}
-          </div>
-          <p style={{ color: '#374151', fontSize: '1rem', lineHeight: '1.5', marginBottom: '20px' }}>
-            {statusModal.message}
-          </p>
-          <button 
-            onClick={() => setStatusModal({ ...statusModal, show: false })}
-            style={{
-              width: '100%', padding: '12px', borderRadius: '8px', border: 'none',
-              background: statusModal.type === 'error' ? '#ef4444' : '#0ea5e9',
-              color: '#fff', fontWeight: 700, cursor: 'pointer'
-            }}
-          >
-            Entendido
-          </button>
-        </div>
-      </Modal>
+      {ModalComponent}
 
       <style>{`
         .spin { animation: spin 1s linear infinite; }

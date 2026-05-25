@@ -27,7 +27,7 @@ const FinanzasPropietario = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await reportesService.obtenerReportes(filtros);
+      const data = await reportesService.obtenerReportes({ ...filtros, personal: 'true' });
       setReportData(data);
     } catch (error) {
       console.error("Error fetching propietario finances:", error);
@@ -129,11 +129,7 @@ const FinanzasPropietario = () => {
   const BAR_COLORS = ['#6366f1', '#f59e0b']; // Índigo y Ámbar (Alto contraste)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      <div className="no-print">
-        <Navbar />
-        <UserMenu />
-      </div>
+    <div style={{ paddingTop: '20px' }}>
 
       <div className="print-container" style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
         <header className="no-print" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>

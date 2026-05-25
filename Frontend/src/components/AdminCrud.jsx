@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RotateCcw, Plus, Search, ChevronLeft, ChevronRight, Edit3, Trash2 } from 'lucide-react';
 import api from '../services/api';
+import useAlertConfirm from '../hooks/useAlertConfirm';
 
 const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id', transformPayload, transformEditItem }) => {
+  const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -71,18 +73,33 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
     setShowModal(true);
   };
 
-  const handleDelete = async (item) => {
-    console.log("Intentando eliminar item:", item[idKey], "en endpoint:", endpoint);
-    try {
-      console.log("Enviando petición DELETE a:", `${endpoint}${item[idKey]}/`);
-      await api.delete(`${endpoint}${item[idKey]}/`);
-      console.log("Eliminación exitosa");
-      fetchItems();
-    } catch (err) {
-      console.error("Error en DELETE:", err);
-      const msg = err.response?.data?.error || err.response?.data?.detail || 'Error desconocido';
-      alert('Error al eliminar: ' + msg);
-    }
+  const handleDelete = (item) => {
+    showConfirm({
+      title: `¿Eliminar Registro?`,
+      message: `¿Estás seguro de que deseas eliminar este registro de ${title} permanentemente?`,
+      status: 'error',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await api.delete(`${endpoint}${item[idKey]}/`);
+          fetchItems();
+          showAlert({
+            title: 'Registro Eliminado',
+            message: 'El registro ha sido eliminado del sistema con éxito.',
+            status: 'success'
+          });
+        } catch (err) {
+          console.error("Error en DELETE:", err);
+          const msg = err.response?.data?.error || err.response?.data?.detail || 'Error desconocido';
+          showAlert({
+            title: 'Error al Eliminar',
+            message: `No se pudo eliminar el registro: ${msg}`,
+            status: 'error'
+          });
+        }
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -98,6 +115,11 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
       }
       setShowModal(false);
       fetchItems();
+      showAlert({
+        title: editItem ? 'Registro Actualizado' : 'Registro Creado',
+        message: editItem ? 'Los cambios han sido guardados correctamente.' : 'El nuevo registro ha sido guardado exitosamente.',
+        status: 'success'
+      });
     } catch (err) {
       const data = err.response?.data;
       if (data) {
@@ -192,7 +214,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
-        <span style={s.badge}>{filtered.length} registro{filtered.length !== 1 ? 's' : ''}</span>
+        <span style={s.badge}>{`${filtered.length} registro${filtered.length !== 1 ? 's' : ''}`}</span>
       </div>
 
       {loading ? (
@@ -290,6 +312,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
           </div>
         </div>
       )}
+      {ModalComponent}
     </div>
   );
 };

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Check, X, Clock, Trash2, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw } from 'lucide-react';
+import { MapPin, Check, X, Clock, Trash2, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw, Settings, ChevronDown, ChevronUp, Eye, EyeOff, Edit3 } from 'lucide-react';
 import tituloService from '../../services/tituloService';
+import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
+import useAlertConfirm from '../../hooks/useAlertConfirm';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -33,11 +35,13 @@ const LocationPicker = ({ position, setPosition }) => {
 
 const MisInmuebles = () => {
   const { isAuthenticated } = useAuth();
+  const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
 
   const [inmuebles, setInmuebles] = useState([]);
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [expandedCardId, setExpandedCardId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [archivos, setArchivos] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -101,16 +105,31 @@ const MisInmuebles = () => {
       const res = await api.get('/inmuebles/horarios/', { params: { inmueble: inmuebleHorarioId } });
       setHorarios(res.data.results || res.data || []);
     } catch (err) {
-      alert(err.response?.data?.detail || 'Error al agregar horario');
+      showAlert({
+        title: 'Error de Horario',
+        message: err.response?.data?.detail || 'No se pudo agregar el horario de visitas. Verifica los datos.',
+        status: 'error'
+      });
     } finally { setGuardandoHorario(false); }
   };
 
-  const eliminarHorario = async (horarioId) => {
-    if (!window.confirm('¿Eliminar este horario?')) return;
-    try {
-      await api.delete(`/inmuebles/horarios/${horarioId}/`);
-      setHorarios(prev => prev.filter(h => h.id !== horarioId));
-    } catch { alert('Error al eliminar horario'); }
+  const eliminarHorario = (horarioId) => {
+    showConfirm({
+      title: '¿Eliminar horario?',
+      message: '¿Estás seguro de que deseas eliminar este horario de visitas?',
+      status: 'warning',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/inmuebles/horarios/${horarioId}/`);
+          setHorarios(prev => prev.filter(h => h.id !== horarioId));
+          showAlert({ title: '¡Horario eliminado!', message: 'El horario ha sido removido con éxito.', status: 'success' });
+        } catch { 
+          showAlert({ title: 'Error', message: 'No se pudo eliminar el horario.', status: 'error' });
+        }
+      }
+    });
   };
 
   const abrirVerificacion = async (inmId) => {
@@ -136,11 +155,19 @@ const MisInmuebles = () => {
     try {
       const data = await tituloService.subirTitulo(inmuebleVerificacionId, archivoVerificacion);
       setVerificacionData(data);
-      alert('¡Análisis legal completado con éxito!');
+      showAlert({
+        title: '¡Análisis legal completado!',
+        message: 'El análisis legal inteligente con IA del título de propiedad finalizó con éxito y el activo se selló automáticamente en la Blockchain.',
+        status: 'success'
+      });
       fetchData();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || 'Error al verificar el documento.');
+      showAlert({
+        title: 'Error de verificación',
+        message: err.response?.data?.error || 'No se pudo verificar el documento.',
+        status: 'error'
+      });
     } finally {
       setVerificando(false);
     }
@@ -155,7 +182,7 @@ const MisInmuebles = () => {
     try {
       setLoading(true);
       const [inmRes, tipRes] = await Promise.all([
-        api.get('/inmuebles/panel/lista/'),
+        api.get('/inmuebles/panel/lista/?personal=true'),
         api.get('/inmuebles/tipos/')
       ]);
       setInmuebles(inmRes.data.results || inmRes.data);
@@ -246,7 +273,11 @@ const MisInmuebles = () => {
       setShowModal(true);
     } catch (err) {
       console.error(err);
-      alert('Error fetching inmueble details');
+      showAlert({
+        title: 'Error de Carga',
+        message: 'No se pudieron obtener los detalles del inmueble seleccionado. Inténtalo de nuevo.',
+        status: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -320,23 +351,49 @@ const MisInmuebles = () => {
       setArchivos([]);
       setPreviewUrls([]);
       fetchData(); // Recargar
+      showAlert({
+        title: editingId ? '¡Inmueble Actualizado!' : '¡Inmueble Registrado!',
+        message: editingId ? 'Los datos de tu propiedad han sido modificados exitosamente.' : 'Tu nuevo inmueble ha sido registrado y publicado exitosamente en la plataforma.',
+        status: 'success'
+      });
     } catch (err) {
       console.error(err);
-      alert('Error al registrar inmueble');
+      showAlert({
+        title: 'Error de registro',
+        message: 'No se pudo guardar la información del inmueble.',
+        status: 'error'
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Seguro que deseas eliminar el inmueble?')) return;
-    try {
-      await api.delete(`/inmuebles/panel/lista/${id}/`);
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      alert('Error eliminando inmueble');
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: '¿Eliminar Inmueble?',
+      message: '¿Estás seguro de que deseas eliminar este inmueble? Esta acción borrará todas sus fotos y datos de forma permanente.',
+      status: 'error',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/inmuebles/panel/lista/${id}/`);
+          fetchData();
+          showAlert({
+            title: '¡Inmueble Eliminado!',
+            message: 'La propiedad ha sido eliminada del sistema con éxito.',
+            status: 'success'
+          });
+        } catch (err) {
+          console.error(err);
+          showAlert({
+            title: 'Error al eliminar',
+            message: 'Hubo un problema al intentar eliminar el inmueble.',
+            status: 'error'
+          });
+        }
+      }
+    });
   };
 
   const handleToggleVisibilidad = async (inm) => {
@@ -344,9 +401,18 @@ const MisInmuebles = () => {
       const nuevoEstado = inm.estado === 'oculto' ? 'disponible' : 'oculto';
       await api.patch(`/inmuebles/panel/lista/${inm.id}/`, { estado: nuevoEstado });
       fetchData();
+      showAlert({
+        title: 'Estado Actualizado',
+        message: nuevoEstado === 'oculto' ? 'El inmueble ha sido ocultado del catálogo público.' : 'El inmueble ahora es visible para todos en el catálogo.',
+        status: 'success'
+      });
     } catch (err) {
       console.error(err);
-      alert('Error cambiando estado');
+      showAlert({
+        title: 'Error de cambio de estado',
+        message: 'No se pudo cambiar la visibilidad del inmueble.',
+        status: 'error'
+      });
     }
   };
 
@@ -359,9 +425,7 @@ const MisInmuebles = () => {
   };
 
   return (
-    <div className="propiedades-page" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <Navbar />
-      <UserMenu />
+    <div className="propiedades-page" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', paddingTop: '20px' }}>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -453,65 +517,122 @@ const MisInmuebles = () => {
                       <h3 className="propiedad-card__title">{inm.titulo}</h3>
                       <p className="propiedad-card__location">{inm.ciudad}{inm.zona ? `, ${inm.zona}` : ''}</p>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-                        <span className="propiedad-card__price">Bs. {parseFloat(inm.precio).toLocaleString()}</span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => abrirVerificacion(inm.id)}
-                            style={{
-                              background: 'transparent',
-                              border: '1px solid var(--color-border)',
-                              borderRadius: '6px',
-                              padding: '6px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              color: inm.verificacion_estado === 'verificado' ? '#10b981' : 
-                                     inm.verificacion_estado === 'observado' ? '#eab308' :
-                                     inm.verificacion_estado === 'rechazado' ? '#ef4444' : 'var(--color-text-secondary)'
-                            }}
-                            title="Verificación Legal de Título (IA)"
-                          >
-                            {inm.verificacion_estado === 'verificado' ? <ShieldCheck size={18} /> : <FileText size={18} />}
-                          </button>
-                          <button
-                            onClick={() => abrirHorarios(inm.id)}
-                            style={{
-                              background: 'transparent', border: '1px solid var(--color-border)',
-                              borderRadius: '6px', padding: '6px', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', color: '#0ea5e9',
-                            }}
-                            title="Gestionar horarios de visita"
-                          >
-                            <Clock size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(inm)}
-                            style={{ background: 'transparent', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--color-text-secondary)' }}
-                            title="Editar Inmueble"
-                          >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                          </button>
-                          <button
-                            onClick={() => handleToggleVisibilidad(inm)}
-                            style={{ background: 'transparent', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: inm.estado === 'oculto' ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
-                            title={inm.estado === 'oculto' ? 'Mostrar al público' : 'Ocultar al público'}
-                          >
-                            {inm.estado === 'oculto' ? (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            ) : (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(inm.id)}
-                            style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#ef4444' }}
-                            title="Eliminar"
-                          >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                          </button>
-                          <Link to={`/propiedades/${inm.id}`} style={{ background: 'var(--color-bg)', padding: '6px 12px', borderRadius: '6px', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem', border: '1px solid var(--color-border)' }}>Ver</Link>
+                      <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                        {/* Precio en su propia línea, visible y sin colisionar */}
+                        <div style={{ marginBottom: '12px' }}>
+                          <span className="propiedad-card__price" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                            Bs. {parseFloat(inm.precio).toLocaleString()}
+                          </span>
                         </div>
+
+                        {/* Botones principales de la tarjeta */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                          <Link 
+                            to={`/propiedades/${inm.id}`} 
+                            className="propiedad-card__cta" 
+                            style={{ flex: 1, textAlign: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            Ver Detalles
+                          </Link>
+                          
+                          <button
+                            type="button"
+                            className={`propiedad-card__admin-toggle ${expandedCardId === inm.id ? 'propiedad-card__admin-toggle--active' : ''}`}
+                            onClick={() => setExpandedCardId(expandedCardId === inm.id ? null : inm.id)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 14px',
+                              background: '#ffffff',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '8px',
+                              fontWeight: 600,
+                              fontSize: '0.85rem',
+                              color: 'var(--color-text-secondary)',
+                              cursor: 'pointer',
+                              transition: 'all var(--transition-fast)'
+                            }}
+                          >
+                            <Settings size={16} />
+                            <span>Gestionar</span>
+                            {expandedCardId === inm.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                        </div>
+
+                        {/* PANEL DE DESGLOSE ADMINISTRATIVO (COLLAPSIBLE) */}
+                        {expandedCardId === inm.id && (
+                          <div className="propiedad-card__admin-pane" style={{
+                            marginTop: '12px',
+                            background: 'var(--color-bg-secondary)',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            border: '1px solid var(--color-border)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            animation: 'slideDown var(--transition-fast) ease-out'
+                          }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                              Acciones de Administración
+                            </span>
+                            
+                            <button
+                              type="button"
+                              onClick={() => abrirVerificacion(inm.id)}
+                              className="propiedad-card__admin-btn"
+                              style={{
+                                color: inm.verificacion_estado === 'verificado' ? '#10b981' : 
+                                       inm.verificacion_estado === 'observado' ? '#eab308' :
+                                       inm.verificacion_estado === 'rechazado' ? '#ef4444' : 'var(--color-text-secondary)'
+                              }}
+                            >
+                              {inm.verificacion_estado === 'verificado' ? <ShieldCheck size={16} /> : <FileText size={16} />}
+                              <span>Análisis Legal de Título (IA)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => abrirHorarios(inm.id)}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: '#0ea5e9' }}
+                            >
+                              <Clock size={16} />
+                              <span>Gestionar Horarios de Visita</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleEdit(inm)}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              <Edit3 size={16} />
+                              <span>Editar Información Ficha</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisibilidad(inm)}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: inm.estado === 'oculto' ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
+                            >
+                              {inm.estado === 'oculto' ? <Eye size={16} /> : <EyeOff size={16} />}
+                              <span>{inm.estado === 'oculto' ? 'Publicar Inmueble' : 'Ocultar Inmueble'}</span>
+                            </button>
+
+                            <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }}></div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(inm.id)}
+                              className="propiedad-card__admin-btn propiedad-card__admin-btn--danger"
+                            >
+                              <Trash2 size={16} />
+                              <span>Eliminar Publicación</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -634,7 +755,11 @@ const MisInmuebles = () => {
                       if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
                           (pos) => setFormData(prev => ({ ...prev, gps: `${pos.coords.latitude}, ${pos.coords.longitude}` })),
-                          () => alert('Error obteniendo ubicación. Verifica los permisos de tu navegador.')
+                          () => showAlert({
+                            title: 'Permiso Denegado',
+                            message: 'No se pudo acceder a tu ubicación actual. Por favor, verifica los permisos en tu navegador.',
+                            status: 'warning'
+                          })
                         );
                       }
                     }}
@@ -1120,6 +1245,11 @@ const MisInmuebles = () => {
                     </div>
                   )}
 
+                  {/* Trazabilidad inmutable en Blockchain */}
+                  <div style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginBottom: '16px' }}>
+                    <BlockchainAuditTrail assetId={`INM-${inmuebleVerificacionId}`} />
+                  </div>
+
                   <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <a href={verificacionData.archivo_titulo} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
                       Ver documento original subido
@@ -1157,6 +1287,7 @@ const MisInmuebles = () => {
           </div>
         </div>
       )}
+      {ModalComponent}
     </div>
   );
 };

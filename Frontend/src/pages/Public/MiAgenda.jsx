@@ -8,6 +8,7 @@ import UserMenu from '../../components/UserMenu';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
+import useAlertConfirm from '../../hooks/useAlertConfirm';
 
 const ESTADO_CITA_CONFIG = {
   pendiente: { bg: '#fef3c7', color: '#92400e', label: 'Pendiente' },
@@ -18,6 +19,7 @@ const ESTADO_CITA_CONFIG = {
 
 const MiAgenda = () => {
   const { isAuthenticated, user } = useAuth();
+  const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
   const [tab, setTab] = useState('eventos');
   const [eventos, setEventos] = useState([]);
   const [citas, setCitas] = useState([]);
@@ -62,9 +64,10 @@ const MiAgenda = () => {
       setShowModal(false);
       setFormData({ titulo: '', descripcion: '', fecha_inicio: '', fecha_fin: '', ubicacion: '' });
       fetchTodo();
+      showAlert({ title: 'Evento Guardado', message: 'El evento ha sido registrado en tu agenda con éxito.', status: 'success' });
     } catch (err) {
       console.error(err);
-      alert('Error al guardar el evento en la agenda');
+      showAlert({ title: 'Error de registro', message: 'No se pudo guardar el evento en tu agenda.', status: 'error' });
     } finally {
       setSaving(false);
     }
@@ -77,20 +80,40 @@ const MiAgenda = () => {
     } catch (err) { console.error(err); }
   };
 
-  const deleteEvento = async (id) => {
-    if (!window.confirm('¿Eliminar este evento?')) return;
-    try {
-      await api.delete(`/usuarios/panel/agenda/${id}/`);
-      fetchTodo();
-    } catch (err) { console.error(err); }
+  const deleteEvento = (id) => {
+    showConfirm({
+      title: '¿Eliminar Evento?',
+      message: '¿Estás seguro de que deseas eliminar este evento de tu agenda permanentemente?',
+      status: 'error',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/usuarios/panel/agenda/${id}/`);
+          fetchTodo();
+          showAlert({ title: 'Evento Eliminado', message: 'El evento ha sido borrado exitosamente.', status: 'success' });
+        } catch {
+          showAlert({ title: 'Error al eliminar', message: 'Hubo un problema al eliminar el evento.', status: 'error' });
+        }
+      }
+    });
   };
 
   const cambiarEstadoCita = async (citaId, nuevoEstado) => {
     try {
       await api.patch(`/inmuebles/citas/${citaId}/cambiar-estado/`, { estado: nuevoEstado });
       fetchTodo();
+      showAlert({
+        title: 'Cita Actualizada',
+        message: `La cita de visita ha sido marcada como "${nuevoEstado}" con éxito.`,
+        status: 'success'
+      });
     } catch (err) {
-      alert(err.response?.data?.error || 'Error al actualizar la cita');
+      showAlert({
+        title: 'Error de cita',
+        message: err.response?.data?.error || 'No se pudo actualizar el estado de la cita.',
+        status: 'error'
+      });
     }
   };
 
@@ -115,9 +138,7 @@ const MiAgenda = () => {
 
   return (
     <div className="propiedades-page"
-      style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <Navbar />
-      <UserMenu />
+      style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', paddingTop: '20px' }}>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
@@ -522,6 +543,7 @@ const MiAgenda = () => {
           </div>
         </div>
       )}
+      {ModalComponent}
     </div>
   );
 };

@@ -80,9 +80,9 @@ def create_seed_data():
     # ═══════════════════════════════════════════════════════════
     inmuebles_data = [
         ('Casa Moderna La Guardia', 'propietario1', 'Casa', 'Casa quinta con terreno amplio en La Guardia.', 'Calle Principal La Guardia', 'La Guardia', 'Zona Centro', 850504, 1239, 2, 2, True, 'disponible'),
-        ('Casa en venta Santa Cruz', 'propietario2', 'Casa', 'Casa grande con amplio terreno.', 'Av. Brasil', 'Santa Cruz', 'Zona Centro', 210560, 384, 4, 1, False, 'disponible'),
+        ('Casa en venta Santa Cruz', 'admin', 'Casa', 'Casa grande con amplio terreno.', 'Av. Brasil', 'Santa Cruz', 'Zona Centro', 210560, 384, 4, 1, False, 'disponible'),
         ('Casa Colonial Santa Cruz', 'propietario3', 'Casa', 'Casa en venta con acabados premium.', 'Calle Melchor Pinto', 'Santa Cruz', 'Zona Centro', 146500, 120, 4, 3, True, 'disponible'),
-        ('Casa de 2 Pisos', 'propietario4', 'Casa', 'Casa de 2 pisos con patio.', 'Av. Irala', 'Santa Cruz', 'Zona Centro', 250654, 100, 4, 2, True, 'disponible'),
+        ('Casa de 2 Pisos', 'admin', 'Casa', 'Casa de 2 pisos con patio.', 'Av. Irala', 'Santa Cruz', 'Zona Centro', 250654, 100, 4, 2, True, 'disponible'),
         ('Casa con Terreno', 'propietario5', 'Casa', 'Terreno y 2 casas. 8.000 m2, piscina, churrasquera, garajes, frutales.', 'Radial 26', 'Santa Cruz', 'Zona Centro', 1563200, 12000, 8, 6, True, 'disponible'),
         ('Casa Equipetrol', 'propietario6', 'Casa', 'Casa grande con excelentes acabados.', 'Av. Equipetrol', 'Santa Cruz', 'Zona Centro', 526300, 6000, 3, 4, True, 'disponible'),
         ('Casa Junín', 'propietario7', 'Casa', 'Casa disponible para venta o alquiler.', 'Calle Junín', 'Santa Cruz', 'Zona Centro', 604540, 450, 3, 2, True, 'disponible'),
@@ -426,21 +426,21 @@ def create_seed_data():
     print("  OK Bloqueos de usuarios: 2")
 
     print("\n  OK Datos semilla creados exitosamente.")
-    print("  ──────────────────────────────────────────────")
-    print("  📋 USUARIOS:           11 (admin + 10 propietarios)")
-    print("  🏠 INMUEBLES:          10 (Santa Cruz y La Guardia, 1 por usuario)")
-    print("  📸 MULTIMEDIA:         41 fotos de Cloudinary")
-    print("  📋 CONTRATOS:          5 (Alquiler, Venta, Anticrético, Mixto)")
-    print("  💰 PAGOS:              8 (con historial)")
-    print("  📅 AGENDA:             8 eventos programados")
-    print("  🔔 NOTIFICACIONES:     10 alertas")
-    print("  💬 CHATS:              4 (con 16 mensajes)")
-    print("  ⭐ RESEÑAS:            10 calificaciones")
-    print("  🚫 BLOQUEOS:           2 usuarios bloqueados")
-    print("  ──────────────────────────────────────────────")
-    print("  🔐 Acceso Admin:       admin / admin123")
-    print("  👤 Otros usuarios:     usuario123")
-    print("  ──────────────────────────────────────────────")
+    print("  ----------------------------------------------")
+    print("  USUARIOS:           11 (admin + 10 propietarios)")
+    print("  INMUEBLES:          10 (Santa Cruz y La Guardia, 1 por usuario)")
+    print("  MULTIMEDIA:         41 fotos de Cloudinary")
+    print("  CONTRATOS:          5 (Alquiler, Venta, Anticrético, Mixto)")
+    print("  PAGOS:              8 (con historial)")
+    print("  AGENDA:             8 eventos programados")
+    print("  NOTIFICACIONES:     10 alertas")
+    print("  CHATS:              4 (con 16 mensajes)")
+    print("  RESENAS:            10 calificaciones")
+    print("  BLOQUEOS:           2 usuarios bloqueados")
+    print("  ----------------------------------------------")
+    print("  Acceso Admin:       admin / admin123")
+    print("  Otros usuarios:     usuario123")
+    print("  ----------------------------------------------")
 
 
 if __name__ == '__main__':

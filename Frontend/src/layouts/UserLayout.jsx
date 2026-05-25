@@ -1,16 +1,13 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import UserMenu from '../components/UserMenu';
 
-/**
- * Layout para usuarios estándar con navbar.
- */
 const UserLayout = () => {
   return (
-    <div className="user-layout" id="user-layout">
+    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
       <Navbar />
-      <main className="user-layout__content" style={{ padding: 'var(--spacing-xl)', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
-        <Outlet />
-      </main>
+      <UserMenu />
+      <Outlet />
     </div>
   );
 };

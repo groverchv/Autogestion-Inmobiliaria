@@ -5,9 +5,11 @@ import UserMenu from '../../components/UserMenu';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
+import useAlertConfirm from '../../hooks/useAlertConfirm';
 
 const MisNotificaciones = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { showAlert, ModalComponent } = useAlertConfirm();
   const [tab, setTab] = useState('sistema');
   const [sistema, setSistema] = useState([]);
   const [usuarioNotif, setUsuarioNotif] = useState([]);
@@ -17,8 +19,8 @@ const MisNotificaciones = () => {
     try {
       setLoading(true);
       const [resSistema, resUsuario] = await Promise.all([
-        api.get('/usuarios/notificaciones/sistema/'),
-        api.get('/usuarios/notificaciones/usuario/'),
+        api.get('/usuarios/notificaciones/sistema/?personal=true'),
+        api.get('/usuarios/notificaciones/usuario/?personal=true'),
       ]);
       setSistema(resSistema.data.results || resSistema.data || []);
       setUsuarioNotif(resUsuario.data.results || resUsuario.data || []);
@@ -39,10 +41,11 @@ const MisNotificaciones = () => {
 
   const marcarLeidas = async () => {
     try {
-      await api.post('/usuarios/notificaciones/marcar-leidas/', { origen: tab });
+      await api.post('/usuarios/notificaciones/marcar-leidas/?personal=true', { origen: tab });
       cargarNotificaciones();
+      showAlert({ title: 'Notificaciones Leídas', message: 'Se marcaron todas las notificaciones de esta pestaña como leídas con éxito.', status: 'success' });
     } catch {
-      alert('No se pudo marcar como leídas.');
+      showAlert({ title: 'Error', message: 'No se pudo marcar las notificaciones como leídas.', status: 'error' });
     }
   };
 
@@ -53,9 +56,7 @@ const MisNotificaciones = () => {
   };
 
   return (
-    <div className="propiedades-page">
-      <Navbar />
-      {isAuthenticated && user?.rol !== 'admin' && <UserMenu />}
+    <div className="propiedades-page" style={{ paddingTop: '20px' }}>
       <div className="propiedades-content" style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
         <div
           style={{
@@ -181,6 +182,7 @@ const MisNotificaciones = () => {
           </div>
         </div>
       </div>
+      {ModalComponent}
     </div>
   );
 };

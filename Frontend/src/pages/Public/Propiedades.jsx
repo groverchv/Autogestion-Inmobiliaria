@@ -5,6 +5,7 @@ import inmuebleService from '../../services/inmuebleService';
 import useAuth from '../../hooks/useAuth';
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
+import { Search, SlidersHorizontal, Trash2, Filter, X } from 'lucide-react';
 import './Propiedades.css';
 
 const Propiedades = () => {
@@ -18,9 +19,28 @@ const Propiedades = () => {
   const [filtroBanos, setFiltroBanos] = useState('');
   const [filtroGaraje, setFiltroGaraje] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  const activeFiltersCount = 
+    (filtroCategoria ? 1 : 0) +
+    (filtroCiudad ? 1 : 0) +
+    (filtroPrecioMax ? 1 : 0) +
+    (filtroHabitaciones ? 1 : 0) +
+    (filtroBanos ? 1 : 0) +
+    (filtroGaraje ? 1 : 0);
+
+  const clearFilters = () => {
+    setFiltroCategoria('');
+    setFiltroCiudad('');
+    setFiltroPrecioMax('');
+    setFiltroHabitaciones('');
+    setFiltroBanos('');
+    setFiltroGaraje(false);
+    setSearchTerm('');
+  };
 
   useEffect(() => {
     // Cargar solo los tipos la primera vez
@@ -80,77 +100,144 @@ const Propiedades = () => {
     <div className="propiedades-page">
       <Navbar />
 
-      {isAuthenticated && user?.rol !== 'admin' && (
+      {isAuthenticated && (
         <UserMenu />
       )}
 
       <div className="propiedades-content">
-        <div className="propiedades-filters">
-          <input
-            type="text"
-            placeholder="Búsqueda general (Ej: Urbari, casa jardín, etc.)"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="propiedades-filter__input"
-          />
-          <select
-            value={filtroCategoria}
-            onChange={e => setFiltroCategoria(e.target.value)}
-            className="propiedades-filter__select"
-          >
-            <option value="">Todas las categorías</option>
-            {categorias.map(cat => (
-              <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="Filtrar por Ciudad..."
-            value={filtroCiudad}
-            onChange={e => setFiltroCiudad(e.target.value)}
-            className="propiedades-filter__input"
-          />
-          <input
-            type="number"
-            min="0"
-            placeholder="Precio máximo (Bs)"
-            value={filtroPrecioMax}
-            onChange={e => {
-              const val = e.target.value.replace(/^-/, '');
-              if (val === '' || Number(val) >= 0) setFiltroPrecioMax(val);
-            }}
-            className="propiedades-filter__input"
-          />
-          <select
-            value={filtroHabitaciones}
-            onChange={e => setFiltroHabitaciones(e.target.value)}
-            className="propiedades-filter__select"
-          >
-            <option value="">Habitaciones: Cualquiera</option>
-            <option value="1">1 o más</option>
-            <option value="2">2 o más</option>
-            <option value="3">3 o más</option>
-            <option value="4">4 o más</option>
-          </select>
-          <select
-            value={filtroBanos}
-            onChange={e => setFiltroBanos(e.target.value)}
-            className="propiedades-filter__select"
-          >
-            <option value="">Baños: Cualquiera</option>
-            <option value="1">1 o más</option>
-            <option value="2">2 o más</option>
-            <option value="3">3 o más</option>
-          </select>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-            <input
-              type="checkbox"
-              checked={filtroGaraje}
-              onChange={e => setFiltroGaraje(e.target.checked)}
-            />
-            Con Garaje
-          </label>
-          <span className="propiedades-filter__count">{inmuebles.length} resultados</span>
+        <div className="propiedades-filters-card">
+          <div className="propiedades-filters__search-row">
+            <div className="propiedades-filters__search-wrapper">
+              <Search className="propiedades-filters__search-icon" size={20} />
+              <input
+                type="text"
+                placeholder="Buscar por zona, ciudad o palabras clave (Ej: Equipetrol, Sopocachi...)"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="propiedades-filters__search-input"
+              />
+            </div>
+            
+            <div className="propiedades-filters__actions">
+              <button 
+                type="button"
+                className={`propiedades-filters__toggle-btn ${showAdvanced ? 'propiedades-filters__toggle-btn--active' : ''}`}
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                <SlidersHorizontal size={18} />
+                <span>Filtros</span>
+                {activeFiltersCount > 0 && (
+                  <span className="propiedades-filters__badge">{activeFiltersCount}</span>
+                )}
+              </button>
+
+              {activeFiltersCount > 0 && (
+                <button 
+                  type="button"
+                  className="propiedades-filters__clear-btn"
+                  onClick={clearFilters}
+                  title="Limpiar todos los filtros"
+                >
+                  <Trash2 size={16} />
+                  <span className="desktop-only">Limpiar</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ADVANCED COLLAPSIBLE FILTERS PANEL */}
+          {showAdvanced && (
+            <div className="propiedades-filters__advanced">
+              <div className="propiedades-filters__grid">
+                <div className="propiedades-filters__group">
+                  <label className="propiedades-filters__label">Categoría</label>
+                  <select
+                    value={filtroCategoria}
+                    onChange={e => setFiltroCategoria(e.target.value)}
+                    className="propiedades-filters__select"
+                  >
+                    <option value="">Todas las categorías</option>
+                    {categorias.map(cat => (
+                      <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="propiedades-filters__group">
+                  <label className="propiedades-filters__label">Ciudad</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Santa Cruz, La Paz..."
+                    value={filtroCiudad}
+                    onChange={e => setFiltroCiudad(e.target.value)}
+                    className="propiedades-filters__input"
+                  />
+                </div>
+
+                <div className="propiedades-filters__group">
+                  <label className="propiedades-filters__label">Precio Máximo (Bs.)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Sin límite"
+                    value={filtroPrecioMax}
+                    onChange={e => {
+                      const val = e.target.value.replace(/^-/, '');
+                      if (val === '' || Number(val) >= 0) setFiltroPrecioMax(val);
+                    }}
+                    className="propiedades-filters__input"
+                  />
+                </div>
+
+                <div className="propiedades-filters__group">
+                  <label className="propiedades-filters__label">Habitaciones</label>
+                  <select
+                    value={filtroHabitaciones}
+                    onChange={e => setFiltroHabitaciones(e.target.value)}
+                    className="propiedades-filters__select"
+                  >
+                    <option value="">Cualquiera</option>
+                    <option value="1">1 o más</option>
+                    <option value="2">2 o más</option>
+                    <option value="3">3 o más</option>
+                    <option value="4">4 o más</option>
+                  </select>
+                </div>
+
+                <div className="propiedades-filters__group">
+                  <label className="propiedades-filters__label">Baños</label>
+                  <select
+                    value={filtroBanos}
+                    onChange={e => setFiltroBanos(e.target.value)}
+                    className="propiedades-filters__select"
+                  >
+                    <option value="">Cualquiera</option>
+                    <option value="1">1 o más</option>
+                    <option value="2">2 o más</option>
+                    <option value="3">3 o más</option>
+                  </select>
+                </div>
+
+                <div className="propiedades-filters__group propiedades-filters__group--checkbox">
+                  <label className="propiedades-filters__checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={filtroGaraje}
+                      onChange={e => setFiltroGaraje(e.target.checked)}
+                      className="propiedades-filters__checkbox"
+                    />
+                    <span>¿Requiere Garaje?</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="propiedades-filters__footer">
+            <span className="propiedades-filters__count-pill">
+              {inmuebles.length} {inmuebles.length === 1 ? 'propiedad encontrada' : 'propiedades encontradas'}
+            </span>
+          </div>
         </div>
 
         {loading ? (
