@@ -29,13 +29,13 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
     const downloadAll = async () => {
       const urls = {};
       setCargandoDescarga(true);
-      
+
       for (let i = 0; i < panoramas.length; i++) {
         if (!active) return;
         const pano = panoramas[i];
         setLoadingText(`Cargando ${pano.descripcion || `Habitación ${i + 1}`}...`);
         setLoadingProgress(Math.round((i / panoramas.length) * 100));
-        
+
         try {
           const response = await fetch(pano.archivo, { cache: 'reload', mode: 'cors' });
           const blob = await response.blob();
@@ -46,7 +46,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
           urls[pano.id] = `${pano.archivo}?cb=${new Date().getTime()}`;
         }
       }
-      
+
       if (active) {
         setBlobUrls(urls);
         setLoadingProgress(100);
@@ -75,7 +75,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
   const scenesConfig = useMemo(() => {
     if (Object.keys(blobUrls).length === 0) return null;
     const config = {};
-    
+
     panoramas.forEach((pano) => {
       const panoUrl = blobUrls[pano.id] || pano.archivo;
       config[`scene_${pano.id}`] = {
@@ -102,12 +102,12 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
             sceneId: `scene_${h.escena_destino}`,
             createTooltipFunc: (hotSpotDiv, args) => {
               hotSpotDiv.classList.add('pnlm-custom-nav-hotspot');
-              
+
               // Crear etiqueta de texto visible permanente
               const labelEl = document.createElement('div');
               labelEl.className = 'pnlm-custom-nav-label';
               labelEl.innerText = args;
-              
+
               // Delegación Activa: Si el usuario toca o hace clic en la etiqueta, 
               // forzamos la transición directamente y evitamos que Pannellum crea que es un arrastre.
               const triggerTeleport = (e) => {
@@ -117,10 +117,10 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
                   viewerInstanceRef.current.loadScene(`scene_${h.escena_destino}`);
                 }
               };
-              
+
               labelEl.addEventListener('pointerdown', triggerTeleport);
               labelEl.addEventListener('click', triggerTeleport);
-              
+
               hotSpotDiv.appendChild(labelEl);
             },
             createTooltipArgs: nombreDestino.toUpperCase()
@@ -128,7 +128,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
         }),
       };
     });
-    
+
     return config;
   }, [panoramas, blobUrls]);
 

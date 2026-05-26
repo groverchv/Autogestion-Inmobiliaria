@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import imageCompression from 'browser-image-compression';
 
 // Configurar marker por defecto de Leaflet
 let DefaultIcon = L.icon({
@@ -48,7 +49,8 @@ const MisInmuebles = () => {
   const [archivos360, setArchivos360] = useState([]);
   const [preview360, setPreview360] = useState([]);
   const [existing360, setExisting360] = useState([]);
-  const [meta360, setMeta360] = useState([]); // [{piso: 'Piso 1', habitacion: 'Sala'}, ...]
+  const [meta360, setMeta360] = useState([]); // [{piso: '', habitacion: ''}, ...]
+  const [uploadProgress, setUploadProgress] = useState({ uploading: false, message: '', current: 0, total: 0 });
   const [showGuiaModal, setShowGuiaModal] = useState(false);
   const [guiaPasoActivo, setGuiaPasoActivo] = useState(1);
   const [showEditorRecorrido, setShowEditorRecorrido] = useState(false);
@@ -264,8 +266,9 @@ const MisInmuebles = () => {
         const relacion = ancho / alto;
 
         // El estándar equirectangular 360° perfecto es 2:1.
-        // Damos un margen de tolerancia entre 1.75 y 2.25 para panorámicas de smartphones.
-        if (relacion >= 1.75 && relacion <= 2.25) {
+        // Se ha flexibilizado enormemente el rango (de 1.2 a 5.0) para permitir panorámicas 
+        // extremadamente largas capturadas por smartphones sin apps de Photo Sphere.
+        if (relacion >= 1.2 && relacion <= 5.0) {
           resolve({ valido: true, relacion, ancho, alto });
         } else {
           resolve({ valido: false, relacion, ancho, alto });
@@ -283,12 +286,30 @@ const MisInmuebles = () => {
     const previewsValidos = [];
     const metasValidas = [];
 
-    for (const file of selectedFiles) {
+    setUploadProgress({ uploading: true, message: 'Optimizando imágenes para subida rápida...', current: 0, total: selectedFiles.length });
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      setUploadProgress(prev => ({ ...prev, current: i + 1 }));
       const check = await validarDimensionesPano(file);
       if (check.valido) {
-        archivosValidos.push(file);
-        previewsValidos.push(URL.createObjectURL(file));
-        metasValidas.push({ piso: 'Piso 1', habitacion: '' });
+        try {
+          const options = {
+            maxSizeMB: 4.5,
+            maxWidthOrHeight: 8192,
+            useWebWorker: true,
+            initialQuality: 0.85
+          };
+          const compressedBlob = await imageCompression(file, options);
+          const compressedFile = new File([compressedBlob], file.name, { type: file.type });
+          
+          archivosValidos.push(compressedFile);
+          previewsValidos.push(URL.createObjectURL(compressedFile));
+          metasValidas.push({ piso: '', habitacion: '' });
+        } catch (error) {
+          console.error("Error al comprimir imagen", error);
+          alert(`No se pudo comprimir la imagen ${file.name}`);
+        }
       } else {
         alert(
           `⚠️ Archivo inválido: "${file.name}"\n\n` +
@@ -298,6 +319,8 @@ const MisInmuebles = () => {
         );
       }
     }
+
+    setUploadProgress({ uploading: false, message: '', current: 0, total: 0 });
 
     if (archivosValidos.length > 0) {
       setArchivos360(prev => [...prev, ...archivosValidos]);
@@ -362,6 +385,18 @@ const MisInmuebles = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validar etiquetas de panoramas 360
+    if (archivos360.length > 0) {
+      for (let i = 0; i < archivos360.length; i++) {
+        const meta = meta360[i];
+        if (!meta || !meta.piso.trim() || !meta.habitacion.trim()) {
+          alert('Por favor, completa el Piso y el Nombre de Habitación para TODAS las fotos panorámicas 360°.');
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
       const payload = { ...formData };
@@ -416,22 +451,23 @@ const MisInmuebles = () => {
 
       // Subir panoramas 360° a Cloudinary vía el backend
       if (archivos360.length > 0) {
-        const upload360Promises = archivos360.map(async (file, i) => {
+        setUploadProgress({ uploading: true, message: 'Subiendo panoramas 360°...', current: 1, total: archivos360.length });
+        for (let i = 0; i < archivos360.length; i++) {
+          setUploadProgress(prev => ({ ...prev, current: i + 1 }));
+          const file = archivos360[i];
           const mediaForm = new FormData();
           mediaForm.append('inmueble', nuevoInmuebleId);
           mediaForm.append('archivo', file);
           mediaForm.append('principal', 'false');
           mediaForm.append('tipo', 'panorama360');
-          const metaItem = meta360[i] || {};
-          const piso = metaItem.piso || 'Piso 1';
-          const habitacion = metaItem.habitacion || 'Vista 360°';
-          mediaForm.append('descripcion', `${piso} | ${habitacion}`);
+          const metaItem = meta360[i];
+          mediaForm.append('descripcion', `${metaItem.piso.trim()} | ${metaItem.habitacion.trim()}`);
 
-          return api.post('/inmuebles/multimedia/', mediaForm, {
+          await api.post('/inmuebles/multimedia/', mediaForm, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
-        });
-        await Promise.all(upload360Promises);
+        }
+        setUploadProgress({ uploading: false, message: '', current: 0, total: 0 });
       }
 
       setShowModal(false);
@@ -491,6 +527,38 @@ const MisInmuebles = () => {
 
   return (
     <div className="propiedades-page" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      {uploadProgress.uploading && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.85)', zIndex: 99999,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', padding: '20px', textAlign: 'center'
+        }}>
+          <div style={{ background: '#1e293b', padding: '40px', borderRadius: '24px', maxWidth: '400px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+            <div style={{
+              width: '60px', height: '60px', border: '5px solid rgba(255,255,255,0.1)', borderTopColor: '#8b5cf6',
+              borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 24px auto'
+            }}></div>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.4rem', fontWeight: 'bold' }}>{uploadProgress.message}</h3>
+            {uploadProgress.total > 0 && (
+              <>
+                <p style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: '#cbd5e1' }}>
+                  Procesando {uploadProgress.current} de {uploadProgress.total} panorámicas...
+                </p>
+                <div style={{ width: '100%', height: '10px', background: '#334155', borderRadius: '5px', overflow: 'hidden' }}>
+                  <div style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #a855f7)', transition: 'width 0.4s ease' }}></div>
+                </div>
+              </>
+            )}
+            <p style={{ marginTop: '24px', fontSize: '0.9rem', color: '#94a3b8', fontWeight: 600, lineHeight: 1.5 }}>
+              ⚠️ Por favor, mantén esta aplicación abierta y la pantalla encendida.
+            </p>
+          </div>
+          <style>{`
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          `}</style>
+        </div>
+      )}
       <Navbar />
       <UserMenu />
 
@@ -1094,98 +1162,83 @@ const MisInmuebles = () => {
 
                   {/* Previews de nuevos panoramas con edición de metadatos */}
                   {preview360.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', margin: 0 }}>Nuevos panoramas a subir:</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                       {preview360.map((url, i) => {
-                        const meta = meta360[i] || { piso: 'Piso 1', habitacion: '' };
+                        const meta = meta360[i] || { piso: '', habitacion: '' };
+                        const errorPiso = !meta.piso.trim();
+                        const errorHabitacion = !meta.habitacion.trim();
+
                         return (
                           <div key={i} style={{
                             display: 'flex',
-                            gap: '12px',
+                            flexDirection: 'column',
                             background: '#fff',
-                            padding: '12px',
                             borderRadius: '12px',
-                            border: '1px solid rgba(99, 102, 241, 0.15)',
-                            alignItems: 'center',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                            border: `1px solid ${errorPiso || errorHabitacion ? '#f87171' : 'rgba(99, 102, 241, 0.15)'}`,
+                            overflow: 'hidden',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                            transition: 'all 0.3s'
                           }}>
                             {/* Miniatura */}
-                            <div style={{ width: '80px', height: '60px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                            <div style={{ width: '100%', height: '140px', position: 'relative' }}>
                               <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`new-360-preview-${i}`} />
                               <span style={{
-                                position: 'absolute', top: '2px', left: '2px',
+                                position: 'absolute', top: '8px', left: '8px',
                                 background: 'rgba(99, 102, 241, 0.9)', color: '#fff',
-                                fontSize: '0.6rem', padding: '1px 4px', borderRadius: '4px', fontWeight: 600
-                              }}>360°</span>
+                                fontSize: '0.7rem', padding: '4px 8px', borderRadius: '6px', fontWeight: 600
+                              }}>Panorama {i + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeFile360(i)}
+                                style={{
+                                  position: 'absolute', top: '8px', right: '8px',
+                                  background: 'rgba(239, 68, 68, 0.9)', border: 'none', color: '#fff',
+                                  padding: '6px', borderRadius: '50%', cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}
+                                title="Remover"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             </div>
 
                             {/* Controles de metadatos */}
-                            <div style={{ flex: 1, display: 'flex', gap: '10px' }}>
-                              <div style={{ flex: 1 }}>
-                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Piso *</label>
-                                <select
+                            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: errorPiso ? '#ef4444' : 'var(--color-text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                                  Piso *
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="Ej: Piso 1, Planta Baja"
+                                  required
                                   value={meta.piso}
                                   onChange={(e) => handleMeta360Change(i, 'piso', e.target.value)}
                                   style={{
-                                    width: '100%',
-                                    padding: '6px 8px',
-                                    borderRadius: '6px',
-                                    border: '1px solid var(--color-border)',
-                                    fontSize: '0.8rem',
-                                    outline: 'none',
-                                    background: '#fff'
+                                    width: '100%', padding: '10px 12px', borderRadius: '8px',
+                                    border: `1px solid ${errorPiso ? '#fca5a5' : 'var(--color-border)'}`,
+                                    fontSize: '0.9rem', outline: 'none'
                                   }}
-                                >
-                                  <option value="Piso 1">Piso 1</option>
-                                  <option value="Piso 2">Piso 2</option>
-                                  <option value="Piso 3">Piso 3</option>
-                                  <option value="Piso 4">Piso 4</option>
-                                  <option value="Piso 5">Piso 5</option>
-                                  <option value="Piso 6">Piso 6</option>
-                                  <option value="Piso 7">Piso 7</option>
-                                  <option value="Piso 8">Piso 8</option>
-                                </select>
+                                />
                               </div>
-                              <div style={{ flex: 2 }}>
-                                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: '4px', fontWeight: 600 }}>Habitación / Zona *</label>
+                              <div>
+                                <label style={{ display: 'block', fontSize: '0.8rem', color: errorHabitacion ? '#ef4444' : 'var(--color-text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                                  Habitación / Zona *
+                                </label>
                                 <input
                                   type="text"
-                                  placeholder="Ej: Sala, Cocina, Terraza"
+                                  placeholder="Ej: Sala principal, Terraza"
                                   required
                                   value={meta.habitacion}
                                   onChange={(e) => handleMeta360Change(i, 'habitacion', e.target.value)}
                                   style={{
-                                    width: '100%',
-                                    padding: '6px 8px',
-                                    borderRadius: '6px',
-                                    border: '1px solid var(--color-border)',
-                                    fontSize: '0.8rem',
-                                    outline: 'none'
+                                    width: '100%', padding: '10px 12px', borderRadius: '8px',
+                                    border: `1px solid ${errorHabitacion ? '#fca5a5' : 'var(--color-border)'}`,
+                                    fontSize: '0.9rem', outline: 'none'
                                   }}
                                 />
                               </div>
                             </div>
-
-                            {/* Botón eliminar */}
-                            <button
-                              type="button"
-                              onClick={() => removeFile360(i)}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--color-danger, #ef4444)',
-                                cursor: 'pointer',
-                                padding: '6px',
-                                borderRadius: '6px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'background 0.2s'
-                              }}
-                              title="Remover"
-                            >
-                              <Trash2 size={18} />
-                            </button>
                           </div>
                         );
                       })}
@@ -1270,7 +1323,7 @@ const MisInmuebles = () => {
 
             {/* Contenido del Paso */}
             <div style={{ padding: '30px 24px', flex: 1, overflowY: 'auto' }}>
-              
+
               {guiaPasoActivo === 1 && (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{
@@ -1306,7 +1359,7 @@ const MisInmuebles = () => {
                   </div>
                   <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 10px', color: '#1e293b' }}>Paso 2: Activa el Modo "Panorámica"</h4>
                   <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
-                    Abre tu cámara y desliza los modos de captura hasta encontrar <strong>"PANO" o "Panorámica"</strong>.<br/>
+                    Abre tu cámara y desliza los modos de captura hasta encontrar <strong>"PANO" o "Panorámica"</strong>.<br />
                     Sujeta el teléfono en <strong>posición vertical (retrato)</strong>. Esto te dará un campo de visión vertical mucho más amplio y detallado del espacio.
                   </p>
                 </div>
@@ -1326,7 +1379,7 @@ const MisInmuebles = () => {
                   </div>
                   <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 10px', color: '#1e293b' }}>Paso 3: Gira despacio sobre tu propio Eje</h4>
                   <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
-                    Párate en el centro de la habitación. Presiona el botón de captura y <strong>gira lentamente en círculo 360 grados</strong>.<br/>
+                    Párate en el centro de la habitación. Presiona el botón de captura y <strong>gira lentamente en círculo 360 grados</strong>.<br />
                     Intenta mantener el teléfono al mismo nivel y sigue la línea guía en pantalla para evitar costuras desalineadas o curvas.
                   </p>
                 </div>
@@ -1347,7 +1400,7 @@ const MisInmuebles = () => {
                   </div>
                   <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '0 0 10px', color: '#1e293b' }}>Paso 4: Guarda y Sube el archivo</h4>
                   <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6', margin: 0 }}>
-                    Tu celular procesará la imagen guardándola en tu galería con la proporción perfecta <strong>(proporción panorámica 2:1)</strong>.<br/>
+                    Tu celular procesará la imagen guardándola en tu galería con la proporción perfecta <strong>(proporción panorámica 2:1)</strong>.<br />
                     Presiona el botón de selección de fotos en esta pantalla, selecciónala y ¡listo! Nuestro motor 360° se encargará del resto de forma automática.
                   </p>
                 </div>
