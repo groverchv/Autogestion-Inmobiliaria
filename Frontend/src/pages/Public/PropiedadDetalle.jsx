@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Share2, MapPin, Bed, Bath, Maximize2, X, ChevronLeft,
-  ChevronRight, Home, Video, MessageCircle, Check, AlertCircle, Calendar
+  ChevronRight, Home, Video, MessageCircle, Check, AlertCircle, Calendar,
+  ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -142,12 +143,12 @@ const PropiedadDetalle = () => {
     <div className="propiedades-page">
       <Navbar />
 
-      {isAuthenticated && user?.rol !== 'admin' && (
+      {isAuthenticated && (
         <UserMenu />
       )}
 
       <div className="propiedades-content" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-        <Link to="/propiedades" style={{ display: 'inline-block', marginBottom: '20px', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Link to="/propiedades" style={{ marginBottom: '20px', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ChevronLeft size={18} /> Volver al catálogo
         </Link>
 
@@ -177,14 +178,45 @@ const PropiedadDetalle = () => {
                         <Home size={80} strokeWidth={1.5} />
                       </div>
                     )}
-                    <span style={{ position: 'absolute', top: '24px', left: '24px', background: estadoStyle.bg, color: estadoStyle.color, padding: '6px 14px', border: estadoStyle.border, borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>
-                      {inmueble.estado}
-                    </span>
-                    {offerStyle && (
-                      <span style={{ position: 'absolute', top: '64px', left: '24px', background: offerStyle.bg, color: offerStyle.color, border: offerStyle.border, padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
-                        {offerStyle.label}
+                    
+                    <div style={{ position: 'absolute', top: '24px', left: '24px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 2 }}>
+                      <span style={{ background: estadoStyle.bg, color: estadoStyle.color, padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', width: 'fit-content' }}>
+                        {inmueble.estado}
                       </span>
-                    )}
+                      {inmueble.verificacion_estado && inmueble.verificacion_estado !== 'no_solicitado' && (
+                        <span 
+                          style={{ 
+                            background: inmueble.verificacion_estado === 'verificado' ? '#dcfce7' : 
+                                        inmueble.verificacion_estado === 'observado' ? '#fef3c7' : 
+                                        inmueble.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
+                            color: inmueble.verificacion_estado === 'verificado' ? '#15803d' : 
+                                   inmueble.verificacion_estado === 'observado' ? '#d97706' : 
+                                   inmueble.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
+                            padding: '6px 14px', 
+                            borderRadius: '20px', 
+                            fontSize: '0.8rem', 
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            width: 'fit-content'
+                          }}
+                        >
+                          {inmueble.verificacion_estado === 'verificado' ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
+                          {inmueble.verificacion_estado === 'verificado' ? '✓ Título Verificado con IA' : 
+                           inmueble.verificacion_estado === 'observado' ? '⚠ Título Observado' : 
+                           inmueble.verificacion_estado === 'procesando' ? '⌛ Procesando Verificación' : '✗ Título Inválido'}
+                        </span>
+                      )}
+                      
+                      {offerStyle && (
+                        <span style={{ background: offerStyle.bg, color: offerStyle.color, border: offerStyle.border, padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', backdropFilter: 'blur(4px)', width: 'fit-content' }}>
+                          {offerStyle.label}
+                        </span>
+                      )}
+                    </div>
+
                     {inmueble.tipo_nombre && (
                       <span style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,255,255,0.9)', color: 'var(--color-text-secondary)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
                         {inmueble.tipo_nombre}
@@ -315,6 +347,75 @@ const PropiedadDetalle = () => {
                       </div>
                     </div>
                   )}
+
+            {inmueble.verificacion_estado && inmueble.verificacion_estado !== 'no_solicitado' && (
+              <div style={{ 
+                marginBottom: '32px',
+                background: inmueble.verificacion_estado === 'verificado' ? '#f0fdf4' : 
+                            inmueble.verificacion_estado === 'observado' ? '#fffbeb' : '#fef2f2',
+                border: '1px solid ' + (
+                            inmueble.verificacion_estado === 'verificado' ? '#bbf7d0' : 
+                            inmueble.verificacion_estado === 'observado' ? '#fef08a' : '#fecaca'
+                         ),
+                borderRadius: '12px',
+                padding: '24px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              }}>
+                <h3 style={{ 
+                  margin: '0 0 12px 0', 
+                  fontSize: '1.15rem', 
+                  fontWeight: 700, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px',
+                  color: inmueble.verificacion_estado === 'verificado' ? '#166534' : 
+                         inmueble.verificacion_estado === 'observado' ? '#92400e' : '#991b1b'
+                }}>
+                  {inmueble.verificacion_estado === 'verificado' ? (
+                    <>
+                      <ShieldCheck size={24} style={{ color: '#16a34a' }} />
+                      Título Verificado por IA (Garantía de Autenticidad)
+                    </>
+                  ) : inmueble.verificacion_estado === 'observado' ? (
+                    <>
+                      <ShieldAlert size={24} style={{ color: '#d97706' }} />
+                      Título con Observaciones
+                    </>
+                  ) : (
+                    <>
+                      <ShieldAlert size={24} style={{ color: '#dc2626' }} />
+                      Documentación de Propiedad con Advertencias
+                    </>
+                  )}
+                </h3>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '0.95rem', 
+                  lineHeight: '1.6', 
+                  color: inmueble.verificacion_estado === 'verificado' ? '#1e4620' : 
+                         inmueble.verificacion_estado === 'observado' ? '#78350f' : '#7f1d1d'
+                }}>
+                  {inmueble.verificacion_resumen || 'La documentación legal de propiedad fue analizada automáticamente por nuestra Inteligencia Artificial.'}
+                </p>
+                {inmueble.verificacion_estado === 'verificado' && inmueble.verificacion_score && (
+                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      background: '#16a34a', 
+                      color: '#fff', 
+                      padding: '3px 8px', 
+                      borderRadius: '12px', 
+                      fontWeight: 700 
+                    }}>
+                      Confianza de Análisis: {inmueble.verificacion_score}/100
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 500 }}>
+                      ✓ Datos de DDRR e identidad validados exitosamente.
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {inmueble.gps && (
               <div style={{ marginBottom: '32px' }}>

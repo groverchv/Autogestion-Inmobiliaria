@@ -1,4 +1,4 @@
-from .models import TipoContrato, Contrato
+from .models import TipoContrato, Contrato, VerificacionTitulo
 
 
 def get_tipos_contrato_for_select():
@@ -62,6 +62,9 @@ def get_contrato_pdf_data(contrato_id):
         'incluye_servicios': contrato.incluye_servicios,
         'restricciones': contrato.restricciones,
         'observaciones': contrato.observaciones,
+        'antecedentes': contrato.antecedentes,
+        'uso_exclusivo': contrato.uso_exclusivo,
+        'clausulas_especiales': contrato.clausulas_especiales,
     }
 
 def get_datos_contrato_para_ia(contrato_id: int, usuario) -> dict:
@@ -98,5 +101,21 @@ def get_datos_contrato_para_ia(contrato_id: int, usuario) -> dict:
             "telefono": getattr(contrato.inquilino, 'telefono', 'N/A') or 'N/A',
         },
         "clausulas_adicionales": contrato.clausulas or "Ninguna",
-        "penalidades": contrato.penalidades or "Ninguna"
-    }
+        "clausulas_especiales": contrato.clausulas_especiales or "Ninguna",
+        "penalidades": contrato.penalidades or "Ninguna",
+        "antecedentes": contrato.antecedentes or "No especificado",
+        "uso_exclusivo": contrato.uso_exclusivo or "No especificado",
+        "condiciones_uso": contrato.condiciones_uso or "Ninguna",
+        "politica_cancelacion": contrato.politica_cancelacion or "Ninguna",
+        "incluye_servicios": contrato.incluye_servicios or "Ninguna",
+        "restricciones": contrato.restricciones or "Ninguna",
+    }
+
+
+def get_verificacion_by_inmueble(inmueble_id: int):
+    """Obtiene la verificación de título registrada para un inmueble, o retorna None."""
+    try:
+        return VerificacionTitulo.objects.get(inmueble_id=inmueble_id)
+    except VerificacionTitulo.DoesNotExist:
+        return None
+

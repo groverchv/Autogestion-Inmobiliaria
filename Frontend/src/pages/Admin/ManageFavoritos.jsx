@@ -5,7 +5,7 @@ const ManageFavoritos = () => {
   const columns = [
     { key: 'id', label: 'ID' },
     { 
-      key: 'inmueble_data', 
+      key: 'inmueble_data_inmueble', 
       label: 'Inmueble', 
       render: (item) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -20,10 +20,10 @@ const ManageFavoritos = () => {
         </div>
       ) 
     },
-    { key: 'inmueble_data', label: 'Ubicación', render: (item) => `${item.inmueble_data?.ciudad}, ${item.inmueble_data?.zona || ''}` },
-    { key: 'inmueble_data', label: 'Precio', render: (item) => `Bs. ${parseFloat(item.inmueble_data?.precio || 0).toLocaleString()}` },
+    { key: 'inmueble_data_ubicacion', label: 'Ubicación', render: (item) => `${item.inmueble_data?.ciudad}, ${item.inmueble_data?.zona || ''}` },
+    { key: 'inmueble_data_precio', label: 'Precio', render: (item) => `Bs. ${parseFloat(item.inmueble_data?.precio || 0).toLocaleString()}` },
     { 
-      key: 'inmueble_data', 
+      key: 'inmueble_data_estado', 
       label: 'Estado', 
       render: (item) => {
         const colors = { disponible: '#16a34a', ocupado: '#dc2626', mantenimiento: '#f59e0b', reservado: '#3b82f6' };

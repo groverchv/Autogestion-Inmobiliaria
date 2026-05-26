@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { FileText, Eye, ChevronDown, ChevronUp, CheckCircle, XCircle, Clock, AlertTriangle, Home, User, Sparkles } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { FileText, Eye, ChevronDown, ChevronUp, CheckCircle, XCircle, Clock, AlertTriangle, Home, User, Sparkles, Send, Bot, RotateCcw } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
 import Modal from '../../components/Modal';
+import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
+import useAlertConfirm from '../../hooks/useAlertConfirm';
 import useAuth from '../../hooks/useAuth';
 import contratoService from '../../services/contratoService';
 import './Propiedades.css';
@@ -20,6 +22,7 @@ const estadoConfig = {
 
 const MisContratos = () => {
   const { isAuthenticated, user } = useAuth();
+  const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
   const [contratos, setContratos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedContrato, setSelectedContrato] = useState(null);
@@ -44,9 +47,7 @@ const MisContratos = () => {
   }
 
   return (
-    <div className="propiedades-page">
-      <Navbar />
-      <UserMenu />
+    <div className="propiedades-page" style={{ paddingTop: '20px' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
@@ -113,13 +114,22 @@ const MisContratos = () => {
 
       {/* Modal de detalle del contrato */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Detalle del Contrato">
-        {selectedContrato && <ContratoDetalle contrato={selectedContrato} user={user} onUpdate={() => { fetchContratos(); setShowModal(false); }} />}
+        {selectedContrato && (
+          <ContratoDetalle 
+            contrato={selectedContrato} 
+            user={user} 
+            onUpdate={() => { fetchContratos(); setShowModal(false); }} 
+            showAlert={showAlert}
+            showConfirm={showConfirm}
+          />
+        )}
       </Modal>
+      {ModalComponent}
     </div>
   );
 };
 
-const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
+const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }) => {
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -131,6 +141,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
 
       const link = document.createElement('a');
       link.href = blobUrl;
+      link.setAttribute('download', `Contrato_Oficial_${c.id}.pdf`);
       link.download = `Contrato_Oficial_${c.id}.pdf`;
       // Estilo fuera de pantalla para evitar flicker y asegurar compatibilidad Chrome
       link.style.position = 'absolute';
@@ -145,66 +156,187 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
       }, 2000);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Error al descargar el PDF');
+      showAlert({ title: 'Error de descarga', message: 'No se pudo descargar el contrato en formato PDF.', status: 'error' });
     }
   };
 
   const esCliente = c.inquilino === user?.id;
   const puedeAceptar = esCliente && c.estado === 'enviado';
-  const puedeRechazar = esCliente && c.estado === 'enviado';
 
-  const handleAceptar = async () => {
-    setActionLoading(true);
-    try {
-      await contratoService.aceptar(c.id);
-      onUpdate();
-    } catch (e) { alert(e.response?.data?.error || 'Error'); }
-    finally { setActionLoading(false); }
+  const handleAceptar = () => {
+    showConfirm({
+      title: '¿Aceptar y Firmar Contrato?',
+      message: '¿Estás seguro de que deseas aceptar los términos y condiciones de este contrato? Al aceptar, se registrarán automáticamente tus firmas criptográficas digitales en la Blockchain.',
+      status: 'question',
+      confirmText: 'Sí, aceptar y firmar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          await contratoService.aceptar(c.id);
+          showAlert({
+            title: '¡Contrato Firmado!',
+            message: 'Has firmado y aceptado el contrato exitosamente. Sus bloques e historial digital se han sellado de forma inmutable en la Blockchain.',
+            status: 'success'
+          });
+          onUpdate();
+        } catch (e) {
+          showAlert({
+            title: 'Error al firmar',
+            message: e.response?.data?.error || 'No se pudo firmar el contrato.',
+            status: 'error'
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    });
   };
 
-  const handleRechazar = async () => {
-    if (!motivoRechazo.trim()) { alert('Ingresa un motivo de rechazo'); return; }
-    setActionLoading(true);
-    try {
-      await contratoService.rechazar(c.id, motivoRechazo);
-      onUpdate();
-    } catch (e) { alert(e.response?.data?.error || 'Error'); }
-    finally { setActionLoading(false); }
+  const handleRechazar = () => {
+    if (!motivoRechazo.trim()) {
+      showAlert({
+        title: 'Motivo Requerido',
+        message: 'Por favor, ingresa un motivo para rechazar el borrador de contrato.',
+        status: 'warning'
+      });
+      return;
+    }
+    showConfirm({
+      title: '¿Rechazar Contrato?',
+      message: '¿Estás seguro de que deseas rechazar este borrador? Se notificará al propietario con tus observaciones.',
+      status: 'warning',
+      confirmText: 'Sí, rechazar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          await contratoService.rechazar(c.id, motivoRechazo);
+          showAlert({
+            title: 'Contrato Devuelto',
+            message: 'Has rechazado el contrato. Se ha notificado al propietario con tus observaciones.',
+            status: 'info'
+          });
+          onUpdate();
+        } catch (e) {
+          showAlert({
+            title: 'Error al rechazar',
+            message: e.response?.data?.error || 'No se pudo rechazar el contrato.',
+            status: 'error'
+          });
+        } finally {
+          setActionLoading(false);
+        }
+      }
+    });
   };
 
   const [isGeneratingIA, setIsGeneratingIA] = useState(false);
 
+  // ── Chat con Asistente IA ──────────────────────────────
+  const [chatMensajes, setChatMensajes] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatCargando, setChatCargando] = useState(false);
+  const [chatIniciado, setChatIniciado] = useState(false);
+  const [temasClickeados, setTemasClickeados] = useState([]);
+  const chatEndRef = useRef(null);
+
+  // Scroll al fondo del chat cuando llegan nuevos mensajes
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMensajes]);
+
+  // Inicializar chat con saludo automático al abrir el modal
+  useEffect(() => {
+    if (!chatIniciado) {
+      setChatIniciado(true);
+      const saludo = `¡Hola! Soy tu asistente legal. Revisé el contrato de **${c.tipo_contrato_nombre || 'arrendamiento'}** entre **${c.propietario_nombre}** (propietario) y **${c.inquilino_nombre}** (inquilino) por el inmueble **${c.inmueble_titulo}** a $${c.monto} ${c.moneda}/mes.\n\n¿En qué puedo ayudarte? Puedo sugerirte cláusulas, restricciones, condiciones de uso, o analizar posibles riesgos para ambas partes.`;
+      setChatMensajes([{ role: 'assistant', content: saludo }]);
+    }
+  }, [chatIniciado, c]);
+
+  // Temas del contrato con sus chips — se van marcando conforme se hablan
+  const TEMAS_CONTRATO = [
+    { id: 'clausulas',    emoji: '📋', label: 'Cláusulas',          pregunta: '¿Qué cláusulas recomiendas para este contrato?' },
+    { id: 'restricciones',emoji: '🚫', label: 'Restricciones',      pregunta: '¿Qué restricciones debería incluir el contrato?' },
+    { id: 'garantias',    emoji: '🛡️', label: 'Garantías',          pregunta: '¿Cómo debería estructurarse la garantía y el depósito?' },
+    { id: 'penalizaciones',emoji: '⚠️', label: 'Penalizaciones',   pregunta: '¿Qué penalizaciones recomiendas incluir si el inquilino incumple?' },
+    { id: 'servicios',    emoji: '💡', label: 'Servicios',          pregunta: '¿Qué servicios debería incluir o excluir el contrato?' },
+    { id: 'cancelacion',  emoji: '🗓️', label: 'Cancelación',       pregunta: '¿Cuál debería ser la política de cancelación del contrato?' },
+    { id: 'renovacion',   emoji: '🔄', label: 'Renovación',        pregunta: '¿Qué tipo de cláusula de renovación recomiendas?' },
+    { id: 'riesgos',      emoji: '⚡', label: 'Riesgos Legales',   pregunta: '¿Cuáles son los principales riesgos legales de este contrato?' },
+    { id: 'uso',          emoji: '🏠', label: 'Uso del Inmueble',  pregunta: '¿Qué condiciones de uso debo especificar en el contrato?' },
+    { id: 'antecedentes', emoji: '📄', label: 'Antecedentes',       pregunta: '¿Qué antecedentes del inmueble debo incluir en el contrato?' },
+  ];
+
+  // Retorna los temas que AUN NO se han discutido (se filtra por click del usuario)
+  const getChipsPendientes = () => {
+    return TEMAS_CONTRATO.filter(t => !temasClickeados.includes(t.id));
+  };
+
+  const enviarMensaje = async (textoOverride) => {
+    const texto = (textoOverride || chatInput).trim();
+    if (!texto || chatCargando) return;
+
+    const nuevosMensajes = [...chatMensajes, { role: 'user', content: texto }];
+    setChatMensajes(nuevosMensajes);
+    setChatInput('');
+    setChatCargando(true);
+
+    try {
+      const respuesta = await contratoService.chatIA(c.id, nuevosMensajes);
+      setChatMensajes(prev => [...prev, { role: 'assistant', content: respuesta }]);
+    } catch {
+      setChatMensajes(prev => [...prev, {
+        role: 'assistant',
+        content: '❌ Ocurrió un error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
+      }]);
+    } finally {
+      setChatCargando(false);
+    }
+  };
+
+  // Extrae el texto del chat para enviarlo como instrucciones al PDF
+  const getChatComoInstrucciones = () => {
+    const conversacion = chatMensajes
+      .filter((m, idx) => m.role !== 'assistant' || idx > 0) // Excluye el saludo inicial
+      .map(m => `${m.role === 'user' ? 'Usuario' : 'Abogado IA'}: ${m.content}`)
+      .join('\n\n');
+    return conversacion.length > 100 ? conversacion : '';
+  };
+
   const handleDownloadIA = async () => {
     setIsGeneratingIA(true);
     try {
-      const blob = await contratoService.generarContratoIA(c.id);
+      // Usar el chat como instrucciones para el PDF
+      const instruccionesChat = getChatComoInstrucciones();
+      const blob = await contratoService.generarContratoIA(c.id, instruccionesChat);
       const pdfBlob = new Blob([blob], { type: 'application/pdf' });
       const fileName = `Contrato_IA_${c.id}.pdf`;
 
-      // Método universal: funciona en Brave, Firefox y Chrome moderno
-      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-        // IE/Edge Legacy
-        window.navigator.msSaveOrOpenBlob(pdfBlob, fileName);
-      } else {
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName;
-        // Chrome bloquea 'download' si el elemento no está en el layout o es 'display: none'
-        link.style.position = 'absolute';
-        link.style.left = '-9999px';
-        link.style.top = '0';
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-          URL.revokeObjectURL(blobUrl);
-          if (link.parentNode) document.body.removeChild(link);
-        }, 2000);
-      }
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', fileName);
+      link.download = fileName;
+      link.style.position = 'absolute';
+      link.style.left = '-9999px';
+      link.style.top = '0';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        if (link.parentNode) document.body.removeChild(link);
+      }, 2000);
     } catch (error) {
       console.error('Error generando PDF con IA:', error);
-      alert('Hubo un error al contactar a la Inteligencia Artificial. Intenta de nuevo.');
+      showAlert({
+        title: 'Error de Asistente IA',
+        message: 'Hubo un error al contactar a la Inteligencia Artificial para la redacción legal del contrato.',
+        status: 'error'
+      });
     } finally {
       setIsGeneratingIA(false);
     }
@@ -269,7 +401,10 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
       </div>
 
       {/* Cláusulas Legales */}
+      {c.antecedentes && <div style={sectionStyle}><div style={titleStyle}>Antecedentes</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f0f9ff', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #bae6fd' }}>{c.antecedentes}</div></div>}
       {c.clausulas && <div style={sectionStyle}><div style={titleStyle}>Cláusulas</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.clausulas}</div></div>}
+      {c.clausulas_especiales && <div style={sectionStyle}><div style={titleStyle}>Cláusulas Especiales</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#faf5ff', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #e9d5ff' }}>{c.clausulas_especiales}</div></div>}
+      {c.uso_exclusivo && <div style={sectionStyle}><div style={titleStyle}>Uso Exclusivo del Inmueble</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f0fdf4', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #bbf7d0' }}>{c.uso_exclusivo}</div></div>}
       {c.condiciones_uso && <div style={sectionStyle}><div style={titleStyle}>Condiciones de Uso</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.condiciones_uso}</div></div>}
       {c.penalidades && <div style={sectionStyle}><div style={titleStyle}>Penalidades</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#fef2f2', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.penalidades}</div></div>}
       {c.politica_cancelacion && <div style={sectionStyle}><div style={titleStyle}>Política de Cancelación</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.politica_cancelacion}</div></div>}
@@ -277,6 +412,11 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
       {c.restricciones && <div style={sectionStyle}><div style={titleStyle}>Restricciones</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#fef3c7', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.restricciones}</div></div>}
       {c.observaciones && <div style={sectionStyle}><div style={titleStyle}>Observaciones</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.observaciones}</div></div>}
       {c.motivo_rechazo && <div style={sectionStyle}><div style={titleStyle}>Motivo de Rechazo</div><div style={{ fontSize: '0.88rem', color: '#dc2626', whiteSpace: 'pre-wrap', background: '#fee2e2', padding: '12px', borderRadius: '8px' }}>{c.motivo_rechazo}</div></div>}
+
+      {/* Trazabilidad inmutable en Blockchain */}
+      <div style={{ marginTop: '24px', borderTop: '2px solid #e2e8f0', paddingTop: '20px', marginBottom: '20px' }}>
+        <BlockchainAuditTrail assetId={`CON-${c.id}`} />
+      </div>
 
       {/* Acciones del cliente */}
       {puedeAceptar && (
@@ -304,8 +444,214 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
         </div>
       )}
       
-      {/* Botón de descarga de PDF */}
-      <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '16px', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* ── ASISTENTE IA CHAT ─────────────────────────────── */}
+      <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '16px', marginTop: '16px' }}>
+        {/* Header del chat */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Bot size={16} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>Asistente Legal IA</div>
+              <div style={{ fontSize: '0.72rem', color: '#8b5cf6' }}>Abogado Inmobiliario Boliviano · Powered by Llama 3.3</div>
+            </div>
+          </div>
+          <button
+            onClick={() => { setChatMensajes([]); setChatIniciado(false); setTemasClickeados([]); }}
+            title="Reiniciar conversación"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}
+          >
+            <RotateCcw size={14} />
+          </button>
+        </div>
+
+        {/* Área de mensajes */}
+        <div style={{
+          height: '300px', overflowY: 'auto', border: '1px solid #e2e8f0',
+          borderRadius: '12px', padding: '12px', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+          display: 'flex', flexDirection: 'column', gap: '12px',
+          scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent',
+        }}>
+          {chatMensajes.map((msg, idx) => (
+            <div key={idx} style={{
+              display: 'flex',
+              flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+              alignItems: 'flex-start', gap: '8px',
+            }}>
+              {/* Avatar */}
+              <div style={{
+                width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
+                background: msg.role === 'user'
+                  ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                  : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.6rem', fontWeight: 800, color: '#fff',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+              }}>
+                {msg.role === 'user' ? 'Tú' : <Bot size={13} />}
+              </div>
+              {/* Burbuja */}
+              <div style={{
+                maxWidth: '78%',
+                background: msg.role === 'user'
+                  ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                  : '#ffffff',
+                color: msg.role === 'user' ? '#fff' : '#1e293b',
+                borderRadius: msg.role === 'user' ? '18px 4px 18px 18px' : '4px 18px 18px 18px',
+                padding: '10px 14px',
+                fontSize: '0.84rem',
+                lineHeight: '1.6',
+                boxShadow: msg.role === 'user'
+                  ? '0 3px 12px rgba(99,102,241,0.35)'
+                  : '0 2px 8px rgba(0,0,0,0.08)',
+                border: msg.role === 'assistant' ? '1px solid #e2e8f0' : 'none',
+                borderLeft: msg.role === 'assistant' ? '3px solid #8b5cf6' : 'none',
+                whiteSpace: 'pre-wrap',
+              }}>
+                {msg.content.replace(/\*\*(.*?)\*\*/g, '$1')}
+              </div>
+            </div>
+          ))}
+          {chatCargando && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <div style={{
+                width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+              }}>
+                <Bot size={13} color="#fff" />
+              </div>
+              <div style={{
+                background: '#fff', border: '1px solid #e2e8f0', borderLeft: '3px solid #8b5cf6',
+                borderRadius: '4px 18px 18px 18px',
+                padding: '12px 18px', display: 'flex', gap: '5px', alignItems: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              }}>
+                {[0, 1, 2].map(i => (
+                  <div key={i} style={{
+                    width: '7px', height: '7px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
+                  }} />
+                ))}
+              </div>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Chips dinámicos: todos visibles en cuadrícula de 2 filas */}
+        {!chatCargando && (() => {
+          const pendientes = getChipsPendientes();
+          if (pendientes.length === 0) return null;
+          const esInicio = chatMensajes.length <= 1;
+          return (
+            <div style={{ marginTop: '8px' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: '6px',
+              }}>
+                <span style={{ fontSize: '0.71rem', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.3px' }}>
+                  {esInicio ? '¿Por dónde quieres empezar?' : 'También puedo ayudarte con:'}
+                </span>
+                <span style={{
+                  fontSize: '0.68rem', background: '#ede9fe', color: '#7c3aed',
+                  borderRadius: '10px', padding: '2px 8px', fontWeight: 700,
+                }}>
+                  {pendientes.length} temas
+                </span>
+              </div>
+              {/* Grid visible — todos los chips en 2 filas max */}
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '6px',
+              }}>
+                {pendientes.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setTemasClickeados(prev => [...prev, t.id]);
+                      enviarMensaje(t.pregunta);
+                    }}
+                    style={{
+                      background: '#f5f3ff', color: '#6d28d9',
+                      border: '1.5px solid #ddd6fe',
+                      borderRadius: '20px', padding: '5px 12px',
+                      fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
+                      transition: 'all 0.15s',
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseOver={e => {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+                      e.currentTarget.style.color = '#fff';
+                      e.currentTarget.style.borderColor = '#8b5cf6';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 4px 10px rgba(139,92,246,0.3)';
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.background = '#f5f3ff';
+                      e.currentTarget.style.color = '#6d28d9';
+                      e.currentTarget.style.borderColor = '#ddd6fe';
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <span style={{ fontSize: '0.82rem' }}>{t.emoji}</span>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Input del chat */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+          <input
+            type="text"
+            value={chatInput}
+            onChange={e => setChatInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviarMensaje()}
+            placeholder="Escribe tu consulta al asistente legal..."
+            disabled={chatCargando}
+            style={{
+              flex: 1, border: '1.5px solid #e2e8f0', borderRadius: '12px',
+              padding: '10px 16px', fontSize: '0.88rem', fontFamily: 'inherit',
+              background: '#fff', outline: 'none',
+              opacity: chatCargando ? 0.6 : 1,
+              transition: 'border-color 0.15s, box-shadow 0.15s',
+            }}
+            onFocus={e => { e.target.style.borderColor = '#8b5cf6'; e.target.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.12)'; }}
+            onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
+          />
+          <button
+            onClick={() => enviarMensaje()}
+            disabled={!chatInput.trim() || chatCargando}
+            style={{
+              width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+              background: !chatInput.trim() || chatCargando
+                ? '#e2e8f0'
+                : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              border: 'none', cursor: !chatInput.trim() || chatCargando ? 'default' : 'pointer',
+              color: !chatInput.trim() || chatCargando ? '#94a3b8' : '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+              boxShadow: !chatInput.trim() || chatCargando ? 'none' : '0 4px 12px rgba(139,92,246,0.35)',
+            }}
+          >
+            <Send size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Botones de descarga de PDF */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
         <button onClick={handleDownloadIA} disabled={isGeneratingIA} style={{
           width: '100%', background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff',
           border: 'none', borderRadius: '10px', padding: '12px', fontWeight: 700, fontSize: '0.95rem',
@@ -314,8 +660,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
         }}>
           {isGeneratingIA ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-              Redactando con IA...
+              <div style={{ width: '16px', height: '16px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+              Redactando contrato con IA...
             </span>
           ) : (
             <><Sparkles size={18} /> Generar Contrato con IA</>
@@ -330,7 +676,14 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
           <FileText size={18} /> Descargar Contrato Básico PDF
         </button>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        .chips-scroll::-webkit-scrollbar { display: none; }
+      `}</style>
     </div>
   );
 };

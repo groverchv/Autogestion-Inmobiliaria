@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion, Hotspot
+from .models import TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion, Hotspot, VerificacionTitulo
 
 
 class TipoInmuebleSerializer(serializers.ModelSerializer):
@@ -50,6 +50,9 @@ class InmuebleSerializer(serializers.ModelSerializer):
     precio = serializers.SerializerMethodField(read_only=True)
     tipo_oferta = serializers.SerializerMethodField(read_only=True)
     publicaciones = PublicacionSerializer(many=True, read_only=True)
+    verificacion_estado = serializers.SerializerMethodField(read_only=True)
+    verificacion_score = serializers.SerializerMethodField(read_only=True)
+    verificacion_resumen = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Inmueble
@@ -81,6 +84,25 @@ class InmuebleSerializer(serializers.ModelSerializer):
                 instance.direccion = direccion
         return super().update(instance, validated_data)
 
+    def get_verificacion_estado(self, obj):
+        try:
+            return obj.verificacion_titulo.estado
+        except Exception:
+            return None
+
+    def get_verificacion_score(self, obj):
+        try:
+            return obj.verificacion_titulo.score_confianza
+        except Exception:
+            return None
+
+    def get_verificacion_resumen(self, obj):
+        try:
+            return obj.verificacion_titulo.resumen_publico
+        except Exception:
+            return None
+
+
 
 class InmuebleListSerializer(serializers.ModelSerializer):
     """Serializer ligero para listados."""
@@ -90,6 +112,8 @@ class InmuebleListSerializer(serializers.ModelSerializer):
     direccion = DireccionSerializer(read_only=True)
     precio = serializers.SerializerMethodField(read_only=True)
     tipo_oferta = serializers.SerializerMethodField(read_only=True)
+    verificacion_estado = serializers.SerializerMethodField(read_only=True)
+    verificacion_score = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Inmueble
@@ -97,7 +121,8 @@ class InmuebleListSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'tipo_nombre', 'direccion',
             'precio', 'tipo_oferta', 'estado', 'habitaciones', 'banos',
             'imagen_principal', 'creado', 'is_favorito',
-            'largo', 'ancho', 'superficie'
+            'largo', 'ancho', 'superficie',
+            'verificacion_estado', 'verificacion_score'
         ]
 
     def get_precio(self, obj):
@@ -126,6 +151,29 @@ class InmuebleListSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return None
+
+    def get_verificacion_estado(self, obj):
+        try:
+            return obj.verificacion_titulo.estado
+        except Exception:
+            return None
+
+    def get_verificacion_score(self, obj):
+        try:
+            return obj.verificacion_titulo.score_confianza
+        except Exception:
+            return None
+
+
+class VerificacionTituloSerializer(serializers.ModelSerializer):
+    solicitado_por_nombre = serializers.CharField(source='solicitado_por.get_full_name', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+
+    class Meta:
+        model = VerificacionTitulo
+        fields = '__all__'
+        read_only_fields = ['id', 'solicitado_por', 'texto_ocr', 'resultado_ia', 'estado', 'score_confianza', 'resumen_publico', 'creado', 'actualizado']
+
 
 
 class TipoContratoSerializer(serializers.ModelSerializer):

@@ -43,7 +43,7 @@ class PagoViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = Pago.objects.select_related('contrato', 'tipo_pago', 'usuario').prefetch_related('detalles')
         if not user.is_authenticated: return qs.none()
-        if user.is_staff or user.rol == 'admin':
+        if (user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return qs.all()
         # Dueño del pago o dueño del inmueble asociado al contrato
         from django.db.models import Q
@@ -68,7 +68,7 @@ class HistorialPagoViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         qs = HistorialPago.objects.select_related('pago', 'usuario')
         if not user.is_authenticated: return qs.none()
-        if user.is_staff or user.rol == 'admin':
+        if (user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return qs.all()
         # Solo lo relacionado a sus propios pagos
         from django.db.models import Q
@@ -593,7 +593,7 @@ class ReportesAPIView(APIView):
             'ciudad': request.query_params.get('ciudad'),
         }
 
-        if request.user.rol == 'admin' or request.user.is_staff:
+        if (request.user.rol == 'admin' or request.user.is_staff) and request.query_params.get('personal') != 'true':
             # Vista Administrador
             data = obtener_estadisticas_admin(filtros)
             return Response(data)

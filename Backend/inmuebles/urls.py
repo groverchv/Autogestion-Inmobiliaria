@@ -42,6 +42,9 @@ from .views import (
     CitaViewSet,
     HorarioDisponibleViewSet,
     HotspotViewSet,
+    VerificacionTituloViewSet,
+    BlockchainHistorialView,
+    BlockchainStatsView,
 )
 
 router = DefaultRouter()
@@ -58,6 +61,7 @@ router.register(r'favoritos',       FavoritoViewSet,        basename='favoritos'
 router.register(r'citas',           CitaViewSet,            basename='citas')
 router.register(r'horarios',        HorarioDisponibleViewSet, basename='horarios')
 router.register(r'hotspots',        HotspotViewSet,         basename='hotspots')
+router.register(r'verificacion',    VerificacionTituloViewSet, basename='verificacion')
 
 # ─── Rutas del panel admin ────────────────────────────────────────────────────
 router.register(r'panel/tipos',     TipoInmuebleViewSet,    basename='panel-tipos')
@@ -70,5 +74,7 @@ router.register(r'panel/horarios',  HorarioDisponibleViewSet, basename='panel-ho
 router.register(r'panel/hotspots',  HotspotViewSet,         basename='panel-hotspots')
 
 urlpatterns = [
+    path('blockchain/stats/', BlockchainStatsView.as_view(), name='blockchain-stats'),
+    path('blockchain/historial/<str:asset_id>/', BlockchainHistorialView.as_view(), name='blockchain-historial'),
     path('', include(router.urls)),
 ]

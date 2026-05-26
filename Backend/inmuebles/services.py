@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.db.models import Q
-from .models import TipoContrato, Contrato
+from .models import TipoContrato, Contrato, VerificacionTitulo, Inmueble
 from django.core.exceptions import ValidationError
 
 
@@ -95,17 +95,26 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
 from io import BytesIO
 from .selectors import get_datos_contrato_para_ia
 
-def generar_contrato_pdf_con_ia(contrato_id: int, usuario) -> bytes:
-    """Genera un PDF del contrato con IA (Groq) y diseño profesional tipo notarial."""
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+def generar_contrato_pdf_con_ia(contrato_id: int, usuario, instrucciones_usuario: str = '') -> bytes:
+    """Genera un PDF del contrato con IA (Groq) y diseño profesional tipo notarial.
+    
+    Args:
+        contrato_id: ID del contrato
+        usuario: Usuario que solicita la generación
+        instrucciones_usuario: Texto libre del usuario (escrito o transcrito de audio)
+            con indicaciones adicionales para el contrato (antecedentes, cláusulas, etc.)
+    """
 
     # 1. Obtener datos
     datos = get_datos_contrato_para_ia(contrato_id, usuario)
-
+    
     # 2. Construir Prompt
     prompt = f"""
 Actúa como un Abogado Inmobiliario Boliviano experto. Redacta el texto legal completo para un {datos['tipo_contrato']}.
-Usa estrictamente los siguientes datos, sin inventar ni agregar información extra:
 
+DATOS DEL CONTRATO (usa estos datos exactamente, no modifiques nombres, fechas ni montos):
 - Propietario: {datos['propietario']['nombre']} (CI: {datos['propietario']['ci']})
 - Inquilino/Cliente: {datos['inquilino']['nombre']} (CI: {datos['inquilino']['ci']})
 - Inmueble: {datos['inmueble']['titulo']} ubicado en {datos['inmueble']['direccion']} (Superficie: {datos['inmueble']['superficie']} m2)
@@ -114,13 +123,34 @@ Usa estrictamente los siguientes datos, sin inventar ni agregar información ext
 - Monto: {datos['monto']} {datos['moneda']}
 - Día de pago: {datos['dia_pago']} de cada mes
 - Depósito de Garantía: {datos['deposito']} {datos['moneda']}
+- Antecedentes: {datos['antecedentes']}
+- Uso Exclusivo del Inmueble: {datos['uso_exclusivo']}
 - Cláusulas Adicionales: {datos['clausulas_adicionales']}
+- Cláusulas Especiales: {datos['clausulas_especiales']}
 - Penalidades: {datos['penalidades']}
+- Condiciones de Uso: {datos['condiciones_uso']}
+- Política de Cancelación: {datos['politica_cancelacion']}
+- Servicios Incluidos: {datos['incluye_servicios']}
+- Restricciones: {datos['restricciones']}
 
-El contrato debe tener las secciones: ANTECEDENTES, OBJETO DEL CONTRATO, DURACIÓN, PRECIO Y FORMA DE PAGO, OBLIGACIONES DEL PROPIETARIO, OBLIGACIONES DEL ARRENDATARIO, GARANTÍA, CLÁUSULAS ESPECIALES, RESOLUCIÓN DEL CONTRATO, JURISDICCIÓN.
-Devuelve ÚNICAMENTE el texto legal del contrato listo para imprimir. 
-NO incluyas saludos, explicaciones, ni bloques de código. NO uses formato Markdown (sin asteriscos, sin numerales).
-Usa un tono formal, legal y estructurado en párrafos claros. Separa cada sección con su título en MAYÚSCULAS seguido de dos saltos de línea.
+INSTRUCCIONES DE FORMATO:
+- El contrato DEBE incluir todas estas secciones en orden: ANTECEDENTES, OBJETO DEL CONTRATO, DURACIÓN, PRECIO Y FORMA DE PAGO, OBLIGACIONES DEL PROPIETARIO, OBLIGACIONES DEL ARRENDATARIO, GARANTÍA, USO DEL INMUEBLE, SERVICIOS INCLUIDOS, CLÁUSULAS ESPECIALES, PENALIDADES, POLÍTICA DE CANCELACIÓN, RESOLUCIÓN DEL CONTRATO, JURISDICCIÓN.
+- Si un dato de la sección dice 'Ninguna', 'No especificado' o está vacío, redacta esa sección con texto legal estándar boliviano apropiado para ese tipo de contrato.
+- Devuelve ÚNICAMENTE el texto legal del contrato listo para imprimir.
+- NO incluyas saludos, explicaciones, ni bloques de código. NO uses formato Markdown (sin asteriscos, sin numerales).
+- Usa un tono formal, legal y estructurado en párrafos claros. Separa cada sección con su título en MAYÚSCULAS seguido de dos saltos de línea.
+"""
+
+    # 2b. Inyectar instrucciones del usuario (texto libre o transcripción de audio)
+    if instrucciones_usuario:
+        prompt += f"""
+
+INSTRUCCIONES ESPECIALES DEL CLIENTE (OBLIGATORIO INCORPORAR):
+El cliente ha solicitado específicamente las siguientes condiciones adicionales. DEBES incorporarlas de forma legal y formal en las secciones correspondientes del contrato. Estas instrucciones tienen PRIORIDAD sobre el texto estándar de cada sección:
+
+{instrucciones_usuario}
+
+Por ejemplo: si el cliente pide "cláusula de renovación de 7 meses", debes redactar formalmente en la sección CLÁUSULAS ESPECIALES o DURACIÓN un texto legal que estipule la posibilidad de renovación por un período de 7 meses adicionales con las condiciones pertinentes.
 """
 
     # 3. Llamar a la API de Groq
@@ -137,12 +167,12 @@ Usa un tono formal, legal y estructurado en párrafos claros. Separa cada secci�
             {"role": "system", "content": "Eres un Abogado Inmobiliario Boliviano experto en redacción de contratos. Tu objetivo es generar contratos legales precisos, formales y completos."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.2,
+        "temperature": 0.5,
         "max_tokens": 4096
     }
 
     try:
-        resp = requests.post(url, json=payload, headers=headers_req, timeout=60)
+        resp = requests.post(GROQ_API_URL, json=payload, headers=headers_req, timeout=60)
         resp.raise_for_status()
         texto_contrato = resp.json()['choices'][0]['message']['content']
     except Exception as e:
@@ -345,6 +375,344 @@ Usa un tono formal, legal y estructurado en párrafos claros. Separa cada secci�
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes
+
+
+
+def chat_asistente_contrato(contrato_id: int, usuario, historial: list) -> str:
+    """Chat interactivo con un asistente IA que actúa como abogado inmobiliario boliviano.
+
+    Args:
+        contrato_id: ID del contrato
+        usuario: Usuario que hace la consulta
+        historial: Lista de mensajes [{role: 'user'|'assistant', content: str}]
+
+    Returns:
+        str: Respuesta del asistente IA
+    """
+    datos = get_datos_contrato_para_ia(contrato_id, usuario)
+
+    # System prompt con contexto completo del contrato
+    system_prompt = f"""Eres un abogado especialista en derecho inmobiliario boliviano con 20 años de experiencia. 
+Estás asesorando sobre el siguiente contrato de {datos['tipo_contrato']}:
+
+DATOS DEL CONTRATO:
+- Tipo: {datos['tipo_contrato']}
+- Inmueble: {datos['inmueble']['titulo']} — {datos['inmueble']['direccion']} ({datos['inmueble']['superficie']} m²)
+- Propietario: {datos['propietario']['nombre']} (CI: {datos['propietario']['ci']})
+- Arrendatario/Comprador: {datos['inquilino']['nombre']} (CI: {datos['inquilino']['ci']})
+- Monto: {datos['monto']} {datos['moneda']} mensuales
+- Vigencia: desde {datos['fecha_inicio']} hasta {datos['fecha_fin']}
+- Depósito de garantía: {datos['deposito']} {datos['moneda']}
+- Día de pago: {datos['dia_pago']} de cada mes
+- Antecedentes registrados: {datos.get('antecedentes', 'Ninguno')}
+- Cláusulas especiales: {datos.get('clausulas_especiales', 'Ninguna')}
+- Restricciones: {datos.get('restricciones', 'Ninguna')}
+- Servicios incluidos: {datos.get('incluye_servicios', 'No especificado')}
+- Uso exclusivo: {datos.get('uso_exclusivo', 'No especificado')}
+- Penalidades: {datos.get('penalidades', 'Ninguna')}
+- Política de cancelación: {datos.get('politica_cancelacion', 'No especificada')}
+
+TU ROL:
+- Analiza este contrato específico y da consejos personalizados basados en los datos reales
+- Sugiere cláusulas concretas, restricciones y condiciones apropiadas para este caso
+- Identifica posibles riesgos legales o vacíos contractuales
+- Propón el texto legal formal cuando el usuario pida redactar algo
+- Responde de forma clara, estructurada y en español boliviano formal
+- Sé conciso pero completo. Usa listas cuando sea apropiado.
+- NO inventes datos que no estén en el contrato
+- Cuando sugieras cláusulas, formúlalas de manera que puedan copiarse directamente al contrato"""
+
+    api_key = settings.GROQ_API_KEY
+    if not api_key:
+        raise Exception("API Key de Groq no configurada.")
+
+    headers_req = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # Construir messages: system + historial completo
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend(historial)
+
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": messages,
+        "temperature": 0.6,
+        "max_tokens": 1024,
+    }
+
+    try:
+        resp = requests.post(GROQ_API_URL, json=payload, headers=headers_req, timeout=30)
+        resp.raise_for_status()
+        return resp.json()['choices'][0]['message']['content']
+    except Exception as e:
+        raise Exception(f"Error al contactar al asistente IA: {e}")
+
+
+def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario) -> VerificacionTitulo:
+    """Realiza la verificación de un título de propiedad mediante OCR e IA (Groq)."""
+    import os
+    import json
+    import requests
+    from io import BytesIO
+    from PIL import Image
+    import pytesseract
+    from pdf2image import convert_from_bytes
+    from django.conf import settings
+    from usuarios.services import crear_notificacion_sistema
+    from usuarios.models import Notificacion
+
+    # 1. Obtener o crear el registro
+    inmueble = Inmueble.objects.get(id=inmueble_id)
+    verificacion, created = VerificacionTitulo.objects.get_or_create(
+        inmueble=inmueble,
+        defaults={
+            'solicitado_por': usuario,
+            'archivo_titulo': archivo_url,
+            'estado': VerificacionTitulo.EstadoVerificacion.PROCESANDO
+        }
+    )
+    if not created:
+        verificacion.solicitado_por = usuario
+        verificacion.archivo_titulo = archivo_url
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.PROCESANDO
+        verificacion.save()
+
+    texto_extraido = ""
+
+    # Descargar el documento primero
+    try:
+        resp_file = requests.get(archivo_url, timeout=30)
+        resp_file.raise_for_status()
+        file_bytes = resp_file.content
+    except Exception as exc:
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.ERROR
+        verificacion.resumen_publico = f"No se pudo descargar el documento. Verifique la URL y su conexión a internet."
+        verificacion.texto_ocr = f"[ERROR DE DESCARGA]: {exc}"
+        verificacion.save()
+        return verificacion
+
+    is_pdf = archivo_url.lower().endswith('.pdf') or b'%PDF' in file_bytes[:10]
+
+    # ── ESTRATEGIA 1: Extracción directa de texto (PDFs digitales) ────────────
+    # Funciona con cualquier PDF que tenga texto embebido, sin necesitar Poppler
+    if is_pdf:
+        # Intento 1a: pdfplumber (excelente para PDFs con estructura)
+        try:
+            import pdfplumber
+            from io import BytesIO as _BytesIO
+            with pdfplumber.open(_BytesIO(file_bytes)) as pdf:
+                pages_text = []
+                for page in pdf.pages:
+                    t = page.extract_text()
+                    if t:
+                        pages_text.append(t)
+                texto_extraido = "\n--- PÁGINA ---\n".join(pages_text)
+            print(f"[ExtraccionTexto] pdfplumber: {len(texto_extraido)} caracteres extraídos")
+        except Exception as e_plumber:
+            print(f"[ExtraccionTexto] pdfplumber falló: {e_plumber}")
+
+        # Intento 1b: PyMuPDF/fitz si pdfplumber no extrajo suficiente texto
+        if len(texto_extraido.strip()) < 100:
+            try:
+                import fitz  # PyMuPDF
+                from io import BytesIO as _BytesIO2
+                doc = fitz.open(stream=file_bytes, filetype="pdf")
+                pages_text = []
+                for page in doc:
+                    pages_text.append(page.get_text())
+                doc.close()
+                texto_fitz = "\n--- PÁGINA ---\n".join(pages_text)
+                if len(texto_fitz.strip()) > len(texto_extraido.strip()):
+                    texto_extraido = texto_fitz
+                print(f"[ExtraccionTexto] PyMuPDF: {len(texto_extraido)} caracteres extraídos")
+            except Exception as e_fitz:
+                print(f"[ExtraccionTexto] PyMuPDF falló: {e_fitz}")
+
+    # ── ESTRATEGIA 2: OCR con Tesseract (PDFs escaneados / imágenes) ──────────
+    # Solo si las estrategias anteriores no extrajeron suficiente texto
+    if len(texto_extraido.strip()) < 100:
+        print("[ExtraccionTexto] Texto insuficiente, intentando OCR con Tesseract...")
+        try:
+            import pytesseract
+            from PIL import Image
+            from pdf2image import convert_from_bytes
+
+            TESSERACT_POSSIBLE_PATHS = [
+                r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+                r"C:\Users\PERSONAL\AppData\Local\Programs\Tesseract-OCR\tesseract.exe",
+            ]
+            for path in TESSERACT_POSSIBLE_PATHS:
+                if os.path.exists(path):
+                    pytesseract.pytesseract.tesseract_cmd = path
+                    break
+
+            poppler_path = os.getenv('POPPLER_PATH', None)
+            if not poppler_path:
+                for p in [r"C:\Program Files\poppler\bin", r"C:\poppler\bin"]:
+                    if os.path.exists(p):
+                        poppler_path = p
+                        break
+
+            if is_pdf:
+                images = convert_from_bytes(file_bytes, poppler_path=poppler_path)
+                ocr_pages = []
+                for img in images:
+                    page_text = pytesseract.image_to_string(img, lang='spa')
+                    ocr_pages.append(page_text)
+                texto_ocr = "\n--- PÁGINA ---\n".join(ocr_pages)
+            else:
+                img = Image.open(BytesIO(file_bytes))
+                texto_ocr = pytesseract.image_to_string(img, lang='spa')
+
+            if len(texto_ocr.strip()) > len(texto_extraido.strip()):
+                texto_extraido = texto_ocr
+            print(f"[ExtraccionTexto] Tesseract OCR: {len(texto_extraido)} caracteres extraídos")
+
+        except Exception as exc_ocr:
+            print(f"[ExtraccionTexto] OCR Tesseract también falló: {exc_ocr}")
+
+    # ── FALLO TOTAL: No se pudo extraer texto por ningún método ───────────────
+    if len(texto_extraido.strip()) < 50:
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.ERROR
+        verificacion.resumen_publico = (
+            "No se pudo extraer texto del documento. "
+            "Asegúrese de que el PDF no esté protegido con contraseña y que sea legible. "
+            "Si es un documento escaneado, capture una imagen JPG o PNG con buena iluminación."
+        )
+        verificacion.texto_ocr = f"[SIN TEXTO]: Solo se extrajeron {len(texto_extraido.strip())} caracteres."
+        verificacion.save()
+        return verificacion
+
+    verificacion.texto_ocr = texto_extraido.strip()
+    verificacion.save()
+
+    # 3. Analizar con Groq
+    api_key = settings.GROQ_API_KEY
+    if not api_key:
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.ERROR
+        verificacion.resumen_publico = "Error: API Key de Groq no configurada"
+        verificacion.save()
+        return verificacion
+
+    # Determinar el propietario esperado para comparar
+    propietario_nombre = inmueble.propietario.get_full_name() if inmueble.propietario else 'Desconocido'
+    propietario_ci = getattr(inmueble.propietario, 'ci', '') if inmueble.propietario else ''
+
+    prompt = f"""
+Eres un Abogado Registral Boliviano altamente especializado en la verificación de documentos de Derechos Reales.
+Tu misión es determinar si el texto proporcionado corresponde REALMENTE a un documento de título de propiedad inmobiliaria boliviano (Folio Real, Escritura Pública, Minuta de Transferencia, Testimonio de DDRR).
+
+--- INICIO DEL TEXTO EXTRAÍDO DEL DOCUMENTO ---
+{texto_extraido}
+--- FIN DEL TEXTO DEL DOCUMENTO ---
+
+Datos esperados del propietario del inmueble (para validar si coincide el documento):
+- Nombre del propietario registrado: {propietario_nombre}
+- CI del propietario: {propietario_ci if propietario_ci else 'No disponible'}
+
+SIGUE ESTAS REGLAS ESTRICTAMENTE:
+
+**REGLA CRÍTICA #1 - VERIFICAR QUE ES UN TÍTULO:**
+Antes de analizar cualquier dato, determina si el texto contiene elementos propios de un título de propiedad boliviano:
+- Términos como: "Folio Real", "Derechos Reales", "DDRR", "Matrícula", "Escritura Pública", "Testimonio", "Asiento", "Gravamen", "Hipoteca", "Propietario registrado", "Superficie", "Municipio", etc.
+- Si el documento parece ser un CV/currículum, factura, contrato laboral, certificado académico, recibo, carta, o cualquier otro tipo de documento que NO sea un título de propiedad inmobiliaria:
+  * Asigna "estado": "rechazado"
+  * Asigna "tipo_documento": "Desconocido"
+  * Asigna "score_confianza": 0
+  * En "resumen_publico" explica claramente que el documento no corresponde a un título de propiedad.
+  * Deja los demás campos como null o listas vacías.
+  * NO inventes datos registrales.
+
+**REGLA #2 - VERIFICAR PROPIETARIO:**
+Si el documento sí es un título de propiedad, verifica que el nombre del propietario encontrado en el documento coincida razonablemente con el propietario esperado: "{propietario_nombre}".
+Si el propietario NO coincide, asigna "estado": "rechazado" y añade una alerta explicando la discrepancia.
+
+**REGLA #3 - VERIFICAR GRAVÁMENES:**
+Si hay hipotecas, embargos, anotaciones preventivas o deudas activas, asigna "estado": "observado" o "rechazado" según la gravedad.
+
+El JSON de respuesta debe tener EXACTAMENTE esta estructura:
+{{
+  "tipo_documento": "Folio Real" | "Escritura Pública" | "Minuta de Transferencia" | "Desconocido",
+  "propietario_registrado": "Nombre completo del propietario encontrado en el documento, o null",
+  "documento_identidad": "CI del propietario (ej. 1234567 LP), o null",
+  "matricula_inmobiliaria": "Número de matrícula / Folio Real (ej. 7.01.1.01.XXXX), o null",
+  "superficie_registrada_m2": número o null,
+  "departamento": "ej. La Paz" o null,
+  "municipio": "ej. Santa Cruz de la Sierra" o null,
+  "zona": "ej. Equipetrol" o null,
+  "gravamenes": ["lista de gravámenes detectados, vacío si ninguno"],
+  "alertas": ["lista de alertas o irregularidades detectadas"],
+  "score_confianza": número entre 0 y 100,
+  "estado": "verificado" | "observado" | "rechazado",
+  "resumen_publico": "Resumen ejecutivo claro del resultado del análisis."
+}}
+
+Retorna ÚNICAMENTE el objeto JSON crudo. Sin comentarios, sin explicaciones, sin bloques ```json```.
+"""
+
+    headers_req = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "system", "content": "Eres un Abogado Registral Boliviano experto. Analizas títulos de propiedad y retornas un objeto JSON estructurado con la evaluación legal."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1,
+        "max_tokens": 1500
+    }
+
+    try:
+        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers_req, timeout=60)
+        resp.raise_for_status()
+        content = resp.json()['choices'][0]['message']['content'].strip()
+        
+        # Limpiar markdown
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+
+        resultado_json = json.loads(content)
+
+        estado_ia = resultado_json.get('estado', 'verificado')
+        if estado_ia == 'verificado':
+            verificacion.estado = VerificacionTitulo.EstadoVerificacion.VERIFICADO
+        elif estado_ia == 'observado':
+            verificacion.estado = VerificacionTitulo.EstadoVerificacion.OBSERVADO
+        elif estado_ia == 'rechazado':
+            verificacion.estado = VerificacionTitulo.EstadoVerificacion.RECHAZADO
+        else:
+            verificacion.estado = VerificacionTitulo.EstadoVerificacion.VERIFICADO
+
+        verificacion.resultado_ia = resultado_json
+        verificacion.score_confianza = resultado_json.get('score_confianza', 100)
+        verificacion.resumen_publico = resultado_json.get('resumen_publico', 'Título verificado por IA')
+        verificacion.save()
+
+        # Crear notificación al propietario
+        crear_notificacion_sistema(
+            usuario=inmueble.propietario,
+            titulo='Verificación de Título Completada',
+            mensaje=f'El análisis legal del título para "{inmueble.titulo}" ha finalizado. Estado: {verificacion.get_estado_display()}. Confianza: {verificacion.score_confianza}%.',
+            tipo=Notificacion.TipoNotificacion.CONFIRMACION if verificacion.estado == VerificacionTitulo.EstadoVerificacion.VERIFICADO else Notificacion.TipoNotificacion.ALERTA
+        )
+
+    except Exception as err:
+        print(f"Error procesando análisis legal de Groq: {err}")
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.ERROR
+        verificacion.resumen_publico = "Error durante el análisis automático."
+        verificacion.save()
+
+    return verificacion
 
 
 

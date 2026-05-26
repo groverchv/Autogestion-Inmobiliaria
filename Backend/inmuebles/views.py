@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from .models import (
     TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato,
     Contrato, Comision, Favorito, Cita, HorarioDisponible, Hotspot,
+    VerificacionTitulo,
 )
 from .serializers import (
     TipoInmuebleSerializer,
@@ -23,6 +24,7 @@ from .serializers import (
     CitaSerializer,
     HorarioDisponibleSerializer,
     HotspotSerializer,
+    VerificacionTituloSerializer,
 )
 from django.db import models as dj_models
 from .services import (
@@ -123,6 +125,8 @@ class InmuebleViewSet(viewsets.ModelViewSet):
         
         if self.request.path.startswith('/api/inmuebles/panel/'):
             if user.is_authenticated:
+                if self.request.query_params.get('personal') == 'true':
+                    return qs.filter(propietario=user)
                 if user.is_staff or user.rol == 'admin':
                     return qs.all()
                 return qs.filter(propietario=user)
@@ -410,16 +414,25 @@ class ContratoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
-    @action(detail=True, methods=['get'], url_path='generar-ia')
+    @action(detail=True, methods=['post'], url_path='generar-ia')
     def generar_contrato_ia(self, request, pk=None):
-        """Generate a contract text with AI and download it as PDF."""
+        """Generate a contract text with AI and download it as PDF.
+        
+        Accepts optional POST body:
+        - instrucciones: str - Natural language instructions from the user
+          (e.g. typed text or transcribed audio describing antecedentes,
+           clausulas especiales, etc.)
+        """
         try:
             from .services import generar_contrato_pdf_con_ia
             
             contrato = self.get_object()
+            instrucciones_usuario = request.data.get('instrucciones', '').strip()
             
             # La lógica pesada está en la capa de servicios
-            pdf_content = generar_contrato_pdf_con_ia(contrato.id, request.user)
+            pdf_content = generar_contrato_pdf_con_ia(
+                contrato.id, request.user, instrucciones_usuario
+            )
             
             if pdf_content:
                 response = HttpResponse(pdf_content, content_type='application/pdf')
@@ -427,6 +440,39 @@ class ContratoViewSet(viewsets.ModelViewSet):
                 return response
             else:
                 return Response({'error': 'No se pudo generar el PDF con IA'}, status=400)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=True, methods=['post'], url_path='chat-ia')
+    def chat_asistente_ia(self, request, pk=None):
+        """Chat con el asistente IA de contratos (abogado virtual).
+
+        Accepts POST body:
+        - mensajes: list of {role: 'user'|'assistant', content: str}
+          The full conversation history including the latest user message.
+
+        Returns:
+        - { respuesta: str } — The AI assistant's reply
+        """
+        try:
+            from .services import chat_asistente_contrato
+
+            contrato = self.get_object()
+            mensajes = request.data.get('mensajes', [])
+
+            if not mensajes:
+                return Response({'error': 'Se requiere al menos un mensaje.'}, status=400)
+
+            # Validar estructura básica
+            for msg in mensajes:
+                if 'role' not in msg or 'content' not in msg:
+                    return Response({'error': 'Formato de mensaje inválido. Se requiere {role, content}.'}, status=400)
+                if msg['role'] not in ('user', 'assistant'):
+                    return Response({'error': f"Rol inválido: {msg['role']}"}, status=400)
+
+            respuesta = chat_asistente_contrato(contrato.id, request.user, mensajes)
+            return Response({'respuesta': respuesta})
+
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
@@ -492,7 +538,7 @@ class HorarioDisponibleViewSet(viewsets.ModelViewSet):
                 )
             return qs
 
-        if user.is_staff or user.rol == 'admin':
+        if (user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return HorarioDisponible.objects.all()
         return HorarioDisponible.objects.filter(propietario=user)
 
@@ -577,7 +623,7 @@ class CitaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff or user.rol == 'admin':
+        if (user.is_staff or user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
             return Cita.objects.select_related(
                 'inmueble', 'cliente', 'propietario'
             ).all()
@@ -681,6 +727,7 @@ class CitaViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(citas, many=True).data)
 
 
+
 class PublicacionViewSet(viewsets.ModelViewSet):
     """CRUD para ofertas comerciales (publicaciones)."""
     queryset = Publicacion.objects.select_related('inmueble').all()
@@ -711,3 +758,115 @@ class PublicacionViewSet(viewsets.ModelViewSet):
         if inmueble.propietario != self.request.user and not self.request.user.is_staff:
             raise ValidationError("No eres el propietario de este inmueble.")
         serializer.save()
+
+class VerificacionTituloViewSet(viewsets.ModelViewSet):
+    """ViewSet para la verificación legal automatizada de títulos de propiedad."""
+    serializer_class = VerificacionTituloSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if (self.request.user.is_staff or self.request.user.rol == 'admin') and self.request.query_params.get('personal') != 'true':
+            return VerificacionTitulo.objects.all()
+        return VerificacionTitulo.objects.filter(inmueble__propietario=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        """Sube un documento y ejecuta la verificación legal por IA."""
+        import cloudinary
+        import cloudinary.uploader
+        from django.conf import settings
+        from .services import verificar_titulo_con_ia
+
+        inmueble_id = request.data.get('inmueble')
+        archivo = request.FILES.get('archivo')
+
+        if not inmueble_id or not archivo:
+            return Response({'error': 'Se requiere el ID del inmueble y el archivo del título.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            inmueble = Inmueble.objects.get(id=inmueble_id)
+        except Inmueble.DoesNotExist:
+            return Response({'error': 'El inmueble especificado no existe.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if inmueble.propietario != request.user and not (request.user.is_staff or request.user.rol == 'admin'):
+            return Response({'error': 'No tienes permisos para verificar este inmueble.'}, status=status.HTTP_403_FORBIDDEN)
+
+        cloudinary.config(
+            cloud_name=settings.CLOUDINARY_STORAGE['CLOUD_NAME'],
+            api_key=settings.CLOUDINARY_STORAGE['API_KEY'],
+            api_secret=settings.CLOUDINARY_STORAGE['API_SECRET']
+        )
+
+        try:
+            is_pdf = archivo.name.lower().endswith('.pdf')
+            upload_data = cloudinary.uploader.upload(
+                archivo,
+                resource_type='raw' if is_pdf else 'image',
+                folder='titulos_propiedad'
+            )
+            archivo_url = upload_data.get('secure_url')
+        except Exception as upload_err:
+            return Response({'error': f'Error al subir archivo a Cloudinary: {str(upload_err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            verificacion = verificar_titulo_con_ia(inmueble.id, archivo_url, request.user)
+            serializer = self.get_serializer(verificacion)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as ocr_err:
+            return Response({'error': f'Error al procesar la verificación del documento: {str(ocr_err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='resultado/(?P<inmueble_id>[0-9]+)')
+    def resultado(self, request, inmueble_id=None):
+        """Retorna el resultado actual de la verificación de un inmueble."""
+        try:
+            inmueble = Inmueble.objects.get(id=inmueble_id)
+        except Inmueble.DoesNotExist:
+            return Response({'error': 'El inmueble especificado no existe.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if inmueble.propietario != request.user and not (request.user.is_staff or request.user.rol == 'admin'):
+            return Response({'error': 'No tienes permisos para ver esta verificación.'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            verificacion = VerificacionTitulo.objects.get(inmueble=inmueble)
+            serializer = self.get_serializer(verificacion)
+            return Response(serializer.data)
+        except VerificacionTitulo.DoesNotExist:
+            return Response({'estado': 'no_solicitado', 'mensaje': 'No se ha solicitado verificación para este inmueble.'})
+
+
+from rest_framework.views import APIView
+from .blockchain_service import BlockchainService
+
+class BlockchainHistorialView(APIView):
+    """
+    Vista de API para obtener la traza de auditoría inmutable de Blockchain de cualquier activo.
+    Exclusivo para usuarios autenticados.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, asset_id, format=None):
+        try:
+            historial = BlockchainService.obtener_historial(asset_id)
+            return Response(historial, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BlockchainStatsView(APIView):
+    """
+    Vista de API para obtener las estadísticas generales de la Blockchain para el Admin.
+    Exclusivo para administradores.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, format=None):
+        try:
+            if request.user.rol != 'admin':
+                return Response({"error": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
+            stats_data = BlockchainService.obtener_stats()
+            if stats_data:
+                return Response(stats_data, status=status.HTTP_200_OK)
+            return Response({"error": "No se pudo conectar con el Blockchain Gateway."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

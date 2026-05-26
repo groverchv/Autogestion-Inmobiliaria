@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+<<<<<<< HEAD
 import { MapPin, Check, X, Clock, Trash2, Tag, Megaphone, Plus, Calendar, AlertCircle } from 'lucide-react';
+=======
+import { MapPin, Check, X, Clock, Trash2, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw, Settings, ChevronDown, ChevronUp, Eye, EyeOff, Edit3 } from 'lucide-react';
+import tituloService from '../../services/tituloService';
+import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
+import useAlertConfirm from '../../hooks/useAlertConfirm';
+>>>>>>> origin/main
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -34,11 +41,13 @@ const LocationPicker = ({ position, setPosition }) => {
 
 const MisInmuebles = () => {
   const { isAuthenticated } = useAuth();
+  const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
 
   const [inmuebles, setInmuebles] = useState([]);
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [expandedCardId, setExpandedCardId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [archivos, setArchivos] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -82,6 +91,7 @@ const MisInmuebles = () => {
   const [nuevoHorario, setNuevoHorario] = useState({ dia_semana: 0, hora_inicio: '09:00', hora_fin: '18:00' });
   const [guardandoHorario, setGuardandoHorario] = useState(false);
 
+<<<<<<< HEAD
   const [showPubModal, setShowPubModal] = useState(false);
   const [selectedInmId, setSelectedInmId] = useState(null);
   const [publications, setPublications] = useState([]);
@@ -92,6 +102,14 @@ const MisInmuebles = () => {
     precio: '',
     estado: 'activa'
   });
+=======
+  const [showVerificacionModal, setShowVerificacionModal] = useState(false);
+  const [inmuebleVerificacionId, setInmuebleVerificacionId] = useState(null);
+  const [verificacionLoading, setVerificacionLoading] = useState(false);
+  const [verificacionData, setVerificacionData] = useState(null);
+  const [archivoVerificacion, setArchivoVerificacion] = useState(null);
+  const [verificando, setVerificando] = useState(false);
+>>>>>>> origin/main
 
   const DIAS_NOMBRES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -175,16 +193,72 @@ const MisInmuebles = () => {
       const res = await api.get('/inmuebles/horarios/', { params: { inmueble: inmuebleHorarioId } });
       setHorarios(res.data.results || res.data || []);
     } catch (err) {
-      alert(err.response?.data?.detail || 'Error al agregar horario');
+      showAlert({
+        title: 'Error de Horario',
+        message: err.response?.data?.detail || 'No se pudo agregar el horario de visitas. Verifica los datos.',
+        status: 'error'
+      });
     } finally { setGuardandoHorario(false); }
   };
 
-  const eliminarHorario = async (horarioId) => {
-    if (!window.confirm('¿Eliminar este horario?')) return;
+  const eliminarHorario = (horarioId) => {
+    showConfirm({
+      title: '¿Eliminar horario?',
+      message: '¿Estás seguro de que deseas eliminar este horario de visitas?',
+      status: 'warning',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/inmuebles/horarios/${horarioId}/`);
+          setHorarios(prev => prev.filter(h => h.id !== horarioId));
+          showAlert({ title: '¡Horario eliminado!', message: 'El horario ha sido removido con éxito.', status: 'success' });
+        } catch { 
+          showAlert({ title: 'Error', message: 'No se pudo eliminar el horario.', status: 'error' });
+        }
+      }
+    });
+  };
+
+  const abrirVerificacion = async (inmId) => {
+    setInmuebleVerificacionId(inmId);
+    setVerificacionLoading(true);
+    setVerificacionData(null);
+    setArchivoVerificacion(null);
+    setShowVerificacionModal(true);
     try {
-      await api.delete(`/inmuebles/horarios/${horarioId}/`);
-      setHorarios(prev => prev.filter(h => h.id !== horarioId));
-    } catch { alert('Error al eliminar horario'); }
+      const data = await tituloService.getResultado(inmId);
+      setVerificacionData(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setVerificacionLoading(false);
+    }
+  };
+
+  const handleSubirTitulo = async (e) => {
+    e.preventDefault();
+    if (!archivoVerificacion) return;
+    setVerificando(true);
+    try {
+      const data = await tituloService.subirTitulo(inmuebleVerificacionId, archivoVerificacion);
+      setVerificacionData(data);
+      showAlert({
+        title: '¡Análisis legal completado!',
+        message: 'El análisis legal inteligente con IA del título de propiedad finalizó con éxito y el activo se selló automáticamente en la Blockchain.',
+        status: 'success'
+      });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      showAlert({
+        title: 'Error de verificación',
+        message: err.response?.data?.error || 'No se pudo verificar el documento.',
+        status: 'error'
+      });
+    } finally {
+      setVerificando(false);
+    }
   };
 
   useEffect(() => {
@@ -196,7 +270,7 @@ const MisInmuebles = () => {
     try {
       setLoading(true);
       const [inmRes, tipRes] = await Promise.all([
-        api.get('/inmuebles/panel/lista/'),
+        api.get('/inmuebles/panel/lista/?personal=true'),
         api.get('/inmuebles/tipos/')
       ]);
       setInmuebles(inmRes.data.results || inmRes.data);
@@ -377,7 +451,11 @@ const MisInmuebles = () => {
       setShowModal(true);
     } catch (err) {
       console.error(err);
-      alert('Error fetching inmueble details');
+      showAlert({
+        title: 'Error de Carga',
+        message: 'No se pudieron obtener los detalles del inmueble seleccionado. Inténtalo de nuevo.',
+        status: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -487,23 +565,49 @@ const MisInmuebles = () => {
       setPreview360([]);
       setMeta360([]);
       fetchData(); // Recargar
+      showAlert({
+        title: editingId ? '¡Inmueble Actualizado!' : '¡Inmueble Registrado!',
+        message: editingId ? 'Los datos de tu propiedad han sido modificados exitosamente.' : 'Tu nuevo inmueble ha sido registrado y publicado exitosamente en la plataforma.',
+        status: 'success'
+      });
     } catch (err) {
       console.error(err);
-      alert('Error al registrar inmueble');
+      showAlert({
+        title: 'Error de registro',
+        message: 'No se pudo guardar la información del inmueble.',
+        status: 'error'
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Seguro que deseas eliminar el inmueble?')) return;
-    try {
-      await api.delete(`/inmuebles/panel/lista/${id}/`);
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      alert('Error eliminando inmueble');
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: '¿Eliminar Inmueble?',
+      message: '¿Estás seguro de que deseas eliminar este inmueble? Esta acción borrará todas sus fotos y datos de forma permanente.',
+      status: 'error',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/inmuebles/panel/lista/${id}/`);
+          fetchData();
+          showAlert({
+            title: '¡Inmueble Eliminado!',
+            message: 'La propiedad ha sido eliminada del sistema con éxito.',
+            status: 'success'
+          });
+        } catch (err) {
+          console.error(err);
+          showAlert({
+            title: 'Error al eliminar',
+            message: 'Hubo un problema al intentar eliminar el inmueble.',
+            status: 'error'
+          });
+        }
+      }
+    });
   };
 
   const handleToggleVisibilidad = async (inm) => {
@@ -511,9 +615,18 @@ const MisInmuebles = () => {
       const nuevoEstado = inm.estado === 'oculto' ? 'disponible' : 'oculto';
       await api.patch(`/inmuebles/panel/lista/${inm.id}/`, { estado: nuevoEstado });
       fetchData();
+      showAlert({
+        title: 'Estado Actualizado',
+        message: nuevoEstado === 'oculto' ? 'El inmueble ha sido ocultado del catálogo público.' : 'El inmueble ahora es visible para todos en el catálogo.',
+        status: 'success'
+      });
     } catch (err) {
       console.error(err);
-      alert('Error cambiando estado');
+      showAlert({
+        title: 'Error de cambio de estado',
+        message: 'No se pudo cambiar la visibilidad del inmueble.',
+        status: 'error'
+      });
     }
   };
 
@@ -526,7 +639,7 @@ const MisInmuebles = () => {
   };
 
   return (
-    <div className="propiedades-page" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <div className="propiedades-page" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', paddingTop: '20px' }}>
       {uploadProgress.uploading && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -619,7 +732,7 @@ const MisInmuebles = () => {
                 const estadoStyle = estadoColors[inm.estado] || estadoColors.disponible;
                 return (
                   <div key={inm.id} className="propiedad-card">
-                    <div className="propiedad-card__image" style={{ height: '200px' }}>
+                    <div className="propiedad-card__image" style={{ height: '200px', position: 'relative' }}>
                       {inm.imagen_principal ? (
                         <img src={inm.imagen_principal} alt={inm.titulo} />
                       ) : (
@@ -627,130 +740,186 @@ const MisInmuebles = () => {
                           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
                         </div>
                       )}
-                      <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color }}>
-                        {inm.estado}
-                      </span>
+                      <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 2 }}>
+                        <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color, position: 'static' }}>
+                          {inm.estado}
+                        </span>
+                        {inm.verificacion_estado && (
+                          <span 
+                            className="propiedad-card__badge" 
+                            style={{ 
+                              background: inm.verificacion_estado === 'verificado' ? '#dcfce7' : 
+                                          inm.verificacion_estado === 'observado' ? '#fef3c7' : '#fee2e2',
+                              color: inm.verificacion_estado === 'verificado' ? '#15803d' : 
+                                     inm.verificacion_estado === 'observado' ? '#d97706' : '#dc2626',
+                              position: 'static',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: 700
+                            }}
+                          >
+                            {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
+                             inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : '✗ Inválido'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="propiedad-card__body">
                       <h3 className="propiedad-card__title">{inm.titulo}</h3>
                       <p className="propiedad-card__location">{inm.ciudad}{inm.zona ? `, ${inm.zona}` : ''}</p>
 
-                      <div style={{ marginTop: '12px', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-                        <span className="propiedad-card__price">
-                          {inm.precio ? (
-                            <>{`Bs. ${parseFloat(inm.precio).toLocaleString()}`}
-                              {inm.tipo_oferta === 'alquiler' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', marginLeft: '4px' }}>/mes</small>}
-                              {inm.tipo_oferta === 'anticretico' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', marginLeft: '4px' }}>(Anticrético)</small>}
-                            </>
-                          ) : (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#f59e0b', fontWeight: 600, background: '#fef3c7', padding: '4px 10px', borderRadius: '20px', border: '1px solid #fde68a' }}>
-                              <AlertCircle size={13} /> Sin publicación activa
-                            </span>
-                          )}
-                        </span>
-                      </div>
+                      <div style={{ marginTop: '16px', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <span className="propiedad-card__price" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                            {inm.precio ? (
+                              <>{`Bs. ${parseFloat(inm.precio).toLocaleString()}`}
+                                {inm.tipo_oferta === 'alquiler' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', marginLeft: '4px' }}>/mes</small>}
+                                {inm.tipo_oferta === 'anticretico' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', marginLeft: '4px' }}>(Anticrético)</small>}
+                              </>
+                            ) : (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#f59e0b', fontWeight: 600, background: '#fef3c7', padding: '4px 10px', borderRadius: '20px', border: '1px solid #fde68a' }}>
+                                <AlertCircle size={13} /> Sin publicación activa
+                              </span>
+                            )}
+                          </span>
+                        </div>
 
-                      {/* Acciones — grid de botones con etiquetas */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginTop: '12px', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
-                        <button
-                          onClick={() => abrirPublicaciones(inm.id)}
-                          style={{
-                            background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)',
-                            borderRadius: '8px', padding: '8px 6px', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                            color: '#10b981', fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s',
-                          }}
-                          title="Gestionar ofertas comerciales (publicaciones)"
-                        >
-                          <Tag size={14} /> Publicar
-                        </button>
-                        <button
-                          onClick={() => abrirHorarios(inm.id)}
-                          style={{
-                            background: 'rgba(14,165,233,0.06)', border: '1px solid rgba(14,165,233,0.2)',
-                            borderRadius: '8px', padding: '8px 6px', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                            color: '#0ea5e9', fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s',
-                          }}
-                          title="Gestionar horarios de visita"
-                        >
-                          <Clock size={14} /> Horarios
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditorInmueble(inm);
-                            setShowEditorRecorrido(true);
-                          }}
-                          style={{
-                            background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)',
-                            borderRadius: '8px', padding: '8px 6px', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                            color: '#6366f1', fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s',
-                          }}
-                          title="Gestionar recorrido virtual 3D y hotspots con IA"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-                            <path d="M2 12h20" />
-                          </svg>
-                          Recorrido 3D
-                        </button>
-                        <button
-                          onClick={() => handleEdit(inm)}
-                          style={{
-                            background: 'rgba(100,116,139,0.06)', border: '1px solid var(--color-border)',
-                            borderRadius: '8px', padding: '8px 6px', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                            color: 'var(--color-text-secondary)', fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s',
-                          }}
-                          title="Editar datos del inmueble"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleToggleVisibilidad(inm)}
-                          style={{
-                            background: inm.estado === 'oculto' ? 'rgba(14,165,233,0.06)' : 'rgba(100,116,139,0.06)',
-                            border: `1px solid ${inm.estado === 'oculto' ? 'rgba(14,165,233,0.2)' : 'var(--color-border)'}`,
-                            borderRadius: '8px', padding: '8px 6px', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                            color: inm.estado === 'oculto' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                            fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s',
-                          }}
-                          title={inm.estado === 'oculto' ? 'Mostrar al público' : 'Ocultar del catálogo'}
-                        >
-                          {inm.estado === 'oculto' ? (
-                            <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Mostrar</>
-                          ) : (
-                            <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg> Ocultar</>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(inm.id)}
-                          style={{
-                            background: 'rgba(239,68,68,0.05)', border: '1px solid #fecaca',
-                            borderRadius: '8px', padding: '8px 6px', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                            color: '#ef4444', fontSize: '0.72rem', fontWeight: 600, transition: 'all 0.2s',
-                          }}
-                          title="Eliminar inmueble"
-                        >
-                          <Trash2 size={14} /> Eliminar
-                        </button>
-                        <Link
-                          to={`/propiedades/${inm.id}`}
-                          style={{
-                            background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)',
-                            borderRadius: '8px', padding: '8px 6px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                            color: 'var(--color-primary)', fontSize: '0.72rem', fontWeight: 600,
-                            textDecoration: 'none', transition: 'all 0.2s',
-                          }}
-                        >
-                          <Megaphone size={14} /> Ver
-                        </Link>
+                        {/* Botones principales de la tarjeta */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                          <Link 
+                            to={`/propiedades/${inm.id}`} 
+                            className="propiedad-card__cta" 
+                            style={{ flex: 1, textAlign: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
+                          >
+                            Ver Detalles
+                          </Link>
+                          
+                          <button
+                            type="button"
+                            className={`propiedad-card__admin-toggle ${expandedCardId === inm.id ? 'propiedad-card__admin-toggle--active' : ''}`}
+                            onClick={() => setExpandedCardId(expandedCardId === inm.id ? null : inm.id)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 14px',
+                              background: '#ffffff',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '8px',
+                              fontWeight: 600,
+                              fontSize: '0.85rem',
+                              color: 'var(--color-text-secondary)',
+                              cursor: 'pointer',
+                              transition: 'all var(--transition-fast)'
+                            }}
+                          >
+                            <Settings size={16} />
+                            <span>Gestionar</span>
+                            {expandedCardId === inm.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                        </div>
+
+                        {/* PANEL DE DESGLOSE ADMINISTRATIVO (COLLAPSIBLE) */}
+                        {expandedCardId === inm.id && (
+                          <div className="propiedad-card__admin-pane" style={{
+                            marginTop: '12px',
+                            background: 'var(--color-bg-secondary)',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            border: '1px solid var(--color-border)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            animation: 'slideDown var(--transition-fast) ease-out'
+                          }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                              Acciones de Administración
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => abrirPublicaciones(inm.id)}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: '#10b981' }}
+                            >
+                              <Tag size={16} />
+                              <span>Publicar / Ofertas</span>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => abrirVerificacion(inm.id)}
+                              className="propiedad-card__admin-btn"
+                              style={{
+                                color: inm.verificacion_estado === 'verificado' ? '#10b981' : 
+                                       inm.verificacion_estado === 'observado' ? '#eab308' :
+                                       inm.verificacion_estado === 'rechazado' ? '#ef4444' : 'var(--color-text-secondary)'
+                              }}
+                            >
+                              {inm.verificacion_estado === 'verificado' ? <ShieldCheck size={16} /> : <FileText size={16} />}
+                              <span>Análisis Legal de Título (IA)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => abrirHorarios(inm.id)}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: '#0ea5e9' }}
+                            >
+                              <Clock size={16} />
+                              <span>Gestionar Horarios de Visita</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditorInmueble(inm);
+                                setShowEditorRecorrido(true);
+                              }}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: '#6366f1' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                                <path d="M2 12h20" />
+                              </svg>
+                              <span>Recorrido 3D y Hotspots (IA)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleEdit(inm)}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              <Edit3 size={16} />
+                              <span>Editar Información Ficha</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisibilidad(inm)}
+                              className="propiedad-card__admin-btn"
+                              style={{ color: inm.estado === 'oculto' ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
+                            >
+                              {inm.estado === 'oculto' ? <Eye size={16} /> : <EyeOff size={16} />}
+                              <span>{inm.estado === 'oculto' ? 'Publicar Inmueble' : 'Ocultar Inmueble'}</span>
+                            </button>
+
+                            <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }}></div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(inm.id)}
+                              className="propiedad-card__admin-btn propiedad-card__admin-btn--danger"
+                            >
+                              <Trash2 size={16} />
+                              <span>Eliminar Publicación</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -894,7 +1063,11 @@ const MisInmuebles = () => {
                       if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
                           (pos) => setFormData(prev => ({ ...prev, gps: `${pos.coords.latitude}, ${pos.coords.longitude}` })),
-                          () => alert('Error obteniendo ubicación. Verifica los permisos de tu navegador.')
+                          () => showAlert({
+                            title: 'Permiso Denegado',
+                            message: 'No se pudo acceder a tu ubicación actual. Por favor, verifica los permisos en tu navegador.',
+                            status: 'warning'
+                          })
                         );
                       }
                     }}
@@ -1609,6 +1782,7 @@ const MisInmuebles = () => {
           </div>
         </div>
       )}
+<<<<<<< HEAD
       {showPubModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -1619,10 +1793,24 @@ const MisInmuebles = () => {
             background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '650px',
             maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid var(--color-border)'
+=======
+
+      {showVerificacionModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', zIndex: 1002,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px',
+            maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+>>>>>>> origin/main
           }}>
             <div style={{
               padding: '20px 24px', borderBottom: '1px solid var(--color-border)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+<<<<<<< HEAD
               background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)'
             }}>
               <div>
@@ -1775,23 +1963,280 @@ const MisInmuebles = () => {
                   </div>
                 )}
               </div>
+=======
+              background: '#f8fafc'
+            }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={22} style={{ color: 'var(--color-primary)' }} /> Verificación de Título con IA
+                </h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                  Análisis legal automático de escrituras y folios reales usando OCR y NLP (Llama 3)
+                </p>
+              </div>
+              <button onClick={() => setShowVerificacionModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
+                &times;
+              </button>
+            </div>
+
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              {verificacionLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '12px' }}>
+                  <RefreshCw size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
+                  <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Obteniendo estado de verificación...</p>
+                </div>
+              ) : verificando ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '16px' }}>
+                  <div className="spinner" style={{
+                    border: '4px solid #f3f3f3',
+                    borderTop: '4px solid var(--color-primary)',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  <style>{`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}</style>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>Procesando documento...</p>
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>Extrayendo texto con OCR y ejecutando análisis legal con IA. Esto puede tomar unos segundos.</p>
+                  </div>
+                </div>
+              ) : (!verificacionData || verificacionData.estado === 'no_solicitado' || verificacionData.estado === 'error') ? (
+                <form onSubmit={handleSubirTitulo} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {verificacionData?.estado === 'error' && (
+                    <div style={{
+                      background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px',
+                      padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: '10px'
+                    }}>
+                      <ShieldAlert size={20} style={{ color: '#dc2626', flexShrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <p style={{ margin: 0, fontWeight: 700, color: '#991b1b', fontSize: '0.9rem' }}>
+                          Error al procesar el documento anterior
+                        </p>
+                        <p style={{ margin: '4px 0 0', color: '#b91c1c', fontSize: '0.82rem' }}>
+                          {verificacionData.resumen_publico || 'No se pudo leer el documento. Sube un archivo PDF o imagen legible e inténtalo de nuevo.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{
+                    border: '2px dashed #cbd5e1',
+                    borderRadius: '12px',
+                    padding: '30px 20px',
+                    textAlign: 'center',
+                    background: '#f8fafc',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}>
+                    <input 
+                      type="file" 
+                      required 
+                      accept="application/pdf,image/*"
+                      onChange={(e) => setArchivoVerificacion(e.target.files[0])}
+                      style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        opacity: 0, cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                      <UploadCloud size={40} style={{ color: '#94a3b8' }} />
+                      <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>
+                        {archivoVerificacion ? archivoVerificacion.name : 'Arrastra o selecciona el documento del título'}
+                      </p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
+                        Formatos soportados: PDF, JPG, PNG (máx. 10MB)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '12px', border: '1px solid #bfdbfe' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#1e40af', lineHeight: 1.4 }}>
+                      💡 <strong>Recomendación:</strong> Para obtener la mejor precisión, sube un documento escaneado con buena iluminación y resolución, de preferencia la matrícula computarizada (Folio Real) o testimonio notarial de propiedad.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!archivoVerificacion}
+                    style={{
+                      background: archivoVerificacion ? 'var(--color-primary)' : '#cbd5e1',
+                      color: '#fff', border: 'none', padding: '12px', borderRadius: '8px',
+                      fontWeight: 600, cursor: archivoVerificacion ? 'pointer' : 'not-allowed',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    Iniciar Verificación Inteligente
+                  </button>
+                </form>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '16px', borderRadius: '12px',
+                    background: verificacionData.estado === 'verificado' ? '#dcfce7' : 
+                                verificacionData.estado === 'observado' ? '#fef3c7' : 
+                                verificacionData.estado === 'rechazado' ? '#fee2e2' : '#f1f5f9',
+                    border: '1px solid ' + (
+                                verificacionData.estado === 'verificado' ? '#bbf7d0' : 
+                                verificacionData.estado === 'observado' ? '#fef08a' : 
+                                verificacionData.estado === 'rechazado' ? '#fecaca' : '#cbd5e1'
+                             ),
+                    color: verificacionData.estado === 'verificado' ? '#14532d' : 
+                           verificacionData.estado === 'observado' ? '#713f12' : 
+                           verificacionData.estado === 'rechazado' ? '#7f1d1d' : '#334155'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {verificacionData.estado === 'verificado' ? <ShieldCheck size={32} /> : <ShieldAlert size={32} />}
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
+                          {verificacionData.estado_display}
+                        </h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', opacity: 0.85 }}>
+                          Analizado el {new Date(verificacionData.creado).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    {verificacionData.score_confianza !== null && (
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>{verificacionData.score_confianza}</span>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>/100</span>
+                        <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', tracking: '0.05em', fontWeight: 600 }}>Confianza</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', borderLeft: '4px solid var(--color-primary)' }}>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#475569', textTransform: 'uppercase' }}>Resumen de la IA</h4>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#1e293b', fontWeight: 500, fontStyle: 'italic' }}>
+                      "{verificacionData.resumen_publico}"
+                    </p>
+                  </div>
+
+                  {verificacionData.resultado_ia && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <h4 style={{ margin: '0 0 4px', fontSize: '0.9rem', color: '#334155', fontWeight: 700 }}>Datos Registrales Detectados</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Tipo de Documento</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.tipo_documento || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Matrícula Inmobiliaria</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.matricula_inmobiliaria || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Propietario Registrado</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.propietario_registrado || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Documento Identidad</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.documento_identidad || 'No detectado'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Superficie Registrada</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{verificacionData.resultado_ia.superficie_registrada_m2 ? `${verificacionData.resultado_ia.superficie_registrada_m2} m²` : 'No detectada'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>Ubicación Registrada</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>
+                            {verificacionData.resultado_ia.municipio ? `${verificacionData.resultado_ia.municipio}, ` : ''}
+                            {verificacionData.resultado_ia.departamento || ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <h5 style={{ margin: 0, fontSize: '0.85rem', color: '#475569', fontWeight: 700 }}>Gravámenes e Hipotecas</h5>
+                        {(!verificacionData.resultado_ia.gravamenes || verificacionData.resultado_ia.gravamenes.length === 0) ? (
+                          <div style={{ background: '#f0fdf4', color: '#166534', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Check size={16} /> Libre de gravámenes. No se detectaron hipotecas ni cargas legales vigentes.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {verificacionData.resultado_ia.gravamenes.map((grav, i) => (
+                              <div key={i} style={{ background: '#fffbeb', color: '#92400e', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #fef08a', display: 'flex', gap: '8px' }}>
+                                <span style={{ fontWeight: 'bold' }}>•</span>
+                                <span>{grav}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {verificacionData.resultado_ia.alertas && verificacionData.resultado_ia.alertas.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <h5 style={{ margin: 0, fontSize: '0.85rem', color: '#b91c1c', fontWeight: 700 }}>Observaciones / Irregularidades</h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {verificacionData.resultado_ia.alertas.map((alerta, i) => (
+                              <div key={i} style={{ background: '#fef2f2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #fecaca', display: 'flex', gap: '8px' }}>
+                                <span style={{ fontWeight: 'bold' }}>⚠</span>
+                                <span>{alerta}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Trazabilidad inmutable en Blockchain */}
+                  <div style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginBottom: '16px' }}>
+                    <BlockchainAuditTrail assetId={`INM-${inmuebleVerificacionId}`} />
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <a href={verificacionData.archivo_titulo} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                      Ver documento original subido
+                    </a>
+                    <button
+                      onClick={() => {
+                        setVerificacionData(null);
+                        setArchivoVerificacion(null);
+                      }}
+                      style={{
+                        background: 'transparent', border: '1px solid var(--color-border)',
+                        color: 'var(--color-text-secondary)', borderRadius: '8px', padding: '8px 16px',
+                        fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer'
+                      }}
+                    >
+                      Volver a Subir Documento
+                    </button>
+                  </div>
+                </div>
+              )}
+>>>>>>> origin/main
             </div>
 
             <div style={{
               padding: '16px 24px', borderTop: '1px solid var(--color-border)',
               background: '#f8fafc', display: 'flex', justifyContent: 'flex-end',
             }}>
+<<<<<<< HEAD
               <button onClick={() => setShowPubModal(false)}
+=======
+              <button onClick={() => setShowVerificacionModal(false)}
+>>>>>>> origin/main
                 style={{
                   background: 'var(--color-primary)', color: '#fff', border: 'none',
                   padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
                 }}>
+<<<<<<< HEAD
                 Listo
+=======
+                Cerrar
+>>>>>>> origin/main
               </button>
             </div>
           </div>
         </div>
       )}
+<<<<<<< HEAD
 
       {showEditorRecorrido && editorInmueble && (
         <EditorRecorrido
@@ -1803,6 +2248,9 @@ const MisInmuebles = () => {
           }}
         />
       )}
+=======
+      {ModalComponent}
+>>>>>>> origin/main
     </div>
   );
 };

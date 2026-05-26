@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
 import AuthLayout from './layouts/AuthLayout';
+import UserLayout from './layouts/UserLayout';
 
 // Pages - Public
 import Login from './pages/Public/Login';
@@ -36,6 +37,7 @@ import ManageAgenda from './pages/Admin/ManageAgenda';
 import ManageNotificaciones from './pages/Admin/ManageNotificaciones';
 import ManageFavoritos from './pages/Admin/ManageFavoritos';
 import FinanzasAdmin from './pages/Admin/FinanzasAdmin';
+import ManageBlockchain from './pages/Admin/ManageBlockchain';
 import FinanzasPropietario from './pages/Public/FinanzasPropietario';
 
 /**
@@ -58,40 +60,45 @@ const router = createBrowserRouter([
     element: <PropiedadDetalle />,
   },
   {
-    path: '/mis-inmuebles',
-    element: <ProtectedRoute><MisInmuebles /></ProtectedRoute>,
-  },
-  {
-    path: '/mi-agenda',
-    element: <ProtectedRoute><MiAgenda /></ProtectedRoute>,
-  },
-  {
-    path: '/mis-contratos',
-    element: <ProtectedRoute><MisContratos /></ProtectedRoute>,
-  },
-  {
-    path: '/mis-pagos',
-    element: <ProtectedRoute><MisPagos /></ProtectedRoute>,
-  },
-  {
-    path: '/mis-finanzas',
-    element: <ProtectedRoute><FinanzasPropietario /></ProtectedRoute>,
-  },
-  {
-    path: '/favoritos',
-    element: <ProtectedRoute><MisFavoritos /></ProtectedRoute>,
-  },
-  {
-    path: '/notificaciones',
-    element: <ProtectedRoute><MisNotificaciones /></ProtectedRoute>,
-  },
-  {
-    path: '/perfil',
-    element: <ProtectedRoute><MiPerfil /></ProtectedRoute>,
-  },
-  {
-    path: '/mensajes',
-    element: <ProtectedRoute><MisMensajes /></ProtectedRoute>,
+    element: <ProtectedRoute><UserLayout /></ProtectedRoute>,
+    children: [
+      {
+        path: '/mis-inmuebles',
+        element: <MisInmuebles />,
+      },
+      {
+        path: '/mi-agenda',
+        element: <MiAgenda />,
+      },
+      {
+        path: '/mis-contratos',
+        element: <MisContratos />,
+      },
+      {
+        path: '/mis-pagos',
+        element: <MisPagos />,
+      },
+      {
+        path: '/mis-finanzas',
+        element: <FinanzasPropietario />,
+      },
+      {
+        path: '/favoritos',
+        element: <MisFavoritos />,
+      },
+      {
+        path: '/notificaciones',
+        element: <MisNotificaciones />,
+      },
+      {
+        path: '/perfil',
+        element: <MiPerfil />,
+      },
+      {
+        path: '/mensajes',
+        element: <MisMensajes />,
+      },
+    ],
   },
   {
     path: '/pago-exitoso',
@@ -121,6 +128,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: 'dashboard', element: <DashboardAdmin /> },
+      { path: 'blockchain', element: <ManageBlockchain /> },
       { path: 'finanzas', element: <FinanzasAdmin /> },
       { path: 'usuarios', element: <ManageUsers /> },
       { path: 'inmuebles', element: <ManageInmuebles /> },

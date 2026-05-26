@@ -1,8 +1,35 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Star } from 'lucide-react';
 import api from '../services/api';
+import useAlertConfirm from '../hooks/useAlertConfirm';
+
+const StarRating = ({ rating, size = "1rem", interactive = false, onRate = null }) => {
+  return (
+    <div style={{ display: 'flex', gap: '4px' }}>
+      {[1, 2, 3, 4, 5].map(star => (
+        <span
+          key={star} 
+          onClick={() => interactive && onRate && onRate(star)}
+          style={{ 
+            cursor: interactive ? 'pointer' : 'default',
+            transition: 'transform 0.1s'
+          }}
+          onMouseEnter={e => interactive && (e.currentTarget.style.transform = 'scale(1.2)')}
+          onMouseLeave={e => interactive && (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          <Star
+            size={parseInt(size, 10) * 16 || 16}
+            fill={star <= rating ? '#fbbf24' : 'none'}
+            color={star <= rating ? '#fbbf24' : '#e2e8f0'}
+          />
+        </span>
+      ))}
+    </div>
+  );
+};
 
 const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
+  const { showAlert, ModalComponent } = useAlertConfirm();
   const [resenas, setResenas] = useState([]);
   const [promedio, setPromedio] = useState({ promedio: 0, total: 0 });
   const [calificacion, setCalificacion] = useState(5);
@@ -29,14 +56,28 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
   }, [inmuebleId]);
 
   useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     fetchResenas();
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     fetchPromedio();
   }, [inmuebleId, fetchResenas, fetchPromedio]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated) return alert('Debes iniciar sesión para calificar.');
-    if (!calificacion || calificacion < 1 || calificacion > 5) return alert('Calificación inválida.');
+    if (!isAuthenticated) {
+      return showAlert({
+        title: 'Acceso Restringido',
+        message: 'Debes iniciar sesión para poder calificar este inmueble.',
+        status: 'warning'
+      });
+    }
+    if (!calificacion || calificacion < 1 || calificacion > 5) {
+      return showAlert({
+        title: 'Calificación Inválida',
+        message: 'Por favor, ingresa una calificación válida entre 1 y 5 estrellas.',
+        status: 'warning'
+      });
+    }
     
     try {
       await api.post('/usuarios/resenas/', {
@@ -48,34 +89,18 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
       setCalificacion(5);
       fetchResenas();
       fetchPromedio();
+      showAlert({
+        title: 'Opinión Guardada',
+        message: '¡Gracias por compartir tu opinión sobre este inmueble!',
+        status: 'success'
+      });
     } catch (err) {
-      alert(err.response?.data?.error || 'Ya calificaste este inmueble o hubo un error.');
+      showAlert({
+        title: 'Error de Envío',
+        message: err.response?.data?.error || 'Ya calificaste este inmueble o hubo un error al enviar tu reseña.',
+        status: 'error'
+      });
     }
-  };
-
-  const StarRating = ({ rating, size = "1rem", interactive = false, onRate = null }) => {
-    return (
-      <div style={{ display: 'flex', gap: '4px' }}>
-        {[1, 2, 3, 4, 5].map(star => (
-          <span
-            key={star} 
-            onClick={() => interactive && onRate && onRate(star)}
-            style={{ 
-              cursor: interactive ? 'pointer' : 'default',
-              transition: 'transform 0.1s'
-            }}
-            onMouseEnter={e => interactive && (e.currentTarget.style.transform = 'scale(1.2)')}
-            onMouseLeave={e => interactive && (e.currentTarget.style.transform = 'scale(1)')}
-          >
-            <Star
-              size={parseInt(size, 10) * 16 || 16}
-              fill={star <= rating ? '#fbbf24' : 'none'}
-              color={star <= rating ? '#fbbf24' : '#e2e8f0'}
-            />
-          </span>
-        ))}
-      </div>
-    );
   };
 
   return (
@@ -131,6 +156,7 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
           ))}
         </div>
       )}
+      {ModalComponent}
     </div>
   );
 };

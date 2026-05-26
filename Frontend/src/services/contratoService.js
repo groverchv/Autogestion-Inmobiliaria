@@ -40,12 +40,26 @@ const contratoService = {
 
   /**
    * Genera un Contrato en PDF usando IA.
+   * @param {number} id - ID del contrato
+   * @param {string} instrucciones - Texto libre del usuario (escrito o transcrito de audio)
    */
-  generarContratoIA: async (id) => {
-    const response = await api.get(`/inmuebles/contratos/${id}/generar-ia/`, {
-      responseType: 'blob', // Crítico para no corromper el binario
-    });
+  generarContratoIA: async (id, instrucciones = '') => {
+    const response = await api.post(`/inmuebles/contratos/${id}/generar-ia/`, 
+      { instrucciones },
+      { responseType: 'blob' } // Crítico para no corromper el binario
+    );
     return response.data;
+  },
+
+  /**
+   * Chat con el asistente IA de contratos (abogado virtual).
+   * @param {number} id - ID del contrato
+   * @param {Array} mensajes - Historial completo [{role: 'user'|'assistant', content: string}]
+   * @returns {Promise<string>} Respuesta del asistente
+   */
+  chatIA: async (id, mensajes) => {
+    const { data } = await api.post(`/inmuebles/contratos/${id}/chat-ia/`, { mensajes });
+    return data.respuesta;
   },
 };
 

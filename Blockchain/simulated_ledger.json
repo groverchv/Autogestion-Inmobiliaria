@@ -1,0 +1,223 @@
+{
+  "blocks": [
+    {
+      "blockNumber": 1,
+      "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "timestamp": "2026-05-25T05:39:29.792Z",
+      "transactions": [
+        {
+          "txId": "tx_2714767e3b852ee1168a33d9a35cbebd",
+          "timestamp": "2026-05-25T05:39:29.792Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-9",
+            "contratoId": "CON-1",
+            "monto": 3500,
+            "fecha": "2026-05-25",
+            "tipoPago": "Efectivo",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "92b2344d8f2c1f565914603503cb4b02140c732d3c457783c3fab13431198178"
+    },
+    {
+      "blockNumber": 2,
+      "prevHash": "92b2344d8f2c1f565914603503cb4b02140c732d3c457783c3fab13431198178",
+      "timestamp": "2026-05-25T05:39:29.814Z",
+      "transactions": [
+        {
+          "txId": "tx_c5bf210e1428680f37ef920ff13e2371",
+          "timestamp": "2026-05-25T05:39:29.814Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-10",
+            "contratoId": "CON-1",
+            "monto": 3500,
+            "fecha": "2026-04-25",
+            "tipoPago": "Transferencia Bancaria",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "b762d11220513904938b79bee586c3b3339fecd40735375835a3a1f60281f5d8"
+    },
+    {
+      "blockNumber": 3,
+      "prevHash": "b762d11220513904938b79bee586c3b3339fecd40735375835a3a1f60281f5d8",
+      "timestamp": "2026-05-25T05:39:29.822Z",
+      "transactions": [
+        {
+          "txId": "tx_a2ca96bea237d2d0620eb042742e4106",
+          "timestamp": "2026-05-25T05:39:29.822Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-11",
+            "contratoId": "CON-1",
+            "monto": 3500,
+            "fecha": "2026-03-26",
+            "tipoPago": "QR",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "947f0725b57156aa7d07a5fa1fbfb8502c6213c0307e3785794632ae5ffb7cb3"
+    },
+    {
+      "blockNumber": 4,
+      "prevHash": "947f0725b57156aa7d07a5fa1fbfb8502c6213c0307e3785794632ae5ffb7cb3",
+      "timestamp": "2026-05-25T05:39:29.844Z",
+      "transactions": [
+        {
+          "txId": "tx_e93268ed02a42184c4ba90c7c88a25af",
+          "timestamp": "2026-05-25T05:39:29.844Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-12",
+            "contratoId": "CON-2",
+            "monto": 1800,
+            "fecha": "2026-05-25",
+            "tipoPago": "Efectivo",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "b66e7418318e67151ce516a046d35ac8e468c47a14682cb58b7944e90913d2d9"
+    },
+    {
+      "blockNumber": 5,
+      "prevHash": "b66e7418318e67151ce516a046d35ac8e468c47a14682cb58b7944e90913d2d9",
+      "timestamp": "2026-05-25T05:39:29.858Z",
+      "transactions": [
+        {
+          "txId": "tx_e95486dd61ddc4d60f505911dd45bf23",
+          "timestamp": "2026-05-25T05:39:29.858Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-14",
+            "contratoId": "CON-4",
+            "monto": 450000,
+            "fecha": "2026-05-20",
+            "tipoPago": "Tarjeta de Crédito",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "cde7f5d33ef5d780a03ab342a7bad5f02ad91f98a67fa2356b3c8c6151535b83"
+    },
+    {
+      "blockNumber": 6,
+      "prevHash": "cde7f5d33ef5d780a03ab342a7bad5f02ad91f98a67fa2356b3c8c6151535b83",
+      "timestamp": "2026-05-25T05:39:29.866Z",
+      "transactions": [
+        {
+          "txId": "tx_46722dcd61321d845f89bb8f946a3b56",
+          "timestamp": "2026-05-25T05:39:29.866Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-15",
+            "contratoId": "CON-5",
+            "monto": 4500,
+            "fecha": "2026-05-15",
+            "tipoPago": "QR",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "bc383ca71f794a7a03833f80b523b3ff05da5f5ea52ab370cec964102a18860c"
+    },
+    {
+      "blockNumber": 7,
+      "prevHash": "bc383ca71f794a7a03833f80b523b3ff05da5f5ea52ab370cec964102a18860c",
+      "timestamp": "2026-05-25T05:39:29.892Z",
+      "transactions": [
+        {
+          "txId": "tx_70bd08be3e60cce6a79736dd06189ded",
+          "timestamp": "2026-05-25T05:39:29.892Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-16",
+            "contratoId": "CON-5",
+            "monto": 4500,
+            "fecha": "2026-04-15",
+            "tipoPago": "Efectivo",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "5e23aa161de04e610866aac0958e0c952ed06af51e6d4e9e665ec89878bfbb57"
+    }
+  ],
+  "worldState": {
+    "PAG-9": {
+      "docType": "pago",
+      "id": "PAG-9",
+      "contratoId": "CON-1",
+      "monto": 3500,
+      "fecha": "2026-05-25",
+      "tipoPago": "Efectivo",
+      "stripeTransactionId": "",
+      "timestamp": "2026-05-25T05:39:29.792Z"
+    },
+    "PAG-10": {
+      "docType": "pago",
+      "id": "PAG-10",
+      "contratoId": "CON-1",
+      "monto": 3500,
+      "fecha": "2026-04-25",
+      "tipoPago": "Transferencia Bancaria",
+      "stripeTransactionId": "",
+      "timestamp": "2026-05-25T05:39:29.814Z"
+    },
+    "PAG-11": {
+      "docType": "pago",
+      "id": "PAG-11",
+      "contratoId": "CON-1",
+      "monto": 3500,
+      "fecha": "2026-03-26",
+      "tipoPago": "QR",
+      "stripeTransactionId": "",
+      "timestamp": "2026-05-25T05:39:29.822Z"
+    },
+    "PAG-12": {
+      "docType": "pago",
+      "id": "PAG-12",
+      "contratoId": "CON-2",
+      "monto": 1800,
+      "fecha": "2026-05-25",
+      "tipoPago": "Efectivo",
+      "stripeTransactionId": "",
+      "timestamp": "2026-05-25T05:39:29.844Z"
+    },
+    "PAG-14": {
+      "docType": "pago",
+      "id": "PAG-14",
+      "contratoId": "CON-4",
+      "monto": 450000,
+      "fecha": "2026-05-20",
+      "tipoPago": "Tarjeta de Crédito",
+      "stripeTransactionId": "",
+      "timestamp": "2026-05-25T05:39:29.858Z"
+    },
+    "PAG-15": {
+      "docType": "pago",
+      "id": "PAG-15",
+      "contratoId": "CON-5",
+      "monto": 4500,
+      "fecha": "2026-05-15",
+      "tipoPago": "QR",
+      "stripeTransactionId": "",
+      "timestamp": "2026-05-25T05:39:29.866Z"
+    },
+    "PAG-16": {
+      "docType": "pago",
+      "id": "PAG-16",
+      "contratoId": "CON-5",
+      "monto": 4500,
+      "fecha": "2026-04-15",
+      "tipoPago": "Efectivo",
+      "stripeTransactionId": "",
+      "timestamp": "2026-05-25T05:39:29.892Z"
+    }
+  }
+}
