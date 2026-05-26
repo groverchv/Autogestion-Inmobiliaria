@@ -1776,7 +1776,7 @@ const MisInmuebles = () => {
           </div>
         </div>
       )}
-<<<<<<< HEAD
+
       {showPubModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -1787,24 +1787,10 @@ const MisInmuebles = () => {
             background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '650px',
             maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid var(--color-border)'
-=======
-
-      {showVerificacionModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.5)', zIndex: 1002,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px',
-            maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
->>>>>>> origin/main
           }}>
             <div style={{
               padding: '20px 24px', borderBottom: '1px solid var(--color-border)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-<<<<<<< HEAD
               background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)'
             }}>
               <div>
@@ -1824,7 +1810,6 @@ const MisInmuebles = () => {
             </div>
 
             <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Formulario para agregar publicación */}
               <form onSubmit={crearPublicacion} style={{
                 background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)', borderRadius: '16px', padding: '20px',
                 border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', flexDirection: 'column', gap: '14px'
@@ -1890,7 +1875,6 @@ const MisInmuebles = () => {
                 )}
               </form>
 
-              {/* Lista de publicaciones */}
               <div>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>
                   Historial de Ofertas Comerciales
@@ -1957,7 +1941,38 @@ const MisInmuebles = () => {
                   </div>
                 )}
               </div>
-=======
+            </div>
+
+            <div style={{
+              padding: '16px 24px', borderTop: '1px solid var(--color-border)',
+              background: '#f8fafc', display: 'flex', justifyContent: 'flex-end',
+            }}>
+              <button onClick={() => setShowPubModal(false)}
+                style={{
+                  background: 'var(--color-primary)', color: '#fff', border: 'none',
+                  padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
+                }}>
+                Listo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVerificacionModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.5)', zIndex: 1002,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px',
+            maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid var(--color-border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               background: '#f8fafc'
             }}>
               <div>
@@ -2179,7 +2194,6 @@ const MisInmuebles = () => {
                     </div>
                   )}
 
-                  {/* Trazabilidad inmutable en Blockchain */}
                   <div style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginBottom: '16px' }}>
                     <BlockchainAuditTrail assetId={`INM-${inmuebleVerificacionId}`} />
                   </div>
@@ -2204,33 +2218,23 @@ const MisInmuebles = () => {
                   </div>
                 </div>
               )}
->>>>>>> origin/main
             </div>
 
             <div style={{
               padding: '16px 24px', borderTop: '1px solid var(--color-border)',
               background: '#f8fafc', display: 'flex', justifyContent: 'flex-end',
             }}>
-<<<<<<< HEAD
-              <button onClick={() => setShowPubModal(false)}
-=======
               <button onClick={() => setShowVerificacionModal(false)}
->>>>>>> origin/main
                 style={{
                   background: 'var(--color-primary)', color: '#fff', border: 'none',
                   padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
                 }}>
-<<<<<<< HEAD
-                Listo
-=======
                 Cerrar
->>>>>>> origin/main
               </button>
             </div>
           </div>
         </div>
       )}
-<<<<<<< HEAD
 
       {showEditorRecorrido && editorInmueble && (
         <EditorRecorrido
@@ -2242,9 +2246,7 @@ const MisInmuebles = () => {
           }}
         />
       )}
-=======
       {ModalComponent}
->>>>>>> origin/main
     </div>
   );
 };
