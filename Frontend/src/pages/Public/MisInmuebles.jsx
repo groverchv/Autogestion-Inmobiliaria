@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-<<<<<<< HEAD
-import { MapPin, Check, X, Clock, Trash2, Tag, Megaphone, Plus, Calendar, AlertCircle } from 'lucide-react';
-=======
-import { MapPin, Check, X, Clock, Trash2, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw, Settings, ChevronDown, ChevronUp, Eye, EyeOff, Edit3 } from 'lucide-react';
+import { MapPin, Check, X, Clock, Trash2, Tag, Megaphone, Plus, Calendar, AlertCircle, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw, Settings, ChevronDown, ChevronUp, Eye, EyeOff, Edit3 } from 'lucide-react';
 import tituloService from '../../services/tituloService';
 import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
 import useAlertConfirm from '../../hooks/useAlertConfirm';
->>>>>>> origin/main
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -91,7 +87,6 @@ const MisInmuebles = () => {
   const [nuevoHorario, setNuevoHorario] = useState({ dia_semana: 0, hora_inicio: '09:00', hora_fin: '18:00' });
   const [guardandoHorario, setGuardandoHorario] = useState(false);
 
-<<<<<<< HEAD
   const [showPubModal, setShowPubModal] = useState(false);
   const [selectedInmId, setSelectedInmId] = useState(null);
   const [publications, setPublications] = useState([]);
@@ -102,14 +97,13 @@ const MisInmuebles = () => {
     precio: '',
     estado: 'activa'
   });
-=======
+
   const [showVerificacionModal, setShowVerificacionModal] = useState(false);
   const [inmuebleVerificacionId, setInmuebleVerificacionId] = useState(null);
   const [verificacionLoading, setVerificacionLoading] = useState(false);
   const [verificacionData, setVerificacionData] = useState(null);
   const [archivoVerificacion, setArchivoVerificacion] = useState(null);
   const [verificando, setVerificando] = useState(false);
->>>>>>> origin/main
 
   const DIAS_NOMBRES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
