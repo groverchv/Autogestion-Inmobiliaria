@@ -207,7 +207,7 @@ const MisInmuebles = () => {
           await api.delete(`/inmuebles/horarios/${horarioId}/`);
           setHorarios(prev => prev.filter(h => h.id !== horarioId));
           showAlert({ title: '¡Horario eliminado!', message: 'El horario ha sido removido con éxito.', status: 'success' });
-        } catch { 
+        } catch {
           showAlert({ title: 'Error', message: 'No se pudo eliminar el horario.', status: 'error' });
         }
       }
@@ -370,7 +370,7 @@ const MisInmuebles = () => {
           };
           const compressedBlob = await imageCompression(file, options);
           const compressedFile = new File([compressedBlob], file.name, { type: file.type });
-          
+
           archivosValidos.push(compressedFile);
           previewsValidos.push(URL.createObjectURL(compressedFile));
           metasValidas.push({ piso: '', habitacion: '' });
@@ -739,13 +739,13 @@ const MisInmuebles = () => {
                           {inm.estado}
                         </span>
                         {inm.verificacion_estado && (
-                          <span 
-                            className="propiedad-card__badge" 
-                            style={{ 
-                              background: inm.verificacion_estado === 'verificado' ? '#dcfce7' : 
-                                          inm.verificacion_estado === 'observado' ? '#fef3c7' : '#fee2e2',
-                              color: inm.verificacion_estado === 'verificado' ? '#15803d' : 
-                                     inm.verificacion_estado === 'observado' ? '#d97706' : '#dc2626',
+                          <span
+                            className="propiedad-card__badge"
+                            style={{
+                              background: inm.verificacion_estado === 'verificado' ? '#dcfce7' :
+                                inm.verificacion_estado === 'observado' ? '#fef3c7' : '#fee2e2',
+                              color: inm.verificacion_estado === 'verificado' ? '#15803d' :
+                                inm.verificacion_estado === 'observado' ? '#d97706' : '#dc2626',
                               position: 'static',
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -753,8 +753,8 @@ const MisInmuebles = () => {
                               fontWeight: 700
                             }}
                           >
-                            {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
-                             inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : '✗ Inválido'}
+                            {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' :
+                              inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : '✗ Inválido'}
                           </span>
                         )}
                       </div>
@@ -781,14 +781,14 @@ const MisInmuebles = () => {
 
                         {/* Botones principales de la tarjeta */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                          <Link 
-                            to={`/propiedades/${inm.id}`} 
-                            className="propiedad-card__cta" 
+                          <Link
+                            to={`/propiedades/${inm.id}`}
+                            className="propiedad-card__cta"
                             style={{ flex: 1, textAlign: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
                           >
                             Ver Detalles
                           </Link>
-                          
+
                           <button
                             type="button"
                             className={`propiedad-card__admin-toggle ${expandedCardId === inm.id ? 'propiedad-card__admin-toggle--active' : ''}`}
@@ -840,15 +840,15 @@ const MisInmuebles = () => {
                               <Tag size={16} />
                               <span>Publicar / Ofertas</span>
                             </button>
-                            
+
                             <button
                               type="button"
                               onClick={() => abrirVerificacion(inm.id)}
                               className="propiedad-card__admin-btn"
                               style={{
-                                color: inm.verificacion_estado === 'verificado' ? '#10b981' : 
-                                       inm.verificacion_estado === 'observado' ? '#eab308' :
-                                       inm.verificacion_estado === 'rechazado' ? '#ef4444' : 'var(--color-text-secondary)'
+                                color: inm.verificacion_estado === 'verificado' ? '#10b981' :
+                                  inm.verificacion_estado === 'observado' ? '#eab308' :
+                                    inm.verificacion_estado === 'rechazado' ? '#ef4444' : 'var(--color-text-secondary)'
                               }}
                             >
                               {inm.verificacion_estado === 'verificado' ? <ShieldCheck size={16} /> : <FileText size={16} />}
@@ -2043,9 +2043,9 @@ const MisInmuebles = () => {
                     cursor: 'pointer',
                     position: 'relative'
                   }}>
-                    <input 
-                      type="file" 
-                      required 
+                    <input
+                      type="file"
+                      required
                       accept="application/pdf,image/*"
                       onChange={(e) => setArchivoVerificacion(e.target.files[0])}
                       style={{
@@ -2088,17 +2088,17 @@ const MisInmuebles = () => {
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '16px', borderRadius: '12px',
-                    background: verificacionData.estado === 'verificado' ? '#dcfce7' : 
-                                verificacionData.estado === 'observado' ? '#fef3c7' : 
-                                verificacionData.estado === 'rechazado' ? '#fee2e2' : '#f1f5f9',
+                    background: verificacionData.estado === 'verificado' ? '#dcfce7' :
+                      verificacionData.estado === 'observado' ? '#fef3c7' :
+                        verificacionData.estado === 'rechazado' ? '#fee2e2' : '#f1f5f9',
                     border: '1px solid ' + (
-                                verificacionData.estado === 'verificado' ? '#bbf7d0' : 
-                                verificacionData.estado === 'observado' ? '#fef08a' : 
-                                verificacionData.estado === 'rechazado' ? '#fecaca' : '#cbd5e1'
-                             ),
-                    color: verificacionData.estado === 'verificado' ? '#14532d' : 
-                           verificacionData.estado === 'observado' ? '#713f12' : 
-                           verificacionData.estado === 'rechazado' ? '#7f1d1d' : '#334155'
+                      verificacionData.estado === 'verificado' ? '#bbf7d0' :
+                        verificacionData.estado === 'observado' ? '#fef08a' :
+                          verificacionData.estado === 'rechazado' ? '#fecaca' : '#cbd5e1'
+                    ),
+                    color: verificacionData.estado === 'verificado' ? '#14532d' :
+                      verificacionData.estado === 'observado' ? '#713f12' :
+                        verificacionData.estado === 'rechazado' ? '#7f1d1d' : '#334155'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {verificacionData.estado === 'verificado' ? <ShieldCheck size={32} /> : <ShieldAlert size={32} />}

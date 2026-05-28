@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Compass, Home } from 'lucide-react';
+import { X, Compass, Home, Eye, EyeOff } from 'lucide-react';
 import 'pannellum/build/pannellum.css';
 import 'pannellum';
 import './ModalRecorrido3D.css';
@@ -22,6 +22,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('Iniciando recorrido virtual...');
   const [escenaActivaId, setEscenaActivaId] = useState(null);
+  const [uiVisible, setUiVisible] = useState(true);
 
   // 1. Pre-descargar todos los panoramas para evadir CORS y acelerar transiciones
   useEffect(() => {
@@ -223,7 +224,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
   return (
     <div className="modal-recorrido">
       {/* ─── Encabezado Flotante (Glassmorphic) ─── */}
-      <div className="modal-recorrido__header">
+      <div className={`modal-recorrido__header ${!uiVisible ? 'modal-recorrido__header--hidden' : ''}`}>
         <div className="modal-recorrido__header-info">
           <div className="modal-recorrido__compass-box">
             <Compass className="modal-recorrido__compass-icon" size={24} />
@@ -245,6 +246,30 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
         >
           <X size={20} />
           <span>Cerrar</span>
+        </button>
+      </div>
+
+      {/* ─── Controles Flotantes Inmersivos ─── */}
+      <div className="modal-recorrido__floating-controls">
+        {!uiVisible && (
+          <button
+            className="modal-recorrido__minimal-close-btn"
+            onClick={onClose}
+            aria-label="Cerrar recorrido"
+            type="button"
+            title="Cerrar recorrido"
+          >
+            <X size={20} />
+          </button>
+        )}
+        <button
+          className={`modal-recorrido__toggle-ui-btn ${!uiVisible ? 'modal-recorrido__toggle-ui-btn--active' : ''}`}
+          onClick={() => setUiVisible(!uiVisible)}
+          aria-label={uiVisible ? "Ocultar interfaz" : "Mostrar interfaz"}
+          type="button"
+          title={uiVisible ? "Ocultar interfaz para visión inmersiva" : "Mostrar interfaz"}
+        >
+          {uiVisible ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
       </div>
 
@@ -275,7 +300,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
 
       {/* ─── Carrusel Inferior de Teletransportación (Glassmorphic) ─── */}
       {!cargandoDescarga && panoramas.length > 0 && (
-        <div className="modal-recorrido__carousel-container">
+        <div className={`modal-recorrido__carousel-container ${!uiVisible ? 'modal-recorrido__carousel-container--hidden' : ''}`}>
           <div className="modal-recorrido__carousel-header">
             <span>HABITACIONES DISPONIBLES ({panoramas.length})</span>
             <span className="modal-recorrido__tip">Haz clic en una habitación para viajar al instante</span>
