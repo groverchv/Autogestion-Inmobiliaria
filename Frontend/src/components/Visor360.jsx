@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Maximize2, Layers, Compass } from 'lucide-react';
+import { Maximize2, Minimize2, Layers, Compass } from 'lucide-react';
 import 'pannellum/build/pannellum.css';
 import 'pannellum';
 import ModalRecorrido3D from './ModalRecorrido3D';
+import api from '../services/api';
 import './Visor360.css';
 /**
  * Visor360 — Componente de exploración inmersiva con panoramas 360°.
@@ -17,13 +18,31 @@ import './Visor360.css';
  *
  * @param {{ panoramas: Array<{id: number, archivo: string, descripcion: string}> }} props
  */
-const Visor360 = ({ panoramas = [], tituloPropiedad = '' }) => {
+const Visor360 = ({ panoramas = [], tituloPropiedad = '', accesoId = null }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const viewerRef = useRef(null);
   const viewerInstanceRef = useRef(null);
   const [pisoActivo, setPisoActivo] = useState('');
   const [escenaActiva, setEscenaActiva] = useState(null);
   const [cargando, setCargando] = useState(true);
+
+  // ─── Latido de Conexión (Heartbeat) para Analíticas ──────────────────
+  useEffect(() => {
+    if (!accesoId) return;
+
+    const ping = () => {
+      api.post(`/inmuebles/accesos-360/${accesoId}/ping_visor/`).catch(() => {});
+    };
+
+    // Ping inmediato al abrir
+    ping();
+
+    // Ping continuo cada 10 segundos
+    const intervalId = setInterval(ping, 10000);
+
+    return () => clearInterval(intervalId);
+  }, [accesoId]);
 
   // ─── Parsear y agrupar panoramas por piso ────────────────────────────
   const pisosParsed = useMemo(() => {
@@ -181,6 +200,29 @@ const Visor360 = ({ panoramas = [], tituloPropiedad = '' }) => {
     };
   }, [inicializarVisor]);
 
+  // Escuchar eventos de pantalla completa para sincronizar estado e íconos
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+      // Forzar redibujado de Pannellum despachando un evento resize
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
   // ─── Handlers ────────────────────────────────────────────────────────
   const cambiarPiso = (nombrePiso) => {
     if (nombrePiso === pisoActivo) return;
@@ -292,13 +334,22 @@ const Visor360 = ({ panoramas = [], tituloPropiedad = '' }) => {
             <span>{escenaActiva?.habitacion || 'Vista 360°'}</span>
           </div>
           <button
-            className="visor360__fullscreen-btn"
-            onClick={toggleFullscreen}
-            type="button"
-          >
-            <Maximize2 size={14} />
-            Pantalla completa
-          </button>
+          className="visor360__fullscreen-btn"
+          onClick={toggleFullscreen}
+          type="button"
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize2 size={14} />
+              Salir de pantalla completa
+            </>
+          ) : (
+            <>
+              <Maximize2 size={14} />
+              Pantalla completa
+            </>
+          )}
+        </button>
         </div>
       </div>
     </div>

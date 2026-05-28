@@ -25,7 +25,7 @@ const Propiedades = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const activeFiltersCount = 
+  const activeFiltersCount =
     (filtroCategoria ? 1 : 0) +
     (filtroCiudad ? 1 : 0) +
     (filtroPrecioMax ? 1 : 0) +
@@ -126,9 +126,9 @@ const Propiedades = () => {
                 className="propiedades-filters__search-input"
               />
             </div>
-            
+
             <div className="propiedades-filters__actions">
-              <button 
+              <button
                 type="button"
                 className={`propiedades-filters__toggle-btn ${showAdvanced ? 'propiedades-filters__toggle-btn--active' : ''}`}
                 onClick={() => setShowAdvanced(!showAdvanced)}
@@ -141,7 +141,7 @@ const Propiedades = () => {
               </button>
 
               {activeFiltersCount > 0 && (
-                <button 
+                <button
                   type="button"
                   className="propiedades-filters__clear-btn"
                   onClick={clearFilters}
@@ -274,15 +274,15 @@ const Propiedades = () => {
                         {inm.estado}
                       </span>
                       {inm.verificacion_estado && inm.verificacion_estado !== 'no_solicitado' && (
-                        <span 
-                          className="propiedad-card__badge" 
-                          style={{ 
-                            background: inm.verificacion_estado === 'verificado' ? '#dcfce7' : 
-                                        inm.verificacion_estado === 'observado' ? '#fef3c7' : 
-                                        inm.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
-                            color: inm.verificacion_estado === 'verificado' ? '#15803d' : 
-                                   inm.verificacion_estado === 'observado' ? '#d97706' : 
-                                   inm.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
+                        <span
+                          className="propiedad-card__badge"
+                          style={{
+                            background: inm.verificacion_estado === 'verificado' ? '#dcfce7' :
+                              inm.verificacion_estado === 'observado' ? '#fef3c7' :
+                                inm.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
+                            color: inm.verificacion_estado === 'verificado' ? '#15803d' :
+                              inm.verificacion_estado === 'observado' ? '#d97706' :
+                                inm.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
                             position: 'static',
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -290,15 +290,15 @@ const Propiedades = () => {
                             fontWeight: 700
                           }}
                           title={
-                            inm.verificacion_estado === 'verificado' ? 'Título de propiedad verificado por IA' : 
-                            inm.verificacion_estado === 'observado' ? 'Título observado (advertencias detectadas)' : 
-                            inm.verificacion_estado === 'procesando' ? 'Verificación en proceso por la IA' : 
-                            'Título de propiedad inválido o no reconocido'
+                            inm.verificacion_estado === 'verificado' ? 'Título de propiedad verificado por IA' :
+                              inm.verificacion_estado === 'observado' ? 'Título observado (advertencias detectadas)' :
+                                inm.verificacion_estado === 'procesando' ? 'Verificación en proceso por la IA' :
+                                  'Título de propiedad inválido o no reconocido'
                           }
                         >
-                          {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
-                           inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : 
-                           inm.verificacion_estado === 'procesando' ? '⌛ Procesando' : '✗ Inválido'}
+                          {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' :
+                            inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' :
+                              inm.verificacion_estado === 'procesando' ? '⌛ Procesando' : '✗ Inválido'}
                         </span>
                       )}
                       {offerStyle && (

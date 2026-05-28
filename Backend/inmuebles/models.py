@@ -630,3 +630,49 @@ class VerificacionTitulo(models.Model):
     def __str__(self):
         return f'Verificación {self.estado} — {self.inmueble.titulo}'
 
+
+class AccesoRecorrido360(models.Model):
+    """Acceso temporal otorgado por un propietario a un cliente para un recorrido 360°."""
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='accesos_360'
+    )
+    cliente = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='accesos_360_recibidos'
+    )
+    propietario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='accesos_360_otorgados'
+    )
+    chat = models.ForeignKey(
+        'usuarios.Chat',
+        on_delete=models.CASCADE,
+        related_name='accesos_360',
+        null=True,
+        blank=True
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+    fecha_expiracion = models.DateTimeField()
+    activo = models.BooleanField(default=True)
+    visitas = models.IntegerField(default=0)
+    ultimo_acceso_visor = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'inmuebles_acceso_recorrido_360'
+        verbose_name = 'Acceso a Recorrido 360°'
+        verbose_name_plural = 'Accesos a Recorridos 360°'
+        ordering = ['-creado']
+
+    @property
+    def es_valido(self) -> bool:
+        from django.utils import timezone
+        return self.activo and self.fecha_expiracion > timezone.now()
+
+    def __str__(self):
+        return f'Acceso: {self.cliente.email} -> {self.inmueble.titulo} (Exp: {self.fecha_expiracion})'
+
+

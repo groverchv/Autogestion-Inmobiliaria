@@ -156,6 +156,8 @@ class Mensaje(models.Model):
         UBICACION = 'ubicacion', 'Ubicación'
         EMOJI = 'emoji', 'Emoji'
         WHATSAPP = 'whatsapp', 'WhatsApp'
+        RECORRIDO_360 = 'recorrido360', 'Recorrido 360°'
+
 
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='mensajes')
     remitente = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='mensajes_enviados')

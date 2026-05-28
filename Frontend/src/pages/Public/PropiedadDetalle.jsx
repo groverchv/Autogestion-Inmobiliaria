@@ -3,8 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, Share2, MapPin, Bed, Bath, Maximize2, X, ChevronLeft,
   ChevronRight, Home, Video, MessageCircle, Check, AlertCircle, Calendar,
-  ShieldCheck, ShieldAlert
+  ShieldCheck, ShieldAlert, Lock, Orbit
 } from 'lucide-react';
+
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -27,6 +28,51 @@ import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
 
+const RenderPaseBadge = ({ expiracion }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [expired, setExpired] = useState(false);
+
+  useEffect(() => {
+    if (!expiracion) return;
+    const update = () => {
+      const diff = new Date(expiracion) - new Date();
+      if (diff <= 0) {
+        setTimeLeft('Pase Expirado');
+        setExpired(true);
+      } else {
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        setTimeLeft(`Pase temporal activo: ${mins}m ${secs}s restantes`);
+        setExpired(false);
+      }
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [expiracion]);
+
+  if (expired) return null;
+
+  return (
+    <div style={{
+      background: 'rgba(16, 185, 129, 0.15)',
+      color: '#059669',
+      padding: '8px 16px',
+      borderRadius: '20px',
+      fontSize: '0.82rem',
+      fontWeight: 700,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      marginBottom: '12px',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+    }}>
+      <Orbit size={16} className="spin" />
+      {timeLeft}
+    </div>
+  );
+};
+
 const PropiedadDetalle = () => {
   const { id } = useParams();
   const [inmueble, setInmueble] = useState(null);
@@ -38,6 +84,9 @@ const PropiedadDetalle = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
+  const [acceso360, setAcceso360] = useState({ tieneAcceso: false, propietario: false, fechaExpiracion: null, accesoId: null });
+  const [accesoLoading, setAccesoLoading] = useState(true);
+
   useEffect(() => {
     api.get(`/inmuebles/lista/${id}/`)
       .then(res => setInmueble(res.data))
@@ -47,6 +96,54 @@ const PropiedadDetalle = () => {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAcceso360({ tieneAcceso: false, propietario: false, fechaExpiracion: null, accesoId: null });
+      setAccesoLoading(false);
+      return;
+    }
+
+    let intervalId = null;
+
+    const checkAcceso = () => {
+      api.get('/inmuebles/accesos-360/check/', { params: { inmueble_id: id } })
+        .then(res => {
+          setAcceso360({
+            tieneAcceso: res.data.tiene_acceso,
+            propietario: res.data.propietario,
+            fechaExpiracion: res.data.fecha_expiracion,
+            accesoId: res.data.acceso_id
+          });
+          
+          if (res.data.tiene_acceso && intervalId) {
+            clearInterval(intervalId);
+          }
+        })
+        .catch(err => console.error("Error al verificar acceso 360:", err))
+        .finally(() => setAccesoLoading(false));
+    };
+
+    setAccesoLoading(true);
+    checkAcceso();
+
+    // Polling inteligente para reactividad inmediata (cada 4 segundos)
+    intervalId = setInterval(() => {
+      setAcceso360(prev => {
+        if (!prev.tieneAcceso) {
+          checkAcceso();
+        } else {
+          clearInterval(intervalId);
+        }
+        return prev;
+      });
+    }, 4000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [id, isAuthenticated]);
+
 
   const handleContactar = () => {
     if (!isAuthenticated) {
@@ -61,9 +158,25 @@ const PropiedadDetalle = () => {
 
     const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
     const pubIdQuery = activePub ? `&publicacionId=${activePub.id}` : '';
-    // Flujo normal de usuario - navega a mensajes con el propietario
     navigate(`/mensajes?inmuebleId=${inmueble.id}&propietarioId=${inmueble.propietario}&inmuebleTitulo=${encodeURIComponent(inmueble.titulo)}${pubIdQuery}`);
   };
+
+  const handleSolicitarAcceso360 = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (user?.rol === 'admin') {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
+    const pubIdQuery = activePub ? `&publicacionId=${activePub.id}` : '';
+    navigate(`/mensajes?inmuebleId=${inmueble.id}&propietarioId=${inmueble.propietario}&inmuebleTitulo=${encodeURIComponent(inmueble.titulo)}${pubIdQuery}&solicitar360=true`);
+  };
+
 
   const confirmAdminContact = async () => {
     // Aquí el admin confirma que ya habló con el usuario
@@ -308,8 +421,133 @@ const PropiedadDetalle = () => {
 
                   {/* ─── Visor 360° ────────────────────────────── */}
                   {panoramas360.length > 0 && (
-                    <Visor360 panoramas={panoramas360} tituloPropiedad={inmueble.titulo} />
+                    <>
+                      {accesoLoading ? (
+                        <div style={{
+                          padding: '24px',
+                          textAlign: 'center',
+                          background: 'var(--color-bg)',
+                          borderRadius: '12px',
+                          color: 'var(--color-text-secondary)',
+                          marginBottom: '32px'
+                        }}>
+                          Verificando permisos de acceso al recorrido 360°...
+                        </div>
+                      ) : acceso360.tieneAcceso ? (
+                        <div style={{ marginBottom: '32px' }}>
+                          {!acceso360.propietario && acceso360.fechaExpiracion && (
+                            <RenderPaseBadge expiracion={acceso360.fechaExpiracion} />
+                          )}
+                          <Visor360 panoramas={panoramas360} tituloPropiedad={inmueble.titulo} accesoId={acceso360.accesoId} />
+                        </div>
+                      ) : (
+                        <div style={{
+                          position: 'relative',
+                          borderRadius: '24px',
+                          overflow: 'hidden',
+                          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(0, 0, 0, 0.05)',
+                          marginBottom: '32px',
+                          border: '1px solid rgba(255, 255, 255, 0.8)',
+                          background: '#ffffff'
+                        }}>
+                          {/* Fondo de Imagen Difuminado con Ajuste de Brillo y Contraste */}
+                          {panoramas360[0]?.archivo && (
+                            <div style={{
+                              position: 'absolute',
+                              inset: '-20px',
+                              backgroundImage: `url(${panoramas360[0].archivo})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              filter: 'blur(30px) brightness(1.22) saturate(1.15)',
+                              zIndex: 1
+                            }} />
+                          )}
+                          
+                          {/* Contenido Superior Glassmorphic Claro */}
+                          <div style={{
+                            position: 'relative',
+                            zIndex: 2,
+                            background: 'rgba(255, 255, 255, 0.42)',
+                            backdropFilter: 'blur(16px)',
+                            WebkitBackdropFilter: 'blur(16px)',
+                            padding: '48px 24px',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '20px'
+                          }}>
+                            {/* Ícono de Candado de Alta Fidelidad en Color Rojo Premium */}
+                            <div style={{
+                              background: 'rgba(239, 68, 68, 0.08)',
+                              border: '1.5px dashed rgba(239, 68, 68, 0.3)',
+                              color: '#ef4444',
+                              padding: '18px',
+                              borderRadius: '50%',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 8px 24px rgba(239, 68, 68, 0.1)',
+                            }}>
+                              <Lock size={32} strokeWidth={2.2} />
+                            </div>
+                            
+                            <div>
+                              <h3 style={{ 
+                                fontSize: '1.35rem', 
+                                fontWeight: 800, 
+                                margin: '0 0 10px 0', 
+                                letterSpacing: '-0.03em',
+                                color: '#0f172a'
+                              }}>
+                                Recorrido Virtual 360° Privado
+                              </h3>
+                              <p style={{ 
+                                color: '#334155', 
+                                fontSize: '0.92rem', 
+                                fontWeight: 500,
+                                maxWidth: '460px', 
+                                margin: '0 auto', 
+                                lineHeight: '1.6' 
+                              }}>
+                                Este recorrido es exclusivo y protegido. Solicita un pase de acceso temporal interactivo en tiempo real al propietario para explorar el inmueble de manera inmersiva.
+                              </p>
+                            </div>
+                            
+                            <button
+                              onClick={handleSolicitarAcceso360}
+                              style={{
+                                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                                color: '#fff',
+                                border: 'none',
+                                padding: '14px 32px',
+                                borderRadius: '30px',
+                                fontWeight: 700,
+                                fontSize: '0.92rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 10px 25px rgba(99, 102, 241, 0.3)',
+                                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                              }}
+                              onMouseOver={e => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 14px 30px rgba(99, 102, 241, 0.45)';
+                              }}
+                              onMouseOut={e => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 10px 25px rgba(99, 102, 241, 0.3)';
+                              }}
+                            >
+                              <MessageCircle size={18} /> Solicitar Acceso Temporal 360°
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
+
 
                   <div style={{ marginBottom: '32px' }}>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Descripción</h2>

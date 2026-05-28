@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from .models import (
     TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato,
     Contrato, Comision, Favorito, Cita, HorarioDisponible, Hotspot,
-    VerificacionTitulo,
+    VerificacionTitulo, AccesoRecorrido360,
 )
 from .serializers import (
     TipoInmuebleSerializer,
@@ -25,6 +25,7 @@ from .serializers import (
     HorarioDisponibleSerializer,
     HotspotSerializer,
     VerificacionTituloSerializer,
+    AccesoRecorrido360Serializer,
 )
 from django.db import models as dj_models
 from .services import (
@@ -870,3 +871,82 @@ class BlockchainStatsView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+from django.utils import timezone
+from django.db import models as dj_models
+
+class AccesoRecorrido360ViewSet(viewsets.ModelViewSet):
+    serializer_class = AccesoRecorrido360Serializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return AccesoRecorrido360.objects.filter(
+            dj_models.Q(propietario=user) | dj_models.Q(cliente=user)
+        ).distinct()
+
+    def perform_create(self, serializer):
+        inmueble = serializer.validated_data['inmueble']
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise ValidationError("Solo el propietario del inmueble puede otorgar acceso al recorrido 360°.")
+        serializer.save(propietario=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='check')
+    def check_acceso(self, request):
+        inmueble_id = request.query_params.get('inmueble_id')
+        if not inmueble_id:
+            return Response({'error': 'El parámetro inmueble_id es requerido.'}, status=400)
+
+        try:
+            inmueble = Inmueble.objects.get(id=inmueble_id)
+            if inmueble.propietario == request.user or request.user.is_staff or request.user.rol == 'admin':
+                return Response({'tiene_acceso': True, 'propietario': True})
+        except Inmueble.DoesNotExist:
+            return Response({'error': 'Inmueble no encontrado.'}, status=404)
+
+        ahora = timezone.now()
+        acceso = AccesoRecorrido360.objects.filter(
+            inmueble_id=inmueble_id,
+            cliente=request.user,
+            activo=True,
+            fecha_expiracion__gt=ahora
+        ).first()
+
+        if acceso:
+            return Response({
+                'tiene_acceso': True,
+                'propietario': False,
+                'acceso_id': acceso.id,
+                'fecha_expiracion': acceso.fecha_expiracion
+            })
+
+        return Response({'tiene_acceso': False, 'propietario': False})
+
+    @action(detail=True, methods=['post'], url_path='revocar')
+    def revocar_acceso(self, request, pk=None):
+        acceso = self.get_object()
+        if acceso.propietario != request.user and not request.user.is_staff:
+            return Response({'error': 'No tienes permisos para revocar este acceso.'}, status=403)
+
+        acceso.activo = False
+        acceso.save()
+        return Response({'success': True, 'mensaje': 'Acceso revocado exitosamente.'})
+
+    @action(detail=True, methods=['post'], url_path='ping_visor')
+    def ping_visor(self, request, pk=None):
+        acceso = self.get_object()
+        if acceso.cliente != request.user:
+            return Response({'error': 'Solo el cliente autorizado puede enviar latidos de conexión.'}, status=403)
+        
+        # Validar si el acceso ya expiró o fue revocado
+        if not acceso.activo or acceso.fecha_expiracion < timezone.now():
+            return Response({'error': 'Acceso inactivo o expirado.'}, status=400)
+
+        # Si es el primer ping de una nueva sesión, incrementamos visitas.
+        # Definiremos "nueva sesión" si el último acceso fue hace más de 5 minutos.
+        ahora = timezone.now()
+        if not acceso.ultimo_acceso_visor or (ahora - acceso.ultimo_acceso_visor).total_seconds() > 300:
+            acceso.visitas += 1
+            
+        acceso.ultimo_acceso_visor = ahora
+        acceso.save(update_fields=['visitas', 'ultimo_acceso_visor'])
+        return Response({'success': True})

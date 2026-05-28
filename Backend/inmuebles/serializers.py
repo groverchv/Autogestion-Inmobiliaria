@@ -279,3 +279,18 @@ class CitaSerializer(serializers.ModelSerializer):
                     {'hora_inicio': 'Ya existe una cita agendada para ese horario.'}
                 )
         return data
+
+
+from .models import AccesoRecorrido360
+
+class AccesoRecorrido360Serializer(serializers.ModelSerializer):
+    cliente_nombre = serializers.CharField(source='cliente.get_full_name', read_only=True)
+    propietario_nombre = serializers.CharField(source='propietario.get_full_name', read_only=True)
+    inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+    es_valido = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = AccesoRecorrido360
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'propietario', 'visitas', 'ultimo_acceso_visor']
+

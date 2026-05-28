@@ -302,7 +302,14 @@ class MensajeViewSet(viewsets.ModelViewSet):
         if tipo == 'whatsapp' and not contenido:
             return Response({'error': 'Debes enviar un número de WhatsApp válido'}, status=400)
 
+        if tipo == 'recorrido360':
+            if not chat.inmueble:
+                return Response({'error': 'Este chat no está asociado a ningún inmueble.'}, status=400)
+            if chat.inmueble.propietario != request.user and not request.user.is_staff:
+                return Response({'error': 'Solo el propietario de este inmueble puede otorgar acceso al recorrido 360°.'}, status=403)
+
         msg = Mensaje.objects.create(
+
             chat_id=chat_id,
             remitente=request.user,
             tipo=tipo,
