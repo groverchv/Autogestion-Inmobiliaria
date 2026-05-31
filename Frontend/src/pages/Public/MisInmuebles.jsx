@@ -19,8 +19,7 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
+
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
@@ -666,8 +665,7 @@ const MisInmuebles = () => {
           `}</style>
         </div>
       )}
-      <Navbar />
-      <UserMenu />
+
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>

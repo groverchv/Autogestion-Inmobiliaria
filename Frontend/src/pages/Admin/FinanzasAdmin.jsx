@@ -75,7 +75,10 @@ const FinanzasAdmin = () => {
   };
 
   const handleUpdateConfig = async () => {
-    if (!config?.id) return;
+    if (!config?.id) {
+      setMensaje({ texto: 'Error: No se detectó el identificador de configuración. Por favor, recarga la página.', tipo: 'error' });
+      return;
+    }
     setSavingConfig(true);
     setMensaje({ texto: '', tipo: '' });
     try {
@@ -193,7 +196,7 @@ const FinanzasAdmin = () => {
   return (
     <div className="print-container" style={{ padding: '0px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ marginBottom: '28px', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1e293b', marginBottom: '4px' }}>
             Análisis Financiero Global
@@ -203,7 +206,7 @@ const FinanzasAdmin = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <button
             className="no-print"
             onClick={handleDownloadPDF}

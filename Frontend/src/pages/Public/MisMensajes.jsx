@@ -980,7 +980,6 @@ const MisMensajes = () => {
   if (!isAuthenticated) {
     return (
       <div className="propiedades-page">
-        <Navbar />
         <div className="propiedades-empty">Inicia sesión para ver tus mensajes</div>
       </div>
     );

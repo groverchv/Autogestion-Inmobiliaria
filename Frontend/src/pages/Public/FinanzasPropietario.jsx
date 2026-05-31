@@ -132,7 +132,7 @@ const FinanzasPropietario = () => {
     <div style={{ paddingTop: '20px' }}>
 
       <div className="print-container" style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
-        <header className="no-print" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <header className="no-print" style={{ marginBottom: '32px', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
               Mis Finanzas
@@ -142,7 +142,7 @@ const FinanzasPropietario = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <button
               className="no-print"
               onClick={handleDownloadPDF}
@@ -218,7 +218,7 @@ const FinanzasPropietario = () => {
         ) : (
           <>
             <div className="kpi-grid" style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: '20px', marginBottom: '32px'
             }}>
 

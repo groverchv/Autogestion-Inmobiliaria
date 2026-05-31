@@ -8,8 +8,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from usuarios.models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
-from inmuebles.models import TipoInmueble, Inmueble, Publicacion, Multimedia, Direccion, TipoContrato, Contrato
-from pagos.models import TipoPago, Pago, HistorialPago
+from inmuebles.models import TipoInmueble, Inmueble, Publicacion, Multimedia, Direccion, TipoContrato, Contrato, Comision
+from pagos.models import TipoPago, Pago, HistorialPago, ConfiguracionSistema
 
 def create_seed_data():
     print("Creando datos semilla...")
@@ -22,13 +22,19 @@ def create_seed_data():
     Chat.objects.all().delete()
     Notificacion.objects.all().delete()
     Agenda.objects.all().delete()
+    Comision.objects.all().delete()
     HistorialPago.objects.all().delete()
     Pago.objects.all().delete()
+    ConfiguracionSistema.objects.all().delete()
     Contrato.objects.all().delete()
     Multimedia.objects.all().delete()
     Publicacion.objects.all().delete()
     Inmueble.objects.all().delete()
     Direccion.objects.all().delete()
+
+    # Inicializar configuración global de comisiones (patrón Singleton)
+    config = ConfiguracionSistema.get_config()
+    print(f"  OK Configuración de comisiones inicializada en {config.porcentaje_comision_plataforma}%")
 
     # ═══════════════════════════════════════════════════════════
     #  11 USUARIOS (Admin + 9 + muerte)
@@ -334,6 +340,27 @@ def create_seed_data():
             }
         )
     print("  OK Historial de pagos: 4 registros")
+
+    # ═══════════════════════════════════════════════════════════
+    #  COMISIONES TRANSACCIONALES
+    # ═══════════════════════════════════════════════════════════
+    comision_count = 0
+    porcentaje_base = config.porcentaje_comision_plataforma
+    for p in Pago.objects.filter(estado='completado'):
+        monto_comision = p.monto * (Decimal(porcentaje_base) / Decimal('100'))
+        monto_comision = round(monto_comision, 2)
+        comision = Comision.objects.create(
+            contrato=p.contrato,
+            pago=p,
+            porcentaje=porcentaje_base,
+            monto=monto_comision,
+            descripcion=f"Comisión automática del {porcentaje_base}% por pago #{p.id}",
+            pagada=True
+        )
+        # Forzar la fecha para que coincida con la del pago
+        Comision.objects.filter(id=comision.id).update(fecha=p.fecha)
+        comision_count += 1
+    print(f"  OK Comisiones generadas: {comision_count} registros")
 
     # ═══════════════════════════════════════════════════════════
     #  AGENDA (8 eventos)
