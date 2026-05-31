@@ -31,7 +31,8 @@ const Propiedades = () => {
     (filtroPrecioMax ? 1 : 0) +
     (filtroHabitaciones ? 1 : 0) +
     (filtroBanos ? 1 : 0) +
-    (filtroGaraje ? 1 : 0);
+    (filtroGaraje ? 1 : 0) +
+    (filtroTipoOferta ? 1 : 0);
 
   const clearFilters = () => {
     setFiltroCategoria('');
@@ -40,6 +41,7 @@ const Propiedades = () => {
     setFiltroHabitaciones('');
     setFiltroBanos('');
     setFiltroGaraje(false);
+    setFiltroTipoOferta('');
     setSearchTerm('');
   };
 
@@ -92,16 +94,16 @@ const Propiedades = () => {
   };
 
   const estadoColors = {
-    disponible: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' },
-    ocupado: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' },
-    mantenimiento: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)' },
-    reservado: { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)' },
+    disponible: { bg: '#10b981', color: '#ffffff', border: '1px solid #10b981' },
+    ocupado: { bg: '#ef4444', color: '#ffffff', border: '1px solid #ef4444' },
+    mantenimiento: { bg: '#f59e0b', color: '#ffffff', border: '1px solid #f59e0b' },
+    reservado: { bg: '#3b82f6', color: '#ffffff', border: '1px solid #3b82f6' },
   };
 
   const offerColors = {
-    alquiler: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Alquiler', border: '1px solid rgba(16, 185, 129, 0.2)' },
-    venta: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Venta', border: '1px solid rgba(99, 102, 241, 0.2)' },
-    anticretico: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Anticrético', border: '1px solid rgba(245, 158, 11, 0.2)' },
+    alquiler: { bg: '#0284c7', color: '#ffffff', label: 'Alquiler', border: '1px solid #0284c7' },
+    venta: { bg: '#6366f1', color: '#ffffff', label: 'Venta', border: '1px solid #6366f1' },
+    anticretico: { bg: '#ec4899', color: '#ffffff', label: 'Anticrético', border: '1px solid #ec4899' },
   };
 
   return (
@@ -224,6 +226,20 @@ const Propiedades = () => {
                     <option value="1">1 o más</option>
                     <option value="2">2 o más</option>
                     <option value="3">3 o más</option>
+                  </select>
+                </div>
+
+                <div className="propiedades-filters__group">
+                  <label className="propiedades-filters__label">Tipo de Oferta</label>
+                  <select
+                    value={filtroTipoOferta}
+                    onChange={e => setFiltroTipoOferta(e.target.value)}
+                    className="propiedades-filters__select"
+                  >
+                    <option value="">Cualquier oferta</option>
+                    <option value="venta">Venta</option>
+                    <option value="alquiler">Alquiler</option>
+                    <option value="anticretico">Anticrético</option>
                   </select>
                 </div>
 

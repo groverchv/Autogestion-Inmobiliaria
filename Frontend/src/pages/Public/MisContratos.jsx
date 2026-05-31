@@ -43,7 +43,7 @@ const MisContratos = () => {
   const esOwner = (c) => c.propietario_email === user?.email;
 
   if (!isAuthenticated) {
-    return (<div className="propiedades-page"><Navbar /><div className="propiedades-empty">Inicia sesión para ver tus contratos</div></div>);
+    return (<div className="propiedades-page"><div className="propiedades-empty">Inicia sesión para ver tus contratos</div></div>);
   }
 
   return (

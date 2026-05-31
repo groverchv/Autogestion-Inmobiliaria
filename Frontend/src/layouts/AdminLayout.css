@@ -163,8 +163,25 @@
 
 /* ─── Responsive ──────────────────────────────────────── */
 @media (max-width: 768px) {
-  .admin-layout { --sidebar-w: 200px; }
-  .admin-layout__content { padding: 16px; }
+  .admin-layout { --sidebar-w: 64px; }
+  .admin-layout__content { padding: 12px; }
+  
+  /* Ocultar textos para simular modo colapsado en móvil */
+  .admin-layout__link-text,
+  .admin-layout__group-title,
+  .admin-layout__sidebar-header h3 {
+    display: none !important;
+  }
+  
+  .admin-layout__brand-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .admin-layout__link {
+    justify-content: center;
+    padding: 8px;
+  }
 }
 
 /* ─── Grouping Styles ─────────────────────────────────── */

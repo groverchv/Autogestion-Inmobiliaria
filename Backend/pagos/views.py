@@ -568,12 +568,27 @@ def stripe_webhook(request):
 
     return HttpResponse(status=200)
 
+class IsAdminOrStaffUser(permissions.BasePermission):
+    """Permiso para usuarios administradores (rol admin o is_staff)."""
+    def has_permission(self, request, view):
+        return bool(
+            request.user and 
+            request.user.is_authenticated and 
+            (request.user.is_staff or getattr(request.user, 'rol', None) == 'admin')
+        )
+
+
 class ConfiguracionSistemaViewSet(viewsets.ModelViewSet):
     """CRUD para la configuración global del sistema (Porcentaje de Comisión)."""
-    queryset = ConfiguracionSistema.objects.all()
     from .serializers import ConfiguracionSistemaSerializer
     serializer_class = ConfiguracionSistemaSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdminOrStaffUser]
+
+    def get_queryset(self):
+        # Aseguramos que siempre exista al menos una configuración al consultar/modificar
+        ConfiguracionSistema.get_config()
+        return ConfiguracionSistema.objects.all()
+
 
 class ReportesAPIView(APIView):
     """API para obtener reportes y métricas dinámicas."""
