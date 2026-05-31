@@ -1,4 +1,5 @@
 import os
+# pyrefly: ignore [missing-import]
 import django
 from decimal import Decimal
 from datetime import date, timedelta, datetime
@@ -7,11 +8,27 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from usuarios.models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
-from inmuebles.models import TipoInmueble, Inmueble, Multimedia, Direccion, TipoContrato, Contrato
+from inmuebles.models import TipoInmueble, Inmueble, Publicacion, Multimedia, Direccion, TipoContrato, Contrato
 from pagos.models import TipoPago, Pago, HistorialPago
 
 def create_seed_data():
     print("Creando datos semilla...")
+
+    # Limpiar datos antiguos para evitar duplicados y conflictos de integridad
+    print("Limpiando base de datos...")
+    Bloqueo.objects.all().delete()
+    Resena.objects.all().delete()
+    Mensaje.objects.all().delete()
+    Chat.objects.all().delete()
+    Notificacion.objects.all().delete()
+    Agenda.objects.all().delete()
+    HistorialPago.objects.all().delete()
+    Pago.objects.all().delete()
+    Contrato.objects.all().delete()
+    Multimedia.objects.all().delete()
+    Publicacion.objects.all().delete()
+    Inmueble.objects.all().delete()
+    Direccion.objects.all().delete()
 
     # ═══════════════════════════════════════════════════════════
     #  11 USUARIOS (Admin + 9 + muerte)
@@ -105,12 +122,42 @@ def create_seed_data():
                 'propietario': users[prop], 'tipo': tipos[tipo_n],
                 'descripcion': desc,
                 'direccion': direccion_obj,
-                'precio': Decimal(str(precio)),
                 'superficie': Decimal(str(sup)), 'habitaciones': hab,
                 'banos': banos, 'garaje': garaje, 'estado': estado,
                 'gps': f'-16.5{idx:03d}, -68.0{idx:03d}'
             }
         )
+        
+        tipo_oferta = 'venta' if ('venta' in titulo.lower() or 'terreno' in titulo.lower() or idx in [3, 8, 9]) else 'alquiler'
+        if idx == 7:
+            tipo_oferta = 'anticretico'
+            
+        # Asignar precio comercial realista basado en el tipo de oferta
+        if tipo_oferta == 'alquiler':
+            if idx == 1:
+                precio_comercial = Decimal('3500.00')
+            elif idx == 4:
+                precio_comercial = Decimal('4500.00')
+            elif idx == 6:
+                precio_comercial = Decimal('5500.00')
+            elif idx == 10:
+                precio_comercial = Decimal('6500.00')
+            else:
+                precio_comercial = Decimal('2800.00')
+        elif tipo_oferta == 'anticretico':
+            precio_comercial = Decimal('80000.00')
+        else:
+            precio_comercial = Decimal(str(precio))
+
+        Publicacion.objects.get_or_create(
+            inmueble=inm,
+            estado=Publicacion.EstadoPublicacion.ACTIVA,
+            defaults={
+                'tipo_oferta': tipo_oferta,
+                'precio': precio_comercial,
+            }
+        )
+        
         inmuebles[titulo] = inm
     print(f"  OK Inmuebles: {len(inmuebles)} (1-10, 1 por usuario)")
 
@@ -291,6 +338,7 @@ def create_seed_data():
     # ═══════════════════════════════════════════════════════════
     #  AGENDA (8 eventos)
     # ═══════════════════════════════════════════════════════════
+    # pyrefly: ignore [missing-import]
     from django.utils import timezone
     agenda_data = [
         ('admin', 'Reunión con propietarios', 'Reunión mensual de revisión de propiedades.', 1, 2, 'Oficina Central', False),
@@ -427,19 +475,19 @@ def create_seed_data():
 
     print("\n  OK Datos semilla creados exitosamente.")
     print("  ----------------------------------------------")
-    print("  USUARIOS:           11 (admin + 10 propietarios)")
-    print("  INMUEBLES:          10 (Santa Cruz y La Guardia, 1 por usuario)")
-    print("  MULTIMEDIA:         41 fotos de Cloudinary")
-    print("  CONTRATOS:          5 (Alquiler, Venta, Anticrético, Mixto)")
-    print("  PAGOS:              8 (con historial)")
-    print("  AGENDA:             8 eventos programados")
-    print("  NOTIFICACIONES:     10 alertas")
-    print("  CHATS:              4 (con 16 mensajes)")
-    print("  RESENAS:            10 calificaciones")
-    print("  BLOQUEOS:           2 usuarios bloqueados")
+    print("  [+] USUARIOS:           11 (admin + 10 propietarios)")
+    print("  [+] INMUEBLES:          10 (Santa Cruz y La Guardia, 1 por usuario)")
+    print("  [+] MULTIMEDIA:         41 fotos de Cloudinary")
+    print("  [+] CONTRATOS:          5 (Alquiler, Venta, Anticretico, Mixto)")
+    print("  [+] PAGOS:              8 (con historial)")
+    print("  [+] AGENDA:             8 eventos programados")
+    print("  [+] NOTIFICACIONES:     10 alertas")
+    print("  [+] CHATS:              4 (con 16 mensajes)")
+    print("  [+] RESENAS:            10 calificaciones")
+    print("  [+] BLOQUEOS:           2 usuarios bloqueados")
     print("  ----------------------------------------------")
-    print("  Acceso Admin:       admin / admin123")
-    print("  Otros usuarios:     usuario123")
+    print("  [!] Acceso Admin:       admin / admin123")
+    print("  [!] Otros usuarios:     usuario123")
     print("  ----------------------------------------------")
 
 

@@ -161,3 +161,5 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 # ─── Groq (IA Generativa) ───────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 
+
+

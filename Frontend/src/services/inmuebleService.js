@@ -78,6 +78,17 @@ const inmuebleService = {
   },
 
   /**
+   * Actualiza la metadata de un registro multimedia (ej: descripción u orden).
+   * @param {number} id - ID del registro multimedia
+   * @param {Object} payload - Campos a actualizar (ej: { orden: 2 })
+   * @returns {Promise<Object>} Registro actualizado
+   */
+  actualizarMultimedia: async (id, payload) => {
+    const { data } = await api.patch(`/inmuebles/multimedia/${id}/`, payload);
+    return data;
+  },
+
+  /**
    * Gestión de Tipos de Contrato (Admin)
    */
   getTiposContrato: async () => {
@@ -107,6 +118,35 @@ const inmuebleService = {
       responseType: 'blob',
     });
     return response.data;
+  },
+
+  /**
+   * Obtiene la lista de hotspots asociados a un inmueble.
+   * @param {number} inmuebleId - ID del inmueble
+   * @returns {Promise<Array>} Lista de hotspots
+   */
+  listarHotspots: async (inmuebleId) => {
+    const { data } = await api.get('/inmuebles/hotspots/', { params: { inmueble: inmuebleId } });
+    return data;
+  },
+
+  /**
+   * Crea un nuevo punto de transición (hotspot) bidireccional o unidireccional.
+   * @param {Object} hotspotData - Datos del hotspot a crear
+   * @returns {Promise<Object>} Hotspot creado
+   */
+  crearHotspot: async (hotspotData) => {
+    const { data } = await api.post('/inmuebles/hotspots/', hotspotData);
+    return data;
+  },
+
+  /**
+   * Elimina un punto de transición (hotspot).
+   * @param {number} id - ID del hotspot
+   * @returns {Promise<void>}
+   */
+  eliminarHotspot: async (id) => {
+    await api.delete(`/inmuebles/hotspots/${id}/`);
   },
 };
 

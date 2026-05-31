@@ -1,18 +1,21 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions, status, filters
+# pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
 from .models import (
-    TipoInmueble, Inmueble, Multimedia, TipoContrato,
-    Contrato, Comision, Favorito, Cita, HorarioDisponible,
-    VerificacionTitulo,
+    TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato,
+    Contrato, Comision, Favorito, Cita, HorarioDisponible, Hotspot,
+    VerificacionTitulo, AccesoRecorrido360,
 )
 from .serializers import (
     TipoInmuebleSerializer,
     InmuebleSerializer,
     InmuebleListSerializer,
+    PublicacionSerializer,
     MultimediaSerializer,
     TipoContratoSerializer,
     ContratoSerializer,
@@ -20,7 +23,9 @@ from .serializers import (
     FavoritoSerializer,
     CitaSerializer,
     HorarioDisponibleSerializer,
+    HotspotSerializer,
     VerificacionTituloSerializer,
+    AccesoRecorrido360Serializer,
 )
 from django.db import models as dj_models
 from .services import (
@@ -49,10 +54,17 @@ class UnaccentSearchFilter(filters.SearchFilter):
             lookup = 'unaccent__icontains'
         return "__".join([field_name, lookup])
 
+    def get_search_terms(self, request):
+        terms = super().get_search_terms(request)
+        # Omitir conectores/preposiciones muy comunes en español para búsquedas naturales tipo "casa en alquiler" o "departamento con garaje"
+        conectores = {'en', 'de', 'y', 'la', 'el', 'un', 'una', 'con', 'para', 'del', 'los', 'las', 'a', 'al'}
+        return [t for t in terms if t.lower() not in conectores]
+
 
 class InmuebleFilter(django_filters.FilterSet):
-    precio_min = django_filters.NumberFilter(field_name="precio", lookup_expr='gte')
-    precio_max = django_filters.NumberFilter(field_name="precio", lookup_expr='lte')
+    precio_min = django_filters.NumberFilter(method='filter_precio_min')
+    precio_max = django_filters.NumberFilter(method='filter_precio_max')
+    tipo_oferta = django_filters.CharFilter(method='filter_tipo_oferta')
     superficie_min = django_filters.NumberFilter(field_name="superficie", lookup_expr='gte')
     superficie_max = django_filters.NumberFilter(field_name="superficie", lookup_expr='lte')
     ciudad = django_filters.CharFilter(field_name="direccion__ciudad", lookup_expr='icontains')
@@ -64,6 +76,16 @@ class InmuebleFilter(django_filters.FilterSet):
     class Meta:
         model = Inmueble
         fields = ['estado', 'tipo', 'habitaciones', 'banos']
+
+    # Filtros avanzados con relacion cruzada usando distinct() para evitar duplicados en la consulta
+    def filter_precio_min(self, queryset, name, value):
+        return queryset.filter(publicaciones__precio__gte=value, publicaciones__estado='activa').distinct()
+
+    def filter_precio_max(self, queryset, name, value):
+        return queryset.filter(publicaciones__precio__lte=value, publicaciones__estado='activa').distinct()
+
+    def filter_tipo_oferta(self, queryset, name, value):
+        return queryset.filter(publicaciones__tipo_oferta=value, publicaciones__estado='activa').distinct()
 
 class TipoInmuebleViewSet(viewsets.ModelViewSet):
     """CRUD para tipos de inmueble."""
@@ -81,7 +103,16 @@ class InmuebleViewSet(viewsets.ModelViewSet):
     queryset = Inmueble.objects.select_related('tipo', 'propietario').prefetch_related('multimedia').all()
     filter_backends = [DjangoFilterBackend, UnaccentSearchFilter]
     filterset_class = InmuebleFilter
-    search_fields = ['titulo', 'descripcion', 'direccion__ciudad', 'direccion__zona', 'direccion__calle', 'direccion__referencia']
+    search_fields = [
+        'titulo',
+        'descripcion',
+        'direccion__ciudad',
+        'direccion__zona',
+        'direccion__calle',
+        'direccion__referencia',
+        'tipo__nombre',
+        'publicaciones__tipo_oferta'
+    ]
 
     def get_permissions(self):
         # Permitir ver inmuebles de forma pública
@@ -128,7 +159,7 @@ class MultimediaViewSet(viewsets.ModelViewSet):
     """CRUD para multimedia de inmuebles."""
     queryset = Multimedia.objects.all()
     serializer_class = MultimediaSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
         import cloudinary
@@ -157,16 +188,60 @@ class MultimediaViewSet(viewsets.ModelViewSet):
         )
         url = upload_data.get('secure_url')
 
+        descripcion = request.data.get('descripcion', '')
+
         # Crear el registro en base de datos con la URL absoluta
         media = Multimedia.objects.create(
             inmueble_id=inmueble_id,
             tipo=tipo,
             principal=es_principal,
-            archivo=url
+            archivo=url,
+            descripcion=descripcion
         )
         
         serializer = self.get_serializer(media)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class HotspotViewSet(viewsets.ModelViewSet):
+    """CRUD para puntos de transición (hotspots) entre panoramas."""
+    queryset = Hotspot.objects.select_related('inmueble', 'escena_origen', 'escena_destino').all()
+    serializer_class = HotspotSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_permissions(self):
+        # Permitir leer de forma pública
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        # Permitir filtrar por inmueble en consultas públicas
+        inmueble_id = self.request.query_params.get('inmueble')
+        if inmueble_id:
+            return Hotspot.objects.filter(inmueble_id=inmueble_id)
+        return Hotspot.objects.all()
+
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        inmueble = serializer.validated_data['inmueble']
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise DRFValidationError("No tienes autorización para editar el recorrido de este inmueble.")
+        serializer.save()
+
+    def perform_update(self, serializer):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        inmueble = serializer.instance.inmueble
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise DRFValidationError("No tienes autorización para editar el recorrido de este inmueble.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+        if instance.inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise DRFValidationError("No tienes autorización para eliminar este punto de transición.")
+        instance.delete()
 
 
 class TipoContratoViewSet(viewsets.ModelViewSet):
@@ -653,6 +728,38 @@ class CitaViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(citas, many=True).data)
 
 
+
+class PublicacionViewSet(viewsets.ModelViewSet):
+    """CRUD para ofertas comerciales (publicaciones)."""
+    queryset = Publicacion.objects.select_related('inmueble').all()
+    serializer_class = PublicacionSerializer
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = Publicacion.objects.select_related('inmueble')
+        
+        # Filtros opcionales
+        inmueble_id = self.request.query_params.get('inmueble')
+        if inmueble_id:
+            qs = qs.filter(inmueble_id=inmueble_id)
+            
+        estado = self.request.query_params.get('estado')
+        if estado:
+            qs = qs.filter(estado=estado)
+            
+        return qs
+
+    def perform_create(self, serializer):
+        # Asegurar que el usuario que crea la publicación sea el propietario del inmueble
+        inmueble = serializer.validated_data['inmueble']
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise ValidationError("No eres el propietario de este inmueble.")
+        serializer.save()
+
 class VerificacionTituloViewSet(viewsets.ModelViewSet):
     """ViewSet para la verificación legal automatizada de títulos de propiedad."""
     serializer_class = VerificacionTituloSerializer
@@ -763,3 +870,83 @@ class BlockchainStatsView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+from django.utils import timezone
+from django.db import models as dj_models
+
+class AccesoRecorrido360ViewSet(viewsets.ModelViewSet):
+    serializer_class = AccesoRecorrido360Serializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return AccesoRecorrido360.objects.filter(
+            dj_models.Q(propietario=user) | dj_models.Q(cliente=user)
+        ).distinct()
+
+    def perform_create(self, serializer):
+        inmueble = serializer.validated_data['inmueble']
+        if inmueble.propietario != self.request.user and not self.request.user.is_staff:
+            raise ValidationError("Solo el propietario del inmueble puede otorgar acceso al recorrido 360°.")
+        serializer.save(propietario=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='check')
+    def check_acceso(self, request):
+        inmueble_id = request.query_params.get('inmueble_id')
+        if not inmueble_id:
+            return Response({'error': 'El parámetro inmueble_id es requerido.'}, status=400)
+
+        try:
+            inmueble = Inmueble.objects.get(id=inmueble_id)
+            if inmueble.propietario == request.user or request.user.is_staff or request.user.rol == 'admin':
+                return Response({'tiene_acceso': True, 'propietario': True})
+        except Inmueble.DoesNotExist:
+            return Response({'error': 'Inmueble no encontrado.'}, status=404)
+
+        ahora = timezone.now()
+        acceso = AccesoRecorrido360.objects.filter(
+            inmueble_id=inmueble_id,
+            cliente=request.user,
+            activo=True,
+            fecha_expiracion__gt=ahora
+        ).first()
+
+        if acceso:
+            return Response({
+                'tiene_acceso': True,
+                'propietario': False,
+                'acceso_id': acceso.id,
+                'fecha_expiracion': acceso.fecha_expiracion
+            })
+
+        return Response({'tiene_acceso': False, 'propietario': False})
+
+    @action(detail=True, methods=['post'], url_path='revocar')
+    def revocar_acceso(self, request, pk=None):
+        acceso = self.get_object()
+        if acceso.propietario != request.user and not request.user.is_staff:
+            return Response({'error': 'No tienes permisos para revocar este acceso.'}, status=403)
+
+        acceso.activo = False
+        acceso.save()
+        return Response({'success': True, 'mensaje': 'Acceso revocado exitosamente.'})
+
+    @action(detail=True, methods=['post'], url_path='ping_visor')
+    def ping_visor(self, request, pk=None):
+        acceso = self.get_object()
+        if acceso.cliente != request.user:
+            return Response({'error': 'Solo el cliente autorizado puede enviar latidos de conexión.'}, status=403)
+        
+        # Validar si el acceso ya expiró o fue revocado
+        if not acceso.activo or acceso.fecha_expiracion < timezone.now():
+            return Response({'error': 'Acceso inactivo o expirado.'}, status=400)
+
+        # Si es el primer ping de una nueva sesión, incrementamos visitas.
+        # Definiremos "nueva sesión" si el último acceso fue hace más de 5 minutos.
+        ahora = timezone.now()
+        if not acceso.ultimo_acceso_visor or (ahora - acceso.ultimo_acceso_visor).total_seconds() > 300:
+            acceso.visitas += 1
+            
+        acceso.ultimo_acceso_visor = ahora
+        acceso.save(update_fields=['visitas', 'ultimo_acceso_visor'])
+        return Response({'success': True})

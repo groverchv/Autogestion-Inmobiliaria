@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 
 class TipoInmueble(models.Model):
@@ -64,10 +65,6 @@ class Inmueble(models.Model):
     )
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
-    precio = models.DecimalField(
-        max_digits=12, decimal_places=2, db_index=True,
-        validators=[MinValueValidator(0)]
-    )
     largo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     ancho = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     superficie = models.DecimalField(
@@ -75,6 +72,11 @@ class Inmueble(models.Model):
         help_text='Superficie en metros cuadrados',
         null=True, blank=True,
         db_index=True
+    )
+    valor_activo = models.DecimalField(
+        max_digits=14, decimal_places=2,
+        null=True, blank=True,
+        help_text='Valor catastral o de referencia del activo físico (DDRR). Interno, no se publica.'
     )
     habitaciones = models.PositiveIntegerField(default=0, db_index=True)
     banos = models.PositiveIntegerField(default=0, db_index=True)
@@ -112,6 +114,7 @@ class Multimedia(models.Model):
     class TipoArchivo(models.TextChoices):
         IMAGEN = 'imagen', 'Imagen'
         VIDEO = 'video', 'Video'
+        PANORAMA360 = 'panorama360', 'Panorama 360°'
 
     inmueble = models.ForeignKey(
         Inmueble,
@@ -119,23 +122,151 @@ class Multimedia(models.Model):
         related_name='multimedia',
     )
     tipo = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=TipoArchivo.choices,
         default=TipoArchivo.IMAGEN,
     )
     archivo = models.CharField(max_length=500, help_text='URL de Cloudinary o ruta')
     descripcion = models.CharField(max_length=200, blank=True)
     principal = models.BooleanField(default=False)
+    orden = models.PositiveIntegerField(default=0, help_text="Orden de visualización")
     subido = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'inmuebles_multimedia'
         verbose_name = 'Multimedia'
         verbose_name_plural = 'Multimedia'
-        ordering = ['-principal', '-subido']
+        ordering = ['orden', '-principal', '-subido']
 
     def __str__(self):
         return f'{self.tipo} — {self.inmueble.titulo}'
+
+
+class Hotspot(models.Model):
+    """
+    Define un punto de transición espacial interactivo (hotspot)
+    desde un panorama de origen hacia otro panorama de destino.
+    """
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='hotspots',
+        help_text="Inmueble al que pertenece el recorrido"
+    )
+    escena_origen = models.ForeignKey(
+        Multimedia,
+        on_delete=models.CASCADE,
+        related_name='hotspots_salida',
+        help_text="Panorama de origen donde se dibuja el hotspot (debe ser tipo panorama360)"
+    )
+    escena_destino = models.ForeignKey(
+        Multimedia,
+        on_delete=models.CASCADE,
+        related_name='hotspots_entrada',
+        help_text="Panorama destino al cual viajará el visor al hacer clic"
+    )
+
+    # Coordenadas esféricas de Pannellum
+    pitch = models.FloatField(
+        help_text="Ángulo vertical (-90 a 90 grados)"
+    )
+    yaw = models.FloatField(
+        help_text="Ángulo horizontal (-180 a 180 grados)"
+    )
+
+    # Metadatos del hotspot
+    texto_ayuda = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Texto informativo que aparece al pasar el cursor (tooltip), ej: 'Ir a Cocina'"
+    )
+
+    class Meta:
+        db_table = 'inmuebles_hotspot'
+        verbose_name = 'Punto de Transición (Hotspot)'
+        verbose_name_plural = 'Puntos de Transición (Hotspots)'
+        unique_together = ('escena_origen', 'escena_destino')
+
+    def clean(self):
+        # Regla de Integridad de Dominio (SOLID / Validación Temprana)
+        if self.escena_origen.tipo != Multimedia.TipoArchivo.PANORAMA360:
+            raise ValidationError("La escena de origen debe ser un panorama 360°.")
+        if self.escena_destino.tipo != Multimedia.TipoArchivo.PANORAMA360:
+            raise ValidationError("La escena de destino debe ser un panorama 360°.")
+        if self.escena_origen.inmueble != self.inmueble or self.escena_destino.inmueble != self.inmueble:
+            raise ValidationError("Ambos panoramas deben pertenecer al mismo inmueble.")
+        if self.escena_origen == self.escena_destino:
+            raise ValidationError("No se puede crear un hotspot que apunte a la misma escena de origen.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"Hotspot: {self.escena_origen.descripcion} -> {self.escena_destino.descripcion}"
+
+
+class Publicacion(models.Model):
+    """Oferta comercial de un inmueble en el catálogo."""
+
+    class TipoOferta(models.TextChoices):
+        ALQUILER = 'alquiler', 'Alquiler'
+        VENTA = 'venta', 'Venta'
+        ANTICRETICO = 'anticretico', 'Anticrético'
+
+    class EstadoPublicacion(models.TextChoices):
+        BORRADOR = 'borrador', 'Borrador'
+        ACTIVA = 'activa', 'Activa'
+        PAUSADA = 'pausada', 'Pausada'
+        FINALIZADA = 'finalizada', 'Finalizada'
+
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='publicaciones',
+    )
+    tipo_oferta = models.CharField(
+        max_length=20,
+        choices=TipoOferta.choices,
+        default=TipoOferta.ALQUILER,
+        db_index=True
+    )
+    precio = models.DecimalField(
+        max_digits=12, decimal_places=2, db_index=True,
+        validators=[MinValueValidator(0)]
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoPublicacion.choices,
+        default=EstadoPublicacion.BORRADOR,
+        db_index=True
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'inmuebles_publicacion'
+        verbose_name = 'Publicación'
+        verbose_name_plural = 'Publicaciones'
+        ordering = ['-creado']
+
+    def save(self, *args, **kwargs):
+        # Si esta publicación se activa, debemos desactivar cualquier otra activa para este inmueble
+        if self.estado == self.EstadoPublicacion.ACTIVA:
+            Publicacion.objects.filter(
+                inmueble=self.inmueble,
+                estado=self.EstadoPublicacion.ACTIVA
+            ).exclude(pk=self.pk).update(estado=self.EstadoPublicacion.FINALIZADA)
+            
+            # Opcionalmente, actualizamos el estado del inmueble físico a disponible
+            if self.inmueble.estado != Inmueble.EstadoInmueble.DISPONIBLE:
+                self.inmueble.estado = Inmueble.EstadoInmueble.DISPONIBLE
+                self.inmueble.save(update_fields=['estado'])
+                
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.get_tipo_oferta_display()} — {self.inmueble.titulo} ({self.precio} USD)'
 
 
 class TipoContrato(models.Model):
@@ -498,4 +629,50 @@ class VerificacionTitulo(models.Model):
 
     def __str__(self):
         return f'Verificación {self.estado} — {self.inmueble.titulo}'
+
+
+class AccesoRecorrido360(models.Model):
+    """Acceso temporal otorgado por un propietario a un cliente para un recorrido 360°."""
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='accesos_360'
+    )
+    cliente = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='accesos_360_recibidos'
+    )
+    propietario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='accesos_360_otorgados'
+    )
+    chat = models.ForeignKey(
+        'usuarios.Chat',
+        on_delete=models.CASCADE,
+        related_name='accesos_360',
+        null=True,
+        blank=True
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+    fecha_expiracion = models.DateTimeField()
+    activo = models.BooleanField(default=True)
+    visitas = models.IntegerField(default=0)
+    ultimo_acceso_visor = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'inmuebles_acceso_recorrido_360'
+        verbose_name = 'Acceso a Recorrido 360°'
+        verbose_name_plural = 'Accesos a Recorridos 360°'
+        ordering = ['-creado']
+
+    @property
+    def es_valido(self) -> bool:
+        from django.utils import timezone
+        return self.activo and self.fecha_expiracion > timezone.now()
+
+    def __str__(self):
+        return f'Acceso: {self.cliente.email} -> {self.inmueble.titulo} (Exp: {self.fecha_expiracion})'
+
 

@@ -377,6 +377,7 @@ Por ejemplo: si el cliente pide "cláusula de renovación de 7 meses", debes red
     return pdf_bytes
 
 
+
 def chat_asistente_contrato(contrato_id: int, usuario, historial: list) -> str:
     """Chat interactivo con un asistente IA que actúa como abogado inmobiliario boliviano.
 

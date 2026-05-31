@@ -18,13 +18,14 @@ const Propiedades = () => {
   const [filtroHabitaciones, setFiltroHabitaciones] = useState('');
   const [filtroBanos, setFiltroBanos] = useState('');
   const [filtroGaraje, setFiltroGaraje] = useState(false);
+  const [filtroTipoOferta, setFiltroTipoOferta] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const activeFiltersCount = 
+  const activeFiltersCount =
     (filtroCategoria ? 1 : 0) +
     (filtroCiudad ? 1 : 0) +
     (filtroPrecioMax ? 1 : 0) +
@@ -60,6 +61,7 @@ const Propiedades = () => {
       if (filtroHabitaciones) filters.habitaciones_min = filtroHabitaciones;
       if (filtroBanos) filters.banos_min = filtroBanos;
       if (filtroGaraje) filters.garaje = true;
+      if (filtroTipoOferta) filters.tipo_oferta = filtroTipoOferta;
 
       inmuebleService.listarInmuebles(filters)
         .then(data => {
@@ -70,7 +72,7 @@ const Propiedades = () => {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, filtroCategoria, filtroCiudad, filtroPrecioMax, filtroHabitaciones, filtroBanos, filtroGaraje, categorias]);
+  }, [searchTerm, filtroCategoria, filtroCiudad, filtroPrecioMax, filtroHabitaciones, filtroBanos, filtroGaraje, filtroTipoOferta, categorias]);
 
   const toggleFavorite = async (inmId, e) => {
     e.preventDefault();
@@ -90,10 +92,16 @@ const Propiedades = () => {
   };
 
   const estadoColors = {
-    disponible: { bg: '#dcfce7', color: '#15803d' },
-    ocupado: { bg: '#fee2e2', color: '#dc2626' },
-    mantenimiento: { bg: '#fef3c7', color: '#d97706' },
-    reservado: { bg: '#dbeafe', color: '#2563eb' },
+    disponible: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' },
+    ocupado: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' },
+    mantenimiento: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)' },
+    reservado: { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)' },
+  };
+
+  const offerColors = {
+    alquiler: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Alquiler', border: '1px solid rgba(16, 185, 129, 0.2)' },
+    venta: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Venta', border: '1px solid rgba(99, 102, 241, 0.2)' },
+    anticretico: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Anticrético', border: '1px solid rgba(245, 158, 11, 0.2)' },
   };
 
   return (
@@ -105,6 +113,7 @@ const Propiedades = () => {
       )}
 
       <div className="propiedades-content">
+
         <div className="propiedades-filters-card">
           <div className="propiedades-filters__search-row">
             <div className="propiedades-filters__search-wrapper">
@@ -117,9 +126,9 @@ const Propiedades = () => {
                 className="propiedades-filters__search-input"
               />
             </div>
-            
+
             <div className="propiedades-filters__actions">
-              <button 
+              <button
                 type="button"
                 className={`propiedades-filters__toggle-btn ${showAdvanced ? 'propiedades-filters__toggle-btn--active' : ''}`}
                 onClick={() => setShowAdvanced(!showAdvanced)}
@@ -132,7 +141,7 @@ const Propiedades = () => {
               </button>
 
               {activeFiltersCount > 0 && (
-                <button 
+                <button
                   type="button"
                   className="propiedades-filters__clear-btn"
                   onClick={clearFilters}
@@ -238,6 +247,7 @@ const Propiedades = () => {
               {inmuebles.length} {inmuebles.length === 1 ? 'propiedad encontrada' : 'propiedades encontradas'}
             </span>
           </div>
+
         </div>
 
         {loading ? (
@@ -246,8 +256,9 @@ const Propiedades = () => {
           <div className="propiedades-grid">
             {inmuebles.map(inm => {
               const estadoStyle = estadoColors[inm.estado] || estadoColors.disponible;
-              const ciudad = inm.direccion_fk?.ciudad || 'N/A';
-              const zona = inm.direccion_fk?.zona || '';
+              const offerStyle = offerColors[inm.tipo_oferta];
+              const ciudad = inm.direccion?.ciudad || 'N/A';
+              const zona = inm.direccion?.zona || '';
               return (
                 <div key={inm.id} className="propiedad-card">
                   <div className="propiedad-card__image">
@@ -263,15 +274,15 @@ const Propiedades = () => {
                         {inm.estado}
                       </span>
                       {inm.verificacion_estado && inm.verificacion_estado !== 'no_solicitado' && (
-                        <span 
-                          className="propiedad-card__badge" 
-                          style={{ 
-                            background: inm.verificacion_estado === 'verificado' ? '#dcfce7' : 
-                                        inm.verificacion_estado === 'observado' ? '#fef3c7' : 
-                                        inm.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
-                            color: inm.verificacion_estado === 'verificado' ? '#15803d' : 
-                                   inm.verificacion_estado === 'observado' ? '#d97706' : 
-                                   inm.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
+                        <span
+                          className="propiedad-card__badge"
+                          style={{
+                            background: inm.verificacion_estado === 'verificado' ? '#dcfce7' :
+                              inm.verificacion_estado === 'observado' ? '#fef3c7' :
+                                inm.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
+                            color: inm.verificacion_estado === 'verificado' ? '#15803d' :
+                              inm.verificacion_estado === 'observado' ? '#d97706' :
+                                inm.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
                             position: 'static',
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -279,15 +290,20 @@ const Propiedades = () => {
                             fontWeight: 700
                           }}
                           title={
-                            inm.verificacion_estado === 'verificado' ? 'Título de propiedad verificado por IA' : 
-                            inm.verificacion_estado === 'observado' ? 'Título observado (advertencias detectadas)' : 
-                            inm.verificacion_estado === 'procesando' ? 'Verificación en proceso por la IA' : 
-                            'Título de propiedad inválido o no reconocido'
+                            inm.verificacion_estado === 'verificado' ? 'Título de propiedad verificado por IA' :
+                              inm.verificacion_estado === 'observado' ? 'Título observado (advertencias detectadas)' :
+                                inm.verificacion_estado === 'procesando' ? 'Verificación en proceso por la IA' :
+                                  'Título de propiedad inválido o no reconocido'
                           }
                         >
-                          {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
-                           inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : 
-                           inm.verificacion_estado === 'procesando' ? '⌛ Procesando' : '✗ Inválido'}
+                          {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' :
+                            inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' :
+                              inm.verificacion_estado === 'procesando' ? '⌛ Procesando' : '✗ Inválido'}
+                        </span>
+                      )}
+                      {offerStyle && (
+                        <span className="propiedad-card__offer-badge" style={{ background: offerStyle.bg, color: offerStyle.color, border: offerStyle.border, position: 'static' }}>
+                          {offerStyle.label}
                         </span>
                       )}
                     </div>
@@ -311,7 +327,17 @@ const Propiedades = () => {
                       {inm.banos > 0 && <span>{inm.banos} baños</span>}
                     </div>
                     <div className="propiedad-card__footer">
-                      <span className="propiedad-card__price">Bs. {parseFloat(inm.precio).toLocaleString()}</span>
+                      <span className="propiedad-card__price">
+                        {inm.precio ? (
+                          <>
+                            Bs. {parseFloat(inm.precio).toLocaleString()}
+                            {inm.tipo_oferta === 'alquiler' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-muted)', marginLeft: '4px' }}>/ mes</small>}
+                            {inm.tipo_oferta === 'anticretico' && <small style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-muted)', marginLeft: '4px' }}> (Anticrético)</small>}
+                          </>
+                        ) : (
+                          'Sin oferta activa'
+                        )}
+                      </span>
                       <Link to={`/propiedades/${inm.id}`} className="propiedad-card__cta">Ver detalles</Link>
                     </div>
                   </div>

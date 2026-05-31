@@ -1,7 +1,5 @@
 from rest_framework import serializers
-from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion, VerificacionTitulo
-
-
+from .models import TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato, Contrato, Comision, Favorito, Direccion, Hotspot, VerificacionTitulo
 
 
 class TipoInmuebleSerializer(serializers.ModelSerializer):
@@ -10,10 +8,18 @@ class TipoInmuebleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class HotspotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hotspot
+        fields = ['id', 'inmueble', 'escena_origen', 'escena_destino', 'pitch', 'yaw', 'texto_ayuda']
+
+
 class MultimediaSerializer(serializers.ModelSerializer):
+    hotspots = HotspotSerializer(many=True, source='hotspots_salida', read_only=True)
+
     class Meta:
         model = Multimedia
-        fields = '__all__'
+        fields = ['id', 'inmueble', 'tipo', 'archivo', 'descripcion', 'principal', 'orden', 'subido', 'hotspots']
         read_only_fields = ['id', 'subido']
 
 
@@ -23,6 +29,17 @@ class DireccionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class PublicacionSerializer(serializers.ModelSerializer):
+    tipo_oferta_display = serializers.CharField(source='get_tipo_oferta_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+
+    class Meta:
+        model = Publicacion
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'actualizado']
+
+
 class InmuebleSerializer(serializers.ModelSerializer):
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
     propietario_nombre = serializers.CharField(
@@ -30,15 +47,25 @@ class InmuebleSerializer(serializers.ModelSerializer):
     )
     multimedia = MultimediaSerializer(many=True, read_only=True)
     direccion = DireccionSerializer()
+    precio = serializers.SerializerMethodField(read_only=True)
+    tipo_oferta = serializers.SerializerMethodField(read_only=True)
+    publicaciones = PublicacionSerializer(many=True, read_only=True)
     verificacion_estado = serializers.SerializerMethodField(read_only=True)
     verificacion_score = serializers.SerializerMethodField(read_only=True)
     verificacion_resumen = serializers.SerializerMethodField(read_only=True)
-
 
     class Meta:
         model = Inmueble
         fields = '__all__'
         read_only_fields = ['id', 'propietario', 'creado', 'actualizado', 'superficie']
+
+    def get_precio(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.precio if pub_activa else None
+
+    def get_tipo_oferta(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.tipo_oferta if pub_activa else None
 
     def create(self, validated_data):
         direccion_data = validated_data.pop('direccion', None)
@@ -83,20 +110,28 @@ class InmuebleListSerializer(serializers.ModelSerializer):
     is_favorito = serializers.SerializerMethodField()
     imagen_principal = serializers.SerializerMethodField()
     direccion = DireccionSerializer(read_only=True)
+    precio = serializers.SerializerMethodField(read_only=True)
+    tipo_oferta = serializers.SerializerMethodField(read_only=True)
     verificacion_estado = serializers.SerializerMethodField(read_only=True)
     verificacion_score = serializers.SerializerMethodField(read_only=True)
-
 
     class Meta:
         model = Inmueble
         fields = [
             'id', 'titulo', 'tipo_nombre', 'direccion',
-            'precio', 'estado', 'habitaciones', 'banos',
+            'precio', 'tipo_oferta', 'estado', 'habitaciones', 'banos',
             'imagen_principal', 'creado', 'is_favorito',
             'largo', 'ancho', 'superficie',
             'verificacion_estado', 'verificacion_score'
         ]
 
+    def get_precio(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.precio if pub_activa else None
+
+    def get_tipo_oferta(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return pub_activa.tipo_oferta if pub_activa else None
 
     def get_is_favorito(self, obj):
         request = self.context.get('request')
@@ -244,3 +279,18 @@ class CitaSerializer(serializers.ModelSerializer):
                     {'hora_inicio': 'Ya existe una cita agendada para ese horario.'}
                 )
         return data
+
+
+from .models import AccesoRecorrido360
+
+class AccesoRecorrido360Serializer(serializers.ModelSerializer):
+    cliente_nombre = serializers.CharField(source='cliente.get_full_name', read_only=True)
+    propietario_nombre = serializers.CharField(source='propietario.get_full_name', read_only=True)
+    inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+    es_valido = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = AccesoRecorrido360
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'propietario', 'visitas', 'ultimo_acceso_visor']
+

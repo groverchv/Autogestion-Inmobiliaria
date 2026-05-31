@@ -363,6 +363,19 @@
   letter-spacing: 0.5px;
 }
 
+.propiedad-card__offer-badge {
+  position: absolute;
+  top: 42px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+}
+
 .propiedad-card__category {
   position: absolute;
   top: 12px;

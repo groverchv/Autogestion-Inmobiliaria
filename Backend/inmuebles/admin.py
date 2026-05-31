@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TipoInmueble, Inmueble, Multimedia, TipoContrato, Contrato, Comision, Direccion
+from .models import TipoInmueble, Inmueble, Publicacion, Multimedia, TipoContrato, Contrato, Comision, Direccion
 from .models import Cita, HorarioDisponible
 
 @admin.register(TipoInmueble)
@@ -21,7 +21,7 @@ class DireccionAdmin(admin.ModelAdmin):
 
 @admin.register(Inmueble)
 class InmuebleAdmin(admin.ModelAdmin):
-    list_display = ['titulo', 'tipo', 'propietario', 'get_ciudad', 'precio', 'estado', 'creado']
+    list_display = ['titulo', 'tipo', 'propietario', 'get_ciudad', 'get_precio_actual', 'estado', 'creado']
     list_filter = ['estado', 'tipo', 'direccion__ciudad']
     search_fields = ['titulo', 'direccion__calle', 'direccion__ciudad']
     inlines = [MultimediaInline]
@@ -29,6 +29,18 @@ class InmuebleAdmin(admin.ModelAdmin):
     def get_ciudad(self, obj):
         return obj.direccion.ciudad if obj.direccion else 'N/A'
     get_ciudad.short_description = 'Ciudad'
+
+    def get_precio_actual(self, obj):
+        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        return f"{pub_activa.precio} USD ({pub_activa.get_tipo_oferta_display()})" if pub_activa else "Sin oferta activa"
+    get_precio_actual.short_description = 'Precio/Oferta'
+
+
+@admin.register(Publicacion)
+class PublicacionAdmin(admin.ModelAdmin):
+    list_display = ['id', 'inmueble', 'tipo_oferta', 'precio', 'estado', 'creado']
+    list_filter = ['estado', 'tipo_oferta']
+    search_fields = ['inmueble__titulo']
 
 
 @admin.register(Multimedia)
