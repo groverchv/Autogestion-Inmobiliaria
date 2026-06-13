@@ -52,61 +52,66 @@ const router = createBrowserRouter([
     element: <Navigate to="/propiedades" replace />,
   },
   {
-    path: '/propiedades',
-    element: <Propiedades />,
-  },
-  {
-    path: '/propiedades/:id',
-    element: <PropiedadDetalle />,
-  },
-  {
-    element: <ProtectedRoute><UserLayout /></ProtectedRoute>,
+    element: <UserLayout />,
     children: [
       {
-        path: '/mis-inmuebles',
-        element: <MisInmuebles />,
+        path: '/propiedades',
+        element: <Propiedades />,
       },
       {
-        path: '/mi-agenda',
-        element: <MiAgenda />,
+        path: '/propiedades/:id',
+        element: <PropiedadDetalle />,
       },
       {
-        path: '/mis-contratos',
-        element: <MisContratos />,
+        path: '/pago-exitoso',
+        element: <PagoExitoso />,
       },
       {
-        path: '/mis-pagos',
-        element: <MisPagos />,
+        path: '/pago-cancelado',
+        element: <PagoCancelado />,
       },
       {
-        path: '/mis-finanzas',
-        element: <FinanzasPropietario />,
-      },
-      {
-        path: '/favoritos',
-        element: <MisFavoritos />,
-      },
-      {
-        path: '/notificaciones',
-        element: <MisNotificaciones />,
-      },
-      {
-        path: '/perfil',
-        element: <MiPerfil />,
-      },
-      {
-        path: '/mensajes',
-        element: <MisMensajes />,
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: '/mis-inmuebles',
+            element: <MisInmuebles />,
+          },
+          {
+            path: '/mi-agenda',
+            element: <MiAgenda />,
+          },
+          {
+            path: '/mis-contratos',
+            element: <MisContratos />,
+          },
+          {
+            path: '/mis-pagos',
+            element: <MisPagos />,
+          },
+          {
+            path: '/mis-finanzas',
+            element: <FinanzasPropietario />,
+          },
+          {
+            path: '/favoritos',
+            element: <MisFavoritos />,
+          },
+          {
+            path: '/notificaciones',
+            element: <MisNotificaciones />,
+          },
+          {
+            path: '/perfil',
+            element: <MiPerfil />,
+          },
+          {
+            path: '/mensajes',
+            element: <MisMensajes />,
+          },
+        ],
       },
     ],
-  },
-  {
-    path: '/pago-exitoso',
-    element: <PagoExitoso />,
-  },
-  {
-    path: '/pago-cancelado',
-    element: <PagoCancelado />,
   },
 
   // ─── Rutas de autenticación ───────────────────────────────

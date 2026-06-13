@@ -57,7 +57,7 @@ const MisNotificaciones = () => {
 
   return (
     <div className="propiedades-page" style={{ paddingTop: '20px' }}>
-      <div className="propiedades-content" style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
+      <div className="propiedades-content" style={{ maxWidth: '960px', margin: '0 auto', width: '100%', padding: '0 16px' }}>
         <div
           style={{
             border: '1px solid var(--color-border)',
@@ -78,7 +78,7 @@ const MisNotificaciones = () => {
               flexWrap: 'wrap',
             }}
           >
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setTab('sistema')}
                 style={{

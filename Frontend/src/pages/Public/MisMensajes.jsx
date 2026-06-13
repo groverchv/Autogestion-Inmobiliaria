@@ -23,6 +23,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Eye,
+  ArrowLeft,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import UserMenu from '../../components/UserMenu';
@@ -688,27 +689,56 @@ const MisMensajes = () => {
 
   return (
     <div className="propiedades-page" style={{ paddingTop: '20px' }}>
+      <style>{`
+        .chat-layout {
+          display: flex;
+          gap: 0;
+          height: calc(100vh - 220px);
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid var(--color-border);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .chat-list-panel {
+          width: 340px;
+          border-right: 1px solid var(--color-border);
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+        }
+        .chat-conv-panel {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          background: #f8fafc;
+        }
+        @media (max-width: 768px) {
+          .chat-layout {
+            height: calc(100vh - 160px);
+          }
+          .chat-layout.has-selected-chat .chat-list-panel {
+            display: none;
+          }
+          .chat-layout.has-selected-chat .chat-conv-panel {
+            display: flex;
+            width: 100%;
+          }
+          .chat-layout:not(.has-selected-chat) .chat-list-panel {
+            display: flex;
+            width: 100%;
+            border-right: none;
+          }
+          .chat-layout:not(.has-selected-chat) .chat-conv-panel {
+            display: none;
+          }
+          .chat-back-button {
+            display: inline-flex !important;
+          }
+        }
+      `}</style>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px', flex: 1 }}>
-        <div
-          style={{
-            display: 'flex',
-            gap: '0',
-            height: 'calc(100vh - 220px)',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            border: '1px solid var(--color-border)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          }}
-        >
-          <div
-            style={{
-              width: '340px',
-              borderRight: '1px solid var(--color-border)',
-              background: '#fff',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
+        <div className={`chat-layout ${selectedChat ? 'has-selected-chat' : ''}`}>
+          <div className="chat-list-panel">
             <div
               style={{
                 padding: '20px',
@@ -810,7 +840,7 @@ const MisMensajes = () => {
             </div>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+          <div className="chat-conv-panel">
             {!selectedChat ? (
               <div
                 style={{
@@ -838,6 +868,23 @@ const MisMensajes = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      className="chat-back-button"
+                      onClick={() => setSelectedChat(null)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '6px',
+                        cursor: 'pointer',
+                        display: 'none',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: '-4px',
+                        color: '#64748b',
+                      }}
+                    >
+                      <ArrowLeft size={20} />
+                    </button>
                     <div
                       style={{
                         width: '40px',

@@ -1,20 +1,20 @@
 import { Link } from 'react-router-dom';
 import { XCircle, Home, MessageSquare } from 'lucide-react';
-import Navbar from '../../components/Navbar';
 import './Propiedades.css';
 
 const PagoCancelado = () => {
   return (
     <div className="propiedades-page">
-      <Navbar />
       <div
         style={{
           maxWidth: '600px',
           margin: '60px auto',
           padding: '40px',
-          background: '#fff',
+          background: 'var(--color-bg-card)',
+          color: 'var(--color-text)',
           borderRadius: '20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          boxShadow: 'var(--shadow-lg)',
+          border: '1px solid var(--color-border)',
           textAlign: 'center',
         }}
       >
@@ -34,10 +34,10 @@ const PagoCancelado = () => {
           <XCircle size={48} color="#fff" />
         </div>
         <h1 style={{ color: '#ea580c', fontSize: '1.8rem', marginBottom: '8px' }}>Pago Cancelado</h1>
-        <p style={{ color: '#64748b', fontSize: '1.05rem', marginBottom: '28px' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.05rem', marginBottom: '28px' }}>
           El proceso de pago ha sido cancelado. No se ha realizado ningún cargo.
         </p>
-        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '28px' }}>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '28px' }}>
           Puedes volver al chat para solicitar un nuevo enlace de pago al propietario.
         </p>
 
@@ -65,8 +65,9 @@ const PagoCancelado = () => {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              background: '#f1f5f9',
-              color: '#475569',
+              background: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-secondary)',
+              border: '1px solid var(--color-border)',
               padding: '12px 24px',
               borderRadius: '12px',
               textDecoration: 'none',

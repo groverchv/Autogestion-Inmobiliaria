@@ -131,8 +131,8 @@ const FinanzasPropietario = () => {
   return (
     <div style={{ paddingTop: '20px' }}>
 
-      <div className="print-container" style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
-        <header className="no-print" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div className="print-container" style={{ maxWidth: '1200px', margin: '40px auto', padding: 'clamp(0px, 4vw, 0px) clamp(12px, 4vw, 20px)' }}>
+        <header className="no-print" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
               Mis Finanzas
@@ -142,7 +142,7 @@ const FinanzasPropietario = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div className="finanzas-admin-buttons" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <button
               className="no-print"
               onClick={handleDownloadPDF}
@@ -218,51 +218,51 @@ const FinanzasPropietario = () => {
         ) : (
           <>
             <div className="kpi-grid" style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: '20px', marginBottom: '32px'
             }}>
 
-              <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div style={{ background: 'var(--color-bg-card)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#f0fdf4', padding: '10px', borderRadius: '12px' }}>
-                    <Wallet size={24} color="#16a34a" />
+                  <div style={{ background: 'rgba(34, 197, 94, 0.15)', padding: '10px', borderRadius: '12px' }}>
+                    <Wallet size={24} color="var(--color-success)" />
                   </div>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ingreso Neto (A tu cuenta)</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Ingreso Neto (A tu cuenta)</span>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b' }}>
+                <div style={{ fontSize: 'clamp(1.4rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {formatterMonto(reportData?.kpis?.ingreso_neto || 0)}
                 </div>
-                <div className="kpi-desc" style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '8px' }}>
+                <div className="kpi-desc" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '8px' }}>
                   Libre de comisiones
                 </div>
               </div>
 
-              <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div style={{ background: 'var(--color-bg-card)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#fffbeb', padding: '10px', borderRadius: '12px' }}>
-                    <ArrowDownRight size={24} color="#d97706" />
+                  <div style={{ background: 'rgba(245, 158, 11, 0.15)', padding: '10px', borderRadius: '12px' }}>
+                    <ArrowDownRight size={24} color="var(--color-warning)" />
                   </div>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Comisión Descontada</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Comisión Descontada</span>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b' }}>
+                <div style={{ fontSize: 'clamp(1.4rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {formatterMonto(reportData?.kpis?.total_comisiones || 0)}
                 </div>
-                <div className="kpi-desc" style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '8px' }}>
+                <div className="kpi-desc" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '8px' }}>
                   Retenido por la plataforma
                 </div>
               </div>
 
-              <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div style={{ background: 'var(--color-bg-card)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#f5f3ff', padding: '10px', borderRadius: '12px' }}>
-                    <Activity size={24} color="#8b5cf6" />
+                  <div style={{ background: 'rgba(139, 92, 246, 0.15)', padding: '10px', borderRadius: '12px' }}>
+                    <Activity size={24} color="var(--color-secondary)" />
                   </div>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Promedio Mensual</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Promedio Mensual</span>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b' }}>
+                <div style={{ fontSize: 'clamp(1.4rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {formatterMonto(reportData?.kpis?.promedio_mensual || 0)}
                 </div>
-                <div className="kpi-desc" style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '8px' }}>
+                <div className="kpi-desc" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '8px' }}>
                   Calculado sobre los 12 meses del año
                 </div>
               </div>
@@ -272,10 +272,10 @@ const FinanzasPropietario = () => {
             <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
 
               {/* Curva de Ingreso Neto */}
-              <div className="chart-box" style={{ background: '#fff', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', gridColumn: 'span 2' }}>
+              <div className="chart-box" style={{ background: 'var(--color-bg-card)', padding: 'clamp(16px, 4vw, 32px)', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)', gridColumn: 'span 2' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                  <TrendingUp size={24} color="#6366f1" />
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                  <TrendingUp size={24} color="var(--color-primary)" />
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
                     {filtros.mes ? 'Ingreso Neto por Inmueble' : 'Curva de Ingreso Neto'}
                   </h2>
                 </div>
@@ -330,10 +330,10 @@ const FinanzasPropietario = () => {
               </div>
 
               {/* Distribución (Pie Chart) */}
-              <div className="chart-box" style={{ background: '#fff', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div className="chart-box" style={{ background: 'var(--color-bg-card)', padding: '32px', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                  <PieChartIcon size={24} color="#10b981" />
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                  <PieChartIcon size={24} color="var(--color-success)" />
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
                     Distribución
                   </h2>
                 </div>
@@ -371,22 +371,22 @@ const FinanzasPropietario = () => {
 
 
             {/* --- EXTRACTO BANCARIO --- */}
-            <div className="chart-box" style={{ marginTop: '24px', padding: '24px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', pageBreakBefore: 'always' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '3px solid #1e293b', paddingBottom: '12px', marginBottom: '20px' }}>
+            <div className="chart-box" style={{ marginTop: '24px', padding: 'clamp(16px, 4vw, 24px)', background: 'var(--color-bg-card)', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)', pageBreakBefore: 'always', overflowX: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '3px solid var(--color-text)', paddingBottom: '12px', marginBottom: '20px' }}>
                 <div>
-                  <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Activity size={20} className="no-print" style={{ color: '#6366f1' }} />
+                  <h2 style={{ fontSize: '18px', fontWeight: '900', color: 'var(--color-text)', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Activity size={20} className="no-print" style={{ color: 'var(--color-primary)' }} />
                     Extracto de Movimientos
                   </h2>
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
                     Registro detallado de ingresos — {obtenerNombreInmuebleFiltrado()}
                   </p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                  <div className="no-print" style={{ background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>
+                  <div className="no-print" style={{ background: 'var(--color-bg-secondary)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
                     {(reportData?.extracto_pagos || []).length} registro(s)
                   </div>
-                  <p className="print-only" style={{ fontSize: '12px', color: '#1e293b', fontWeight: 700, margin: 0 }}>
+                  <p className="print-only" style={{ fontSize: '12px', color: 'var(--color-text)', fontWeight: 700, margin: 0 }}>
                     Año Fiscal: {filtros.anio || new Date().getFullYear()}
                   </p>
                 </div>

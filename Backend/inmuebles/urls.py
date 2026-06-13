@@ -43,6 +43,7 @@ from .views import (
     VerificacionTituloViewSet,
     BlockchainHistorialView,
     BlockchainStatsView,
+    AIReportView,
 )
 
 router = DefaultRouter()
@@ -71,5 +72,6 @@ router.register(r'panel/horarios',  HorarioDisponibleViewSet, basename='panel-ho
 urlpatterns = [
     path('blockchain/stats/', BlockchainStatsView.as_view(), name='blockchain-stats'),
     path('blockchain/historial/<str:asset_id>/', BlockchainHistorialView.as_view(), name='blockchain-historial'),
+    path('reporte-ia/', AIReportView.as_view(), name='reporte-ia'),
     path('', include(router.urls)),
 ]

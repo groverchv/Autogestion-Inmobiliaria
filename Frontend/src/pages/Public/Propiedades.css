@@ -5,7 +5,7 @@
 
 /* Header */
 .propiedades-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--color-navbar-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
@@ -91,7 +91,7 @@
 
 /* Filters Card */
 .propiedades-filters-card {
-  background: #ffffff;
+  background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
@@ -101,6 +101,9 @@
   flex-direction: column;
   gap: var(--spacing-md);
   transition: all var(--transition-normal);
+  position: sticky;
+  top: calc(var(--navbar-height) + 12px);
+  z-index: 90;
 }
 
 .propiedades-filters__search-row {
@@ -137,7 +140,7 @@
 .propiedades-filters__search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: #ffffff;
+  background: var(--color-bg-card);
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
 }
 
@@ -152,7 +155,7 @@
   align-items: center;
   gap: 8px;
   padding: 11px 18px;
-  background: #ffffff;
+  background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   color: var(--color-text-secondary);
@@ -252,7 +255,7 @@
 .propiedades-filters__select:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: #ffffff;
+  background: var(--color-bg-card);
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
@@ -315,7 +318,7 @@
 
 /* Card */
 .propiedad-card {
-  background: white;
+  background: var(--color-bg-card);
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -332,7 +335,7 @@
 .propiedad-card__image {
   position: relative;
   height: 180px;
-  background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+  background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-card));
   overflow: hidden;
 }
 
@@ -371,7 +374,7 @@
   border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
   backdrop-filter: blur(4px);
 }
@@ -449,7 +452,7 @@
   position: absolute;
   bottom: 12px;
   right: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--color-bg-secondary);
   border: none;
   width: 36px;
   height: 36px;
@@ -556,7 +559,7 @@
   gap: 10px;
   width: 100%;
   padding: 10px 12px;
-  background: #ffffff;
+  background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 0.8rem;

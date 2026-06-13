@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import inmuebleService from '../../services/inmuebleService';
 import useAuth from '../../hooks/useAuth';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
-import { Search, SlidersHorizontal, Trash2, Filter, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Trash2, CheckCircle2, AlertTriangle, Clock, XCircle } from 'lucide-react';
 import './Propiedades.css';
 
 const Propiedades = () => {
@@ -98,11 +96,6 @@ const Propiedades = () => {
 
   return (
     <div className="propiedades-page">
-      <Navbar />
-
-      {isAuthenticated && (
-        <UserMenu />
-      )}
 
       <div className="propiedades-content">
         <div className="propiedades-filters-card">
@@ -285,9 +278,15 @@ const Propiedades = () => {
                             'Título de propiedad inválido o no reconocido'
                           }
                         >
-                          {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
-                           inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : 
-                           inm.verificacion_estado === 'procesando' ? '⌛ Procesando' : '✗ Inválido'}
+                          {inm.verificacion_estado === 'verificado' ? (
+                            <><CheckCircle2 size={11} /> Título Ok</>
+                          ) : inm.verificacion_estado === 'observado' ? (
+                            <><AlertTriangle size={11} /> Observado</>
+                          ) : inm.verificacion_estado === 'procesando' ? (
+                            <><Clock size={11} /> Procesando</>
+                          ) : (
+                            <><XCircle size={11} /> Inválido</>
+                          )}
                         </span>
                       )}
                     </div>

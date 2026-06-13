@@ -4,7 +4,7 @@ import UserMenu from '../components/UserMenu';
 
 const UserLayout = () => {
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
       <Navbar />
       <UserMenu />
       <Outlet />

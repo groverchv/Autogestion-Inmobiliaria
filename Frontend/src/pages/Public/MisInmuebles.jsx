@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Check, X, Clock, Trash2, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw, Settings, ChevronDown, ChevronUp, Eye, EyeOff, Edit3 } from 'lucide-react';
+import { MapPin, Check, X, Clock, Trash2, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw, Settings, ChevronDown, ChevronUp, Eye, EyeOff, Edit3, CheckCircle2, AlertTriangle, XCircle, Plus, Lightbulb, AlertCircle } from 'lucide-react';
 import tituloService from '../../services/tituloService';
 import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
 import useAlertConfirm from '../../hooks/useAlertConfirm';
@@ -447,9 +447,9 @@ const MisInmuebles = () => {
                 setMediaToDelete([]);
                 setShowModal(true);
               }}
-              style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+              style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              + Registrar Inmueble
+              <Plus size={16} /> Registrar Inmueble
             </button>
           </div>
 
@@ -507,8 +507,13 @@ const MisInmuebles = () => {
                               fontWeight: 700
                             }}
                           >
-                            {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' : 
-                             inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' : '✗ Inválido'}
+                            {inm.verificacion_estado === 'verificado' ? (
+                              <><CheckCircle2 size={11} /> Título Ok</>
+                            ) : inm.verificacion_estado === 'observado' ? (
+                              <><AlertTriangle size={11} /> Observado</>
+                            ) : (
+                              <><XCircle size={11} /> Inválido</>
+                            )}
                           </span>
                         )}
                       </div>
@@ -651,11 +656,11 @@ const MisInmuebles = () => {
           padding: '24px'
         }}>
           <div style={{
-            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '700px',
+            background: 'var(--color-bg-card)', borderRadius: '16px', width: '100%', maxWidth: '700px',
             maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden'
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{editingId ? 'Editar Inmueble' : 'Registrar Inmueble'}</h2>
+              <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--color-text)' }}>{editingId ? 'Editar Inmueble' : 'Registrar Inmueble'}</h2>
               <button
                 onClick={() => setShowModal(false)}
                 style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
@@ -900,7 +905,7 @@ const MisInmuebles = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
         }}>
           <div style={{
-            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '500px',
+            background: 'var(--color-bg-card)', borderRadius: '16px', width: '100%', maxWidth: '500px',
             maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
             <div style={{
@@ -908,13 +913,13 @@ const MisInmuebles = () => {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Horarios de visita</h2>
-                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-text)' }}>Horarios de visita</h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                   Define cuándo pueden agendar visitas a este inmueble
                 </p>
               </div>
               <button onClick={() => setShowHorarioModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
                 &times;
               </button>
             </div>
@@ -922,10 +927,10 @@ const MisInmuebles = () => {
             <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
               {/* Formulario para agregar horario */}
               <div style={{
-                background: '#f8fafc', borderRadius: '12px', padding: '16px',
-                marginBottom: '20px', border: '1px solid #e2e8f0',
+                background: 'var(--color-bg-secondary)', borderRadius: '12px', padding: '16px',
+                marginBottom: '20px', border: '1px solid var(--color-border)',
               }}>
-                <p style={{ margin: '0 0 12px', fontWeight: 600, color: '#1e293b', fontSize: '0.9rem' }}>
+                <p style={{ margin: '0 0 12px', fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9rem' }}>
                   Agregar disponibilidad
                 </p>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -1017,25 +1022,25 @@ const MisInmuebles = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
         }}>
           <div style={{
-            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px',
+            background: 'var(--color-bg-card)', borderRadius: '16px', width: '100%', maxWidth: '600px',
             maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)'
           }}>
             <div style={{
               padding: '20px 24px', borderBottom: '1px solid var(--color-border)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: '#f8fafc'
+              background: 'var(--color-bg-secondary)'
             }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-text)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ShieldCheck size={22} style={{ color: 'var(--color-primary)' }} /> Verificación de Título con IA
                 </h2>
-                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                   Análisis legal automático de escrituras y folios reales usando OCR y NLP (Llama 3)
                 </p>
               </div>
               <button onClick={() => setShowVerificacionModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
                 &times;
               </button>
             </div>
@@ -1116,8 +1121,9 @@ const MisInmuebles = () => {
                   </div>
 
                   <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '12px', border: '1px solid #bfdbfe' }}>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#1e40af', lineHeight: 1.4 }}>
-                      💡 <strong>Recomendación:</strong> Para obtener la mejor precisión, sube un documento escaneado con buena iluminación y resolución, de preferencia la matrícula computarizada (Folio Real) o testimonio notarial de propiedad.
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#1e40af', lineHeight: 1.4, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                      <Lightbulb size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <span><strong>Recomendación:</strong> Para obtener la mejor precisión, sube un documento escaneado con buena iluminación y resolución, de preferencia la matrícula computarizada (Folio Real) o testimonio notarial de propiedad.</span>
                     </p>
                   </div>
 
@@ -1235,7 +1241,7 @@ const MisInmuebles = () => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {verificacionData.resultado_ia.alertas.map((alerta, i) => (
                               <div key={i} style={{ background: '#fef2f2', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #fecaca', display: 'flex', gap: '8px' }}>
-                                <span style={{ fontWeight: 'bold' }}>⚠</span>
+                                <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
                                 <span>{alerta}</span>
                               </div>
                             ))}

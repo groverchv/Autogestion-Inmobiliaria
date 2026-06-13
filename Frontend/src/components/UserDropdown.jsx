@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
+import { Sun, Moon, Monitor } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import ProfileModal from './ProfileModal';
+import useStore from '../store/store';
 import './UserDropdown.css';
 
 const UserDropdown = () => {
@@ -8,6 +10,18 @@ const UserDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const theme = useStore((state) => state.theme);
+  const setTheme = useStore((state) => state.setTheme);
+
+  const handleThemeCycle = (e) => {
+    e.stopPropagation();
+    let nextTheme = 'light';
+    if (theme === 'system') nextTheme = 'light';
+    else if (theme === 'light') nextTheme = 'dark';
+    else if (theme === 'dark') nextTheme = 'system';
+    setTheme(nextTheme);
+  };
 
   // Cerrar el dropdown al hacer clic afuera
   useEffect(() => {
@@ -71,6 +85,15 @@ const UserDropdown = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   Mi Perfil
+                </button>
+              </li>
+
+              <li className="user-dropdown__item">
+                <button className="user-dropdown__btn" onClick={handleThemeCycle}>
+                  {theme === 'system' && <Monitor size={16} className="user-dropdown__icon" />}
+                  {theme === 'light' && <Sun size={16} className="user-dropdown__icon" />}
+                  {theme === 'dark' && <Moon size={16} className="user-dropdown__icon" />}
+                  Tema: {theme === 'system' ? 'Sistema' : theme === 'light' ? 'Claro' : 'Oscuro'}
                 </button>
               </li>
               

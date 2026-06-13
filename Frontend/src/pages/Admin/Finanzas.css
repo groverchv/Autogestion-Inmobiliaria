@@ -159,3 +159,90 @@
   font-size: 1.2rem;
   color: var(--text-muted);
 }
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .finanzas-container {
+    padding: 1rem;
+  }
+  .finanzas-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+  .finanzas-title {
+    font-size: 1.4rem;
+  }
+  .finanzas-filters {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .filter-select {
+    width: 100%;
+  }
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .config-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 1rem;
+  }
+  .config-form {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+  .config-input {
+    width: 100%;
+    text-align: left;
+  }
+  .btn-guardar {
+    width: 100%;
+    text-align: center;
+  }
+  /* Header de FinanzasAdmin.jsx */
+  .finanzas-admin-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  .finanzas-admin-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .finanzas-admin-buttons button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Chart grid column span fix for mobile ─── */
+@media (max-width: 700px) {
+  /* When a chart uses gridColumn: span 2, collapse it on mobile */
+  .charts-grid > div[style*="span 2"],
+  .pdf-charts-section > div[style*="span 2"] {
+    grid-column: span 1 !important;
+  }
+  .finanzas-container {
+    padding: 0.75rem;
+  }
+  /* Make finanzas header title scale down */
+  .finanzas-admin-header h1,
+  header.no-print h1 {
+    font-size: clamp(1.2rem, 5vw, 2rem) !important;
+  }
+}

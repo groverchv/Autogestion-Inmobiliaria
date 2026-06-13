@@ -65,31 +65,31 @@ const DashboardAdmin = () => {
 
   const s = {
     page: { },
-    greeting: { fontSize: '1.6rem', fontWeight: 800, color: '#1e293b', marginBottom: '4px' },
-    subtitle: { color: '#64748b', fontSize: '0.9rem', marginBottom: '28px' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' },
-    card: () => ({ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', textDecoration: 'none', transition: 'all 0.25s', position: 'relative', overflow: 'hidden' }),
+    greeting: { fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '4px' },
+    subtitle: { color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '28px' },
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px', marginBottom: '32px' },
+    card: () => ({ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '16px', textDecoration: 'none', transition: 'all 0.25s', position: 'relative', overflow: 'hidden', display: 'block' }),
     cardIcon: (bg, color) => ({ width: '44px', height: '44px', borderRadius: '12px', background: bg, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }),
-    cardLabel: { fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500, marginBottom: '4px' },
-    cardValue: (color) => ({ fontSize: '1.8rem', fontWeight: 800, color }),
-    section: { background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', marginBottom: '20px' },
-    sectionTitle: { fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' },
+    cardLabel: { fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '4px' },
+    cardValue: (color) => ({ fontSize: '1.6rem', fontWeight: 800, color }),
+    section: { background: 'var(--color-bg-card)', borderRadius: '16px', border: '1px solid var(--color-border)', padding: '20px', marginBottom: '20px', overflowX: 'auto' },
+    sectionTitle: { fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' },
   };
 
-  if (loading) return <p style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Cargando dashboard...</p>;
+  if (loading) return <p style={{ textAlign: 'center', padding: '60px', color: 'var(--color-text-muted)' }}>Cargando dashboard...</p>;
 
   return (
     <div style={s.page}>
       <h1 style={s.greeting}>Hola, {user?.first_name} {user?.last_name}</h1>
       <p style={s.subtitle}>
-        Rol: <strong style={{ color: '#0ea5e9' }}>{user?.rol_nombre || 'Administrador'}</strong> — Resumen de tu panel de gestión.
+        Rol: <strong style={{ color: 'var(--color-primary)' }}>{user?.rol_nombre || 'Administrador'}</strong> — Resumen de tu panel de gestión.
       </p>
 
       {/* Tarjetas de estadísticas */}
       <div style={s.grid}>
         {cards.map(card => (
           <Link key={card.label} to={card.link} style={s.card(card.bg)}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
           >
             <div style={s.cardIcon(card.bg, card.color)}>{card.icon}</div>
@@ -106,25 +106,25 @@ const DashboardAdmin = () => {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Título</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Categoría</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Ciudad</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Precio</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Estado</th>
+                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Título</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Categoría</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Ciudad</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Precio</th>
+                  <th style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--color-text-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase' }}>Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {recentInmuebles.map(inm => (
-                  <tr key={inm.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{inm.titulo}</td>
+                  <tr key={inm.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--color-text)' }}>{inm.titulo}</td>
                     <td style={{ padding: '10px 12px' }}>
-                      <span style={{ background: '#f0fdf4', color: '#15803d', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>{inm.tipo_nombre}</span>
+                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600 }}>{inm.tipo_nombre}</span>
                     </td>
-                    <td style={{ padding: '10px 12px', color: '#64748b' }}>{inm.ciudad}</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0ea5e9' }}>Bs. {parseFloat(inm.precio).toLocaleString()}</td>
+                    <td style={{ padding: '10px 12px', color: 'var(--color-text-secondary)' }}>{inm.ciudad}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--color-primary)' }}>Bs. {parseFloat(inm.precio).toLocaleString()}</td>
                     <td style={{ padding: '10px 12px' }}>
-                      <span style={{ fontWeight: 600, textTransform: 'capitalize', color: inm.estado === 'disponible' ? '#16a34a' : inm.estado === 'ocupado' ? '#dc2626' : '#f59e0b' }}>{inm.estado}</span>
+                      <span style={{ fontWeight: 600, textTransform: 'capitalize', color: inm.estado === 'disponible' ? 'var(--color-success)' : inm.estado === 'ocupado' ? 'var(--color-danger)' : 'var(--color-warning)' }}>{inm.estado}</span>
                     </td>
                   </tr>
                 ))}

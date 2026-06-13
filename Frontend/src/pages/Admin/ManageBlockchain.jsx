@@ -101,10 +101,10 @@ const ManageBlockchain = () => {
       {/* ─── Cabecera ─────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
             <ShieldCheck size={28} color="#10b981" /> Auditoría Blockchain
           </h1>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginTop: '4px' }}>
             Monitoreo y exploración inmutable de contratos, pagos y títulos en Hyperledger Fabric.
           </p>
         </div>
@@ -113,12 +113,12 @@ const ManageBlockchain = () => {
           disabled={refreshing}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
-            background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
+            background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: '12px',
             cursor: refreshing ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: '0.85rem',
-            color: '#334155', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s'
+            color: 'var(--color-text)', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s'
           }}
-          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-          onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-hover)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-card)'}
         >
           <RefreshCw size={16} className={refreshing ? 'spin' : ''} /> {refreshing ? 'Actualizando...' : 'Actualizar Red'}
         </button>
@@ -128,27 +128,27 @@ const ManageBlockchain = () => {
       <div className="blockchain-top-grid">
         
         {/* Card Conexión */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
+        <div style={{ background: 'var(--color-bg-card)', borderRadius: '20px', border: '1px solid var(--color-border)', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: 'var(--shadow-sm)' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <Server size={18} color="#64748b" />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estado de Red</span>
+              <Server size={18} color="var(--color-text-muted)" />
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estado de Red</span>
             </div>
             
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: isConnected ? '#ecfdf5' : '#fef2f2', padding: '6px 14px', borderRadius: '20px', marginBottom: '16px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: isConnected ? 'rgba(22, 163, 74, 0.15)' : 'rgba(239, 68, 68, 0.15)', padding: '6px 14px', borderRadius: '20px', marginBottom: '16px' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isConnected ? '#10b981' : '#ef4444', boxShadow: isConnected ? '0 0 10px #10b981' : 'none' }} />
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: isConnected ? '#065f46' : '#991b1b' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: isConnected ? '#10b981' : '#ef4444' }}>
                 {isConnected ? 'Conectado / En Línea' : 'Desconectado'}
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px', borderBottom: '1px solid #f1f5f9', paddingBottom: '14px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px', borderBottom: '1px solid var(--color-border)', paddingBottom: '14px', marginBottom: '14px' }}>
               <div>
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block' }}>Canal de Red:</span>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>canal de autogestión</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block' }}>Canal de Red:</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-text)' }}>canal de autogestión</span>
               </div>
               <div>
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block' }}>Modo de Ledger:</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block' }}>Modo de Ledger:</span>
                 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0ea5e9' }}>
                   {stats?.mode === 'SIMULADO (Ledger JSON)' ? 'SIMULADO (JSON del libro mayor)' : (stats?.mode || 'No detectado')}
                 </span>
@@ -160,13 +160,13 @@ const ManageBlockchain = () => {
               onClick={() => setShowTopology(!showTopology)}
               style={{
                 width: '100%',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '10px',
                 padding: '8px 12px',
                 fontSize: '0.75rem',
                 fontWeight: 700,
-                color: '#475569',
+                color: 'var(--color-text-secondary)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -176,8 +176,8 @@ const ManageBlockchain = () => {
                 transition: 'all 0.15s ease',
                 outline: 'none'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-              onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--color-bg-secondary)'}
             >
               <span>{showTopology ? 'Ocultar Componentes de Red' : 'Mostrar Componentes de Red'}</span>
               {showTopology ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -187,47 +187,47 @@ const ManageBlockchain = () => {
             {showTopology && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div>
-                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '6px' }}>
                     NODOS VALIDADORES (PEERS)
                   </span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: '#f8fafc', padding: '6px 10px', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontWeight: 600 }}>peer0.org1.autogestion.com</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: 'var(--color-bg-secondary)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)', fontWeight: 600 }}>peer0.org1.autogestion.com</span>
                       <span style={{ background: '#dcfce7', color: '#15803d', padding: '1px 6px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 700 }}>Activo</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: '#f8fafc', padding: '6px 10px', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                      <span style={{ fontFamily: 'monospace', color: '#334155', fontWeight: 600 }}>peer0.org2.autogestion.com</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: 'var(--color-bg-secondary)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)', fontWeight: 600 }}>peer0.org2.autogestion.com</span>
                       <span style={{ background: '#dcfce7', color: '#15803d', padding: '1px 6px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 700 }}>Activo</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '4px' }}>
                     SERVICIO DE CONSENSO (ORDENADOR)
                   </span>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: '#f8fafc', padding: '6px 10px', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
-                    <span style={{ fontFamily: 'monospace', color: '#334155', fontWeight: 600 }}>orderer.autogestion.com</span>
-                    <span style={{ color: '#64748b', fontWeight: 600, fontSize: '0.65rem' }}>(Balsa)</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: 'var(--color-bg-secondary)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+                    <span style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)', fontWeight: 600 }}>orderer.autogestion.com</span>
+                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 600, fontSize: '0.65rem' }}>(Balsa)</span>
                   </div>
                 </div>
 
                 <div>
-                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '4px' }}>
                     CONTRATO INTELIGENTE (CHAINCODE)
                   </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', background: '#f5f3ff', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e9d5ff', fontSize: '0.72rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', background: 'rgba(124, 58, 237, 0.15)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(124, 58, 237, 0.25)', fontSize: '0.72rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#6b21a8', fontWeight: 600 }}>Nombre:</span>
-                      <span style={{ color: '#581c87', fontWeight: 700 }}>código de cadena de autogestión</span>
+                      <span style={{ color: '#818cf8', fontWeight: 600 }}>Nombre:</span>
+                      <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>código de cadena de autogestión</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#6b21a8', fontWeight: 600 }}>Versión:</span>
-                      <span style={{ color: '#581c87', fontWeight: 700 }}>v1.0.0</span>
+                      <span style={{ color: '#818cf8', fontWeight: 600 }}>Versión:</span>
+                      <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>v1.0.0</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#6b21a8', fontWeight: 600 }}>Idioma:</span>
-                      <span style={{ color: '#581c87', fontWeight: 700 }}>Node.js (JavaScript)</span>
+                      <span style={{ color: '#818cf8', fontWeight: 600 }}>Idioma:</span>
+                      <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>Node.js (JavaScript)</span>
                     </div>
                   </div>
                 </div>
@@ -236,53 +236,53 @@ const ManageBlockchain = () => {
 
           </div>
 
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Cpu size={16} color="#94a3b8" />
-            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Puerta de enlace SDK de Fabric v1.0.0</span>
+          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '12px', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Cpu size={16} color="var(--color-text-muted)" />
+            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Puerta de enlace SDK de Fabric v1.0.0</span>
           </div>
         </div>
 
         {/* Card Totales */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
+        <div style={{ background: 'var(--color-bg-card)', borderRadius: '20px', border: '1px solid var(--color-border)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-            <Layers size={18} color="#64748b" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Métricas Generales del Ledger</span>
+            <Layers size={18} color="var(--color-text-muted)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Métricas Generales del Ledger</span>
           </div>
           
           <div className="blockchain-metrics-grid">
-            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #f1f5f9', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Altura Ledger</span>
-              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>{stats?.totalBlocks || 0}</span>
-              <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', marginTop: '2px' }}>Bloques Registrados</span>
+            <div style={{ background: 'var(--color-bg-secondary)', padding: '16px', borderRadius: '14px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Altura Ledger</span>
+              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)' }}>{stats?.totalBlocks || 0}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>Bloques Registrados</span>
             </div>
-            <div style={{ background: '#f0f9ff', padding: '16px', borderRadius: '14px', border: '1px solid #e0f2fe', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Inmuebles</span>
-              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0369a1' }}>{stats?.totalInmuebles || 0}</span>
-              <span style={{ fontSize: '0.65rem', color: '#0ea5e9', display: 'block', marginTop: '2px' }}>Títulos Sellados</span>
+            <div style={{ background: 'rgba(14, 165, 233, 0.12)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(14, 165, 233, 0.25)', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Inmuebles</span>
+              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)' }}>{stats?.totalInmuebles || 0}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--color-primary-light)', display: 'block', marginTop: '2px' }}>Títulos Sellados</span>
             </div>
-            <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '14px', border: '1px solid #dcfce7', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Contratos</span>
-              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#15803d' }}>{stats?.totalContratos || 0}</span>
-              <span style={{ fontSize: '0.65rem', color: '#16a34a', display: 'block', marginTop: '2px' }}>Firmas Selladas</span>
+            <div style={{ background: 'rgba(34, 197, 94, 0.12)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(34, 197, 94, 0.25)', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-success)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Contratos</span>
+              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-success)' }}>{stats?.totalContratos || 0}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--color-success)', display: 'block', marginTop: '2px' }}>Firmas Selladas</span>
             </div>
-            <div style={{ background: '#fffbeb', padding: '16px', borderRadius: '14px', border: '1px solid #fef3c7', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Pagos</span>
-              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#b45309' }}>{stats?.totalPagos || 0}</span>
-              <span style={{ fontSize: '0.65rem', color: '#f59e0b', display: 'block', marginTop: '2px' }}>Recibos Auditados</span>
+            <div style={{ background: 'rgba(245, 158, 11, 0.12)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(245, 158, 11, 0.25)', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-warning)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Pagos</span>
+              <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-warning)' }}>{stats?.totalPagos || 0}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--color-warning)', display: 'block', marginTop: '2px' }}>Recibos Auditados</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* ─── Explorador de Bloques ──────────────────────────────── */}
-      <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 12px rgba(15,23,42,0.03)' }}>
-        <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ background: 'var(--color-bg-card)', borderRadius: '20px', border: '1px solid var(--color-border)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+        <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Layers size={18} color="#0ea5e9" /> Explorador del Ledger de Bloques
         </h2>
 
         {(!stats || !stats.blocks || stats.blocks.length === 0) ? (
-          <div style={{ padding: '60px 24px', textAlign: 'center', color: '#94a3b8' }}>
-            <Layers size={48} style={{ color: '#cbd5e1', marginBottom: '16px', opacity: 0.5 }} />
+          <div style={{ padding: '60px 24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+            <Layers size={48} style={{ color: 'var(--color-border)', marginBottom: '16px', opacity: 0.5 }} />
             <p style={{ fontWeight: 600 }}>El Ledger está vacío</p>
             <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>
               Aún no se han sellado transacciones de contratos, títulos o pagos en la Blockchain.
@@ -298,10 +298,10 @@ const ManageBlockchain = () => {
                 <div 
                   key={block.blockNumber}
                   style={{
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '16px',
                     overflow: 'hidden',
-                    background: isExpanded ? '#f8fafc' : '#ffffff',
+                    background: isExpanded ? 'var(--color-bg-secondary)' : 'var(--color-bg-card)',
                     transition: 'all 0.2s'
                   }}
                 >
@@ -336,12 +336,12 @@ const ManageBlockchain = () => {
                       
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9rem' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.9rem' }}>
                             Bloque Sellado
                           </span>
                           {tx && getTxBadge(tx.txName)}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Calendar size={12} /> {new Date(block.timestamp).toLocaleString('es-BO')}
                         </div>
                       </div>
@@ -350,14 +350,14 @@ const ManageBlockchain = () => {
                     {/* Hash Abreviado y Expandible */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.75rem' }}>
-                        <span style={{ color: '#94a3b8' }}>Block Hash:</span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Block Hash:</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                          <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '6px', color: '#334155', fontWeight: 600 }}>
+                          <code style={{ background: 'var(--color-bg-secondary)', padding: '2px 6px', borderRadius: '6px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
                             {block.blockHash.slice(0, 12)}...{block.blockHash.slice(-8)}
                           </code>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleCopy(block.blockHash, block.blockNumber); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 0 }}
                             title="Copiar Hash"
                           >
                             {copiedId === block.blockNumber ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
@@ -369,8 +369,8 @@ const ManageBlockchain = () => {
                         <button
                           onClick={(e) => { e.stopPropagation(); setExpandedBlock(isExpanded ? null : block.blockNumber); }}
                           style={{
-                            background: isExpanded ? '#f1f5f9' : '#0ea5e9',
-                            color: isExpanded ? '#475569' : '#ffffff',
+                            background: isExpanded ? 'var(--color-bg-secondary)' : '#0ea5e9',
+                            color: isExpanded ? 'var(--color-text-secondary)' : '#ffffff',
                             border: 'none',
                             padding: '6px 12px',
                             borderRadius: '8px',
@@ -386,7 +386,7 @@ const ManageBlockchain = () => {
                         >
                           {isExpanded ? 'Cerrar' : 'Ver Detalle'}
                         </button>
-                        <div style={{ color: '#64748b', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center' }}>
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </div>
                       </div>
@@ -397,9 +397,9 @@ const ManageBlockchain = () => {
                   {/* Panel Desplegable (Detalles del Bloque) */}
                   {isExpanded && (
                     <div style={{
-                      borderTop: '1px solid #e2e8f0',
+                      borderTop: '1px solid var(--color-border)',
                       padding: '20px',
-                      background: '#ffffff',
+                      background: 'var(--color-bg-card)',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '16px'
@@ -407,14 +407,14 @@ const ManageBlockchain = () => {
                       
                       <div className="blockchain-hashes-grid">
                         <div>
-                          <span style={{ color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Hash Anterior (PrevHash)</span>
-                          <code style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', display: 'block', color: '#475569', border: '1px solid #e2e8f0', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                          <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>Hash Anterior (PrevHash)</span>
+                          <code style={{ background: 'var(--color-bg-secondary)', padding: '4px 8px', borderRadius: '6px', display: 'block', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', overflowX: 'auto', whiteSpace: 'nowrap' }}>
                             {block.prevHash}
                           </code>
                         </div>
                         <div>
-                          <span style={{ color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Hash de Bloque Completo</span>
-                          <code style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', display: 'block', color: '#0369a1', border: '1px solid #e0f2fe', overflowX: 'auto', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                          <span style={{ color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>Hash de Bloque Completo</span>
+                          <code style={{ background: 'var(--color-bg-secondary)', padding: '4px 8px', borderRadius: '6px', display: 'block', color: 'var(--color-primary-light)', border: '1px solid var(--color-border)', overflowX: 'auto', whiteSpace: 'nowrap', fontWeight: 600 }}>
                             {block.blockHash}
                           </code>
                         </div>
@@ -422,25 +422,25 @@ const ManageBlockchain = () => {
 
                       {/* Transacción */}
                       {tx && (
-                        <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-                          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '12px', padding: '16px', border: '1px solid var(--color-border)' }}>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {getTxIcon(tx.txName)} Datos del Registro de Transacción
                           </h4>
                           
                           <div className="blockchain-tx-grid">
                             <div>
-                              <span style={{ color: '#94a3b8', display: 'block' }}>ID Transacción (TxID):</span>
-                              <span style={{ fontWeight: 600, color: '#1e293b' }}>{tx.txId}</span>
+                              <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>ID Transacción (TxID):</span>
+                              <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{tx.txId}</span>
                             </div>
                             <div>
-                              <span style={{ color: '#94a3b8', display: 'block' }}>ID del Activo Sellado:</span>
+                              <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>ID del Activo Sellado:</span>
                               <span style={{ fontWeight: 700, color: '#0ea5e9' }}>{tx.assetId}</span>
                             </div>
                           </div>
 
                           {/* Argumentos/Payload JSON */}
                           <div>
-                            <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.75rem', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Payload de Firma y Atributos:</span>
+                            <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '0.75rem', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase' }}>Payload de Firma y Atributos:</span>
                             <pre style={{
                               margin: 0,
                               background: '#0f172a',

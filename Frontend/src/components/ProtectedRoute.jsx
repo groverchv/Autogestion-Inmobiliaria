@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import useStore from '../store/store';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     }
   }
 
-  return children;
+  return children ? children : <Outlet />;
 };
 
 export default ProtectedRoute;
