@@ -7,13 +7,12 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [lastEvent, setLastEvent] = useState('Ninguno (Presiona botones en tu control)');
   const [gamepadInfo, setGamepadInfo] = useState({ connected: false, name: '' });
   const [showDebug, setShowDebug] = useState(false); // Oculto por defecto
-  const [modoNavegacion, setModoNavegacion] = useState('manual'); // 'manual' o 'vr'
+  const [modoNavegacion, setModoNavegacion] = useState('vr'); // Por defecto directamente en modo VR/Gafas
   const [pantallaDoble, setPantallaDoble] = useState(false);
   const [gyroPermission, setGyroPermission] = useState('unknown');
   const [mostrarInstrucciones, setMostrarInstrucciones] = useState(true);
 
   const sensorInicializado = useRef(false);
-  const lastRoomChangeTime = useRef(0);
   const escenaActivaRef = useRef(escenaActiva);
   const panoramasRef = useRef(panoramas);
 
@@ -25,13 +24,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   useEffect(() => {
     panoramasRef.current = panoramas;
   }, [panoramas]);
-
-  useEffect(() => {
-    // Si cambia de modo, reiniciar el modal de instrucciones
-    if (modoNavegacion === 'vr') {
-      setMostrarInstrucciones(true);
-    }
-  }, [modoNavegacion]);
 
   useEffect(() => {
     // Verificar si se requiere solicitar permisos de giroscopio (iOS)
@@ -224,47 +216,37 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       // Debug: Mostrar qué tecla se recibió
       setLastEvent(`Tecla: "${key}"`);
 
-      // Botón A / Gatillo / Selección
+      // Botón @ (Mapeado a la tecla @, o gatillo en algunos teclados)
+      if (key === '@' || keyLower === '@') {
+        e.preventDefault();
+        triggerActiveHotspot();
+        return;
+      }
+
+      // Botón A (Siguiente imagen)
+      if (keyLower === 'a' || key === 'ArrowRight' || key === 'VolumeUp' || key === 'AudioVolumeUp' || key === 'MediaTrackNext' || key === 'PageDown') {
+        e.preventDefault();
+        goToNextRoom();
+        return;
+      }
+
+      // Botón B (Imagen anterior)
+      if (keyLower === 'b' || key === 'ArrowLeft' || key === 'VolumeDown' || key === 'AudioVolumeDown' || key === 'MediaTrackPrevious' || key === 'PageUp') {
+        e.preventDefault();
+        goToPrevRoom();
+        return;
+      }
+
+      // Otros botones de Gatillo / Selección / Fallback
       if (key === ' ' || key === 'Enter' || key === 'Trigger' || key === 'Select' || key === 'MediaPlayPause') {
         e.preventDefault();
         triggerActiveHotspot();
       }
 
-      // Botón B / Retroceso / Cancelar
+      // Botón de salir / atrás
       if (key === 'Escape' || key === 'Backspace' || keyLower === 'q') {
         e.preventDefault();
         onClose();
-      }
-
-      // Botones C y D / Volumen / Dirección / Mapeo de mandos Bluetooth
-      if (
-        keyLower === 'd' || 
-        keyLower === 'n' || 
-        key === 'ArrowRight' || 
-        key === 'ArrowDown' || 
-        keyLower === 's' ||
-        key === 'VolumeUp' || 
-        key === 'AudioVolumeUp' || 
-        key === 'MediaTrackNext' || 
-        key === 'PageDown'
-      ) {
-        e.preventDefault();
-        goToNextRoom();
-      }
-
-      if (
-        keyLower === 'c' || 
-        keyLower === 'p' || 
-        key === 'ArrowLeft' || 
-        key === 'ArrowUp' || 
-        keyLower === 'w' ||
-        key === 'VolumeDown' || 
-        key === 'AudioVolumeDown' || 
-        key === 'MediaTrackPrevious' || 
-        key === 'PageUp'
-      ) {
-        e.preventDefault();
-        goToPrevRoom();
       }
     };
 
@@ -301,43 +283,25 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
 
           if (pressed && !wasPressed) {
             setLastEvent(`Botón Gamepad #${index}`);
-            // Mapeo universal de botones VR
-            if (index === 0 || index === 6 || index === 7) {
-              // Trigger / Botón principal A
-              triggerActiveHotspot();
-            } else if (index === 1 || index === 8 || index === 9) {
-              // Botón Atrás / B / Start
-              onClose();
-            } else if (index === 2 || index === 4) {
-              // L1 / Botón X -> Anterior
-              goToPrevRoom();
-            } else if (index === 3 || index === 5) {
-              // R1 / Botón Y -> Siguiente
+            // Mapeo adaptado al control del usuario:
+            if (index === 0) {
+              // Botón A -> Siguiente Imagen
               goToNextRoom();
+            } else if (index === 1) {
+              // Botón B -> Imagen Anterior
+              goToPrevRoom();
+            } else {
+              // Botón @ / Trigger / Cualquier otro -> Seleccionar hotspot apuntado
+              triggerActiveHotspot();
             }
           }
           lastButtonStates[index] = pressed;
         });
 
-        // Simular WASD / Palanca analógica para caminar
+        // Simular WASD / Palanca analógica para caminar hacia adelante y atrás
         const axisX = activeGamepad.axes[0]; // -1 izquierda, 1 derecha
         const axisY = activeGamepad.axes[1]; // -1 arriba, 1 abajo
         const threshold = 0.35;
-
-        // Cambiar habitación automáticamente si se mueve la palanca de forma pronunciada (X o Y)
-        const now = Date.now();
-        const roomChangeCooldown = 1500; // Cooldown de 1.5 segundos
-        if (now - lastRoomChangeTime.current > roomChangeCooldown) {
-          if (axisX > 0.75 || axisY > 0.75) {
-            goToNextRoom();
-            lastRoomChangeTime.current = now;
-            setLastEvent("Palanca Gamepad: Siguiente");
-          } else if (axisX < -0.75 || axisY < -0.75) {
-            goToPrevRoom();
-            lastRoomChangeTime.current = now;
-            setLastEvent("Palanca Gamepad: Anterior");
-          }
-        }
 
         const setEmulatedKey = (key, press) => {
           if (press && !activeJoystickKeys[key]) {
@@ -349,10 +313,10 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
           }
         };
 
-        setEmulatedKey('w', axisY < -threshold);
-        setEmulatedKey('s', axisY > threshold);
-        setEmulatedKey('a', axisX < -threshold);
-        setEmulatedKey('d', axisX > threshold);
+        setEmulatedKey('w', axisY < -threshold); // Joystick arriba -> Avanzar (W)
+        setEmulatedKey('s', axisY > threshold);  // Joystick abajo -> Retroceder (S)
+        setEmulatedKey('a', axisX < -threshold); // Izquierda
+        setEmulatedKey('d', axisX > threshold);  // Derecha
       } else {
         if (gamepadInfo.connected) {
           setGamepadInfo({ connected: false, name: '' });
@@ -413,29 +377,35 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     <div className="visor-vr-glasses" onClick={handleVisorClick} onTouchStart={handleVisorClick}>
       
       {/* 1. Modal de Instrucciones de VR y Mando */}
-      {modoNavegacion === 'vr' && mostrarInstrucciones && (
+      {mostrarInstrucciones && (
         <div className="visor-vr-glasses__instructions-overlay">
           <div className="visor-vr-glasses__instructions-card" onClick={(e) => e.stopPropagation()}>
-            <h3>🕶️ Modo Gafas VR & Mando</h3>
-            <p className="subtitle">Configuración del visor y controles:</p>
+            <h3>🕶️ Instrucciones de Recorrido VR</h3>
+            <p className="subtitle">Uso de tus Gafas VR y Mando Bluetooth:</p>
             
             <div className="instruction-steps">
               <div className="step">
-                <span className="step-num">1</span>
+                <span className="step-num">A</span>
                 <div>
-                  <strong>Cambio Automático:</strong> Usa el <strong>Joystick</strong> (izquierda/derecha) o los <strong>botones laterales (L1/R1, C/D)</strong> de tu mando Bluetooth para cambiar de habitación automáticamente.
+                  <strong>Avanzar Habitación:</strong> Presiona el botón <strong>A</strong> en tu mando para cambiar a la siguiente habitación.
                 </div>
               </div>
               <div className="step">
-                <span className="step-num">2</span>
+                <span className="step-num">B</span>
                 <div>
-                  <strong>Mirar y Teletransportar:</strong> Enfoca los círculos azules de navegación con el centro de tu mirada. Presiona el <strong>gatillo (Enter)</strong> de tu mando o mantén la mirada por 1.5 segundos para viajar.
+                  <strong>Retroceder Habitación:</strong> Presiona el botón <strong>B</strong> en tu mando para regresar a la habitación anterior.
                 </div>
               </div>
               <div className="step">
-                <span className="step-num">3</span>
+                <span className="step-num">@</span>
                 <div>
-                  <strong>Poner en Gafas:</strong> Coloca el celular de forma horizontal dentro de tus gafas VR.
+                  <strong>Entrar a un Enlace:</strong> Apunta la mirada (círculo azul) hacia una esfera de transición y presiona el botón <strong>@</strong> (o gatillo) para teletransportarte.
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-num">🕹️</span>
+                <div>
+                  <strong>Desplazarte:</strong> Empuja la palanca o joystick hacia <strong>adelante</strong> para avanzar en el espacio o hacia <strong>atrás</strong> para retroceder.
                 </div>
               </div>
             </div>
@@ -450,13 +420,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
                 type="button"
               >
                 Empezar Recorrido (Pantalla Doble)
-              </button>
-              <button 
-                className="cancel-vr-btn"
-                onClick={() => setModoNavegacion('manual')}
-                type="button"
-              >
-                Volver a Modo Táctil
               </button>
             </div>
           </div>
@@ -475,23 +438,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               <X size={18} />
               <span>Salir de VR</span>
             </button>
-
-            <div className="visor-vr-glasses__mode-selector">
-              <button
-                className={`mode-btn ${modoNavegacion === 'manual' ? 'active' : ''}`}
-                onClick={() => setModoNavegacion('manual')}
-                type="button"
-              >
-                Manual (Táctil)
-              </button>
-              <button
-                className={`mode-btn ${modoNavegacion === 'vr' ? 'active' : ''}`}
-                onClick={() => setModoNavegacion('vr')}
-                type="button"
-              >
-                VR (Gafas/Mando)
-              </button>
-            </div>
 
             {/* Botón para cambiar orientación de pantalla */}
             <button
@@ -550,7 +496,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       )}
 
       {/* Panel de Estado del Control Remoto (Solo PC/Desarrollo) */}
-      {showDebug && modoNavegacion === 'vr' && !pantallaDoble && (
+      {showDebug && !pantallaDoble && (
         <div className="visor-vr-glasses__debug-panel">
           <div className="visor-vr-glasses__debug-body">
             <div className="visor-vr-glasses__debug-row">
@@ -570,7 +516,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       {/* Escena VR en A-Frame */}
       <a-scene 
         embedded 
-        cursor={modoNavegacion === 'manual' ? 'rayOrigin: mouse; fuse: false' : ''}
+        cursor="rayOrigin: mouse; fuse: false"
         style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}
       >
         <a-assets>
@@ -627,17 +573,15 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
 
         {/* Cámara con controles de mirada y movimiento (WASD / Joystick del mando) */}
         <a-camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true; mouseEnabled: true" wasd-controls="enabled: true; fly: false; acceleration: 65">
-          {modoNavegacion === 'vr' && (
-            <a-cursor
-              color="#3b82f6"
-              fuse="true"
-              fuse-timeout="1500"
-              design="ring"
-              animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
-              animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
-              animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
-            ></a-cursor>
-          )}
+          <a-cursor
+            color="#3b82f6"
+            fuse="true"
+            fuse-timeout="1500"
+            design="ring"
+            animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+            animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+            animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
+          ></a-cursor>
         </a-camera>
       </a-scene>
     </div>
