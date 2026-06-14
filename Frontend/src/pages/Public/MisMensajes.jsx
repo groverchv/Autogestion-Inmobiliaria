@@ -654,6 +654,33 @@ const MisMensajes = () => {
     });
   };
 
+  const handleEliminarContratoPropuesto = (contratoId, mensajeId) => {
+    showConfirm({
+      title: '¿Eliminar propuesta?',
+      message: '¿Estás seguro de que deseas eliminar y cancelar esta propuesta de contrato? Esta acción es irreversible.',
+      status: 'error',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: async () => {
+        try {
+          // 1. Eliminar el contrato
+          await api.delete(`/inmuebles/contratos/${contratoId}/`);
+          // 2. Eliminar el mensaje
+          await api.delete(`/usuarios/mensajes/${mensajeId}/`);
+          // 3. Limpiar borrador local
+          localStorage.removeItem(`contrato_ia_draft_${selectedChat.id}`);
+          localStorage.removeItem(`contrato_ia_edit_draft_${contratoId}`);
+          // 4. Recargar mensajes
+          fetchMensajes(selectedChat.id);
+          showAlert({ title: 'Propuesta eliminada', message: 'El contrato y su propuesta han sido eliminados correctamente.', status: 'success' });
+        } catch (err) {
+          console.error(err);
+          showAlert({ title: 'Error', message: 'No se pudo eliminar la propuesta de contrato.', status: 'error' });
+        }
+      }
+    });
+  };
+
   // ─── Recorridos 360: Autorización y Visualización ───────────
   const abrirModalAcceso360 = () => {
     setShowAcceso360Modal(true);
@@ -1043,17 +1070,32 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               )}
             </button>
             {isMine && (
-              <button
-                onClick={() => abrirContratoIAEdicion(contratoId)}
-                style={{
-                  flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
-                  background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none',
-                  padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
-                  fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center'
-                }}
-              >
-                Editar
-              </button>
+              <>
+                <button
+                  onClick={() => abrirContratoIAEdicion(contratoId)}
+                  style={{
+                    flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none',
+                    padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
+                    fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center'
+                  }}
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={() => handleEliminarContratoPropuesto(contratoId, msg.id)}
+                  style={{
+                    flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    background: 'rgba(239, 68, 68, 0.25)', color: '#fca5a5', border: 'none',
+                    padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
+                    fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center',
+                    border: '1px solid rgba(239, 68, 68, 0.4)'
+                  }}
+                  title="Eliminar propuesta"
+                >
+                  <Trash2 size={14} /> Eliminar
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -1674,6 +1716,42 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                         {esOwner && (
                           <button
                             onClick={() => {
+                              // Buscar si ya existe una propuesta de contrato en los mensajes del chat activo
+                              const existingProposalMsg = mensajes.slice().reverse().find(m => m.contenido?.includes('CONTRATO_REVIEW:'));
+                              if (existingProposalMsg) {
+                                const match = existingProposalMsg.contenido.match(/CONTRATO_REVIEW:(\d+):END/);
+                                const contratoId = match ? match[1] : null;
+                                if (contratoId) {
+                                  showConfirm({
+                                    title: 'Propuesta de contrato activa',
+                                    message: 'Ya existe una propuesta de contrato activa en este chat. Si creas una nueva, la propuesta anterior y su historial se eliminarán para evitar confusiones. ¿Deseas continuar?',
+                                    confirmText: 'Sí, crear nuevo',
+                                    cancelText: 'Cancelar',
+                                    status: 'warning',
+                                    onConfirm: async () => {
+                                      try {
+                                        // 1. Eliminar el contrato anterior
+                                        await api.delete(`/inmuebles/contratos/${contratoId}/`);
+                                        // 2. Eliminar el mensaje del chat
+                                        await api.delete(`/usuarios/mensajes/${existingProposalMsg.id}/`);
+                                        // 3. Limpiar borradores guardados
+                                        localStorage.removeItem(`contrato_ia_draft_${selectedChat.id}`);
+                                        localStorage.removeItem(`contrato_ia_edit_draft_${contratoId}`);
+                                        // 4. Recargar mensajes
+                                        fetchMensajes(selectedChat.id);
+                                        // 5. Abrir creación vacía
+                                        setContratoEdicion(null);
+                                        setShowContratoIAModal(true);
+                                      } catch (err) {
+                                        console.error("Error al cancelar propuesta anterior:", err);
+                                        showAlert({ title: 'Error', message: 'No se pudo eliminar la propuesta de contrato anterior.', status: 'error' });
+                                      }
+                                    }
+                                  });
+                                  return;
+                                }
+                              }
+                              // Si no hay propuesta activa, se abre normalmente
                               setContratoEdicion(null);
                               setShowContratoIAModal(true);
                             }}
