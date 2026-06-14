@@ -24,7 +24,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     }
   }, []);
 
-  const solicitarPermisoGiroscopio = async () => {
+  const solicitarPermisoGiroscopio = async (silencioso = false) => {
     if (
       typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function'
@@ -40,17 +40,31 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               cameraEl.components['look-controls'].setupMagicWindow();
             }
           }
-          alert('¡Permiso de sensor de movimiento concedido!');
+          if (!silencioso) {
+            alert('¡Permiso de sensor de movimiento concedido!');
+          }
         } else {
-          alert('Permiso de giroscopio denegado.');
+          if (!silencioso) {
+            alert('Permiso de giroscopio denegado.');
+          }
         }
       } catch (err) {
         console.error('Error al solicitar permiso de giroscopio:', err);
-        alert('Error al solicitar permiso: ' + err.message);
+        if (!silencioso) {
+          alert('Error al solicitar permiso: ' + err.message);
+        }
       }
     } else {
       setGyroPermission('granted');
-      alert('El sensor de movimiento ya está activo y soportado.');
+      if (!silencioso) {
+        alert('El sensor de movimiento ya está activo y soportado.');
+      }
+    }
+  };
+
+  const handleVisorClick = () => {
+    if (gyroPermission === 'prompt') {
+      solicitarPermisoGiroscopio(true);
     }
   };
 
@@ -334,7 +348,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   if (!escenaActiva) return null;
 
   return (
-    <div className="visor-vr-glasses">
+    <div className="visor-vr-glasses" onClick={handleVisorClick} onTouchStart={handleVisorClick}>
       {/* Controles Flotantes 2D */}
       <div className="visor-vr-glasses__ui">
         <div className="visor-vr-glasses__nav-group">
