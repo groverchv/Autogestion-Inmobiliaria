@@ -1,18 +1,37 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Layers, Gamepad, RotateCw, Smartphone } from 'lucide-react';
+import { X, Layers, Gamepad, Smartphone } from 'lucide-react';
 import './VisorVRGlasses.css';
 
 const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [escenaActiva, setEscenaActiva] = useState(panoramas[0] || null);
   const [lastEvent, setLastEvent] = useState('Ninguno (Presiona botones en tu control)');
   const [gamepadInfo, setGamepadInfo] = useState({ connected: false, name: '' });
-  const [showDebug, setShowDebug] = useState(true);
+  const [showDebug, setShowDebug] = useState(false); // Oculto por defecto
   const [modoNavegacion, setModoNavegacion] = useState('manual'); // 'manual' o 'vr'
   const [pantallaDoble, setPantallaDoble] = useState(false);
-  const [autoRotar, setAutoRotar] = useState(false); // Desactivado por defecto
   const [gyroPermission, setGyroPermission] = useState('unknown');
-  
+  const [mostrarInstrucciones, setMostrarInstrucciones] = useState(true);
+
   const sensorInicializado = useRef(false);
+  const lastRoomChangeTime = useRef(0);
+  const escenaActivaRef = useRef(escenaActiva);
+  const panoramasRef = useRef(panoramas);
+
+  useEffect(() => {
+    // Sincronizar referencias para callbacks asíncronos
+    escenaActivaRef.current = escenaActiva;
+  }, [escenaActiva]);
+
+  useEffect(() => {
+    panoramasRef.current = panoramas;
+  }, [panoramas]);
+
+  useEffect(() => {
+    // Si cambia de modo, reiniciar el modal de instrucciones
+    if (modoNavegacion === 'vr') {
+      setMostrarInstrucciones(true);
+    }
+  }, [modoNavegacion]);
 
   useEffect(() => {
     // Verificar si se requiere solicitar permisos de giroscopio (iOS)
@@ -130,7 +149,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   };
 
   useEffect(() => {
-    // Escuchar cambios de estado VR nativos de A-Frame para sincronizar botones
+    // Sincronizar salida de VR nativo (ej: al presionar 'Back' físico en VR de A-Frame)
     const sceneEl = document.querySelector('a-scene');
     if (!sceneEl) return;
 
@@ -145,17 +164,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       sceneEl.removeEventListener('exit-vr', handleExitVR);
     };
   }, [escenaActiva]);
-
-  const escenaActivaRef = useRef(escenaActiva);
-  const panoramasRef = useRef(panoramas);
-
-  useEffect(() => {
-    escenaActivaRef.current = escenaActiva;
-  }, [escenaActiva]);
-
-  useEffect(() => {
-    panoramasRef.current = panoramas;
-  }, [panoramas]);
 
   useEffect(() => {
     // Importar A-Frame dinámicamente en el montaje para evitar errores de SSR / Node.js
@@ -228,13 +236,33 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         onClose();
       }
 
-      // Botones C y D / Volumen / Dirección (Cambio de habitación)
-      if (keyLower === 'd' || keyLower === 'n' || key === 'ArrowRight' || key === 'VolumeUp' || key === 'AudioVolumeUp' || key === 'MediaTrackNext' || key === 'PageDown') {
+      // Botones C y D / Volumen / Dirección / Mapeo de mandos Bluetooth
+      if (
+        keyLower === 'd' || 
+        keyLower === 'n' || 
+        key === 'ArrowRight' || 
+        key === 'ArrowDown' || 
+        keyLower === 's' ||
+        key === 'VolumeUp' || 
+        key === 'AudioVolumeUp' || 
+        key === 'MediaTrackNext' || 
+        key === 'PageDown'
+      ) {
         e.preventDefault();
         goToNextRoom();
       }
 
-      if (keyLower === 'c' || keyLower === 'p' || key === 'ArrowLeft' || key === 'VolumeDown' || key === 'AudioVolumeDown' || key === 'MediaTrackPrevious' || key === 'PageUp') {
+      if (
+        keyLower === 'c' || 
+        keyLower === 'p' || 
+        key === 'ArrowLeft' || 
+        key === 'ArrowUp' || 
+        keyLower === 'w' ||
+        key === 'VolumeDown' || 
+        key === 'AudioVolumeDown' || 
+        key === 'MediaTrackPrevious' || 
+        key === 'PageUp'
+      ) {
         e.preventDefault();
         goToPrevRoom();
       }
@@ -292,9 +320,24 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         });
 
         // Simular WASD / Palanca analógica para caminar
-        const axisX = activeGamepad.axes[0];
-        const axisY = activeGamepad.axes[1];
+        const axisX = activeGamepad.axes[0]; // -1 izquierda, 1 derecha
+        const axisY = activeGamepad.axes[1]; // -1 arriba, 1 abajo
         const threshold = 0.35;
+
+        // Cambiar habitación automáticamente si se mueve la palanca de forma pronunciada (X o Y)
+        const now = Date.now();
+        const roomChangeCooldown = 1500; // Cooldown de 1.5 segundos
+        if (now - lastRoomChangeTime.current > roomChangeCooldown) {
+          if (axisX > 0.75 || axisY > 0.75) {
+            goToNextRoom();
+            lastRoomChangeTime.current = now;
+            setLastEvent("Palanca Gamepad: Siguiente");
+          } else if (axisX < -0.75 || axisY < -0.75) {
+            goToPrevRoom();
+            lastRoomChangeTime.current = now;
+            setLastEvent("Palanca Gamepad: Anterior");
+          }
+        }
 
         const setEmulatedKey = (key, press) => {
           if (press && !activeJoystickKeys[key]) {
@@ -368,153 +411,157 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
 
   return (
     <div className="visor-vr-glasses" onClick={handleVisorClick} onTouchStart={handleVisorClick}>
-      {/* Controles Flotantes 2D */}
-      <div className="visor-vr-glasses__ui">
-        <div className="visor-vr-glasses__nav-group">
-          <button
-            className="visor-vr-glasses__close-btn"
-            onClick={onClose}
-            type="button"
-          >
-            <X size={18} />
-            <span>Salir de VR</span>
-          </button>
+      
+      {/* 1. Modal de Instrucciones de VR y Mando */}
+      {modoNavegacion === 'vr' && mostrarInstrucciones && (
+        <div className="visor-vr-glasses__instructions-overlay">
+          <div className="visor-vr-glasses__instructions-card" onClick={(e) => e.stopPropagation()}>
+            <h3>🕶️ Modo Gafas VR & Mando</h3>
+            <p className="subtitle">Configuración del visor y controles:</p>
+            
+            <div className="instruction-steps">
+              <div className="step">
+                <span className="step-num">1</span>
+                <div>
+                  <strong>Cambio Automático:</strong> Usa el <strong>Joystick</strong> (izquierda/derecha) o los <strong>botones laterales (L1/R1, C/D)</strong> de tu mando Bluetooth para cambiar de habitación automáticamente.
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-num">2</span>
+                <div>
+                  <strong>Mirar y Teletransportar:</strong> Enfoca los círculos azules de navegación con el centro de tu mirada. Presiona el <strong>gatillo (Enter)</strong> de tu mando o mantén la mirada por 1.5 segundos para viajar.
+                </div>
+              </div>
+              <div className="step">
+                <span className="step-num">3</span>
+                <div>
+                  <strong>Poner en Gafas:</strong> Coloca el celular de forma horizontal dentro de tus gafas VR.
+                </div>
+              </div>
+            </div>
 
-          <div className="visor-vr-glasses__mode-selector">
-            <button
-              className={`mode-btn ${modoNavegacion === 'manual' ? 'active' : ''}`}
-              onClick={() => setModoNavegacion('manual')}
-              type="button"
-            >
-              Manual (Táctil)
-            </button>
-            <button
-              className={`mode-btn ${modoNavegacion === 'vr' ? 'active' : ''}`}
-              onClick={() => setModoNavegacion('vr')}
-              type="button"
-            >
-              VR (Gafas/Mando)
-            </button>
+            <div className="instructions-actions">
+              <button 
+                className="start-vr-btn"
+                onClick={() => {
+                  setMostrarInstrucciones(false);
+                  togglePantallaDoble(true); // Entrar a VR pantalla doble directamente
+                }}
+                type="button"
+              >
+                Empezar Recorrido (Pantalla Doble)
+              </button>
+              <button 
+                className="cancel-vr-btn"
+                onClick={() => setModoNavegacion('manual')}
+                type="button"
+              >
+                Volver a Modo Táctil
+              </button>
+            </div>
           </div>
+        </div>
+      )}
 
-          <div className="visor-vr-glasses__screen-selector">
-            <button
-              className={`mode-btn ${!pantallaDoble ? 'active' : ''}`}
-              onClick={() => togglePantallaDoble(false)}
-              type="button"
-            >
-              Pantalla Única
-            </button>
-            <button
-              className={`mode-btn ${pantallaDoble ? 'active' : ''}`}
-              onClick={() => togglePantallaDoble(true)}
-              type="button"
-            >
-              Pantalla Doble
-            </button>
-          </div>
-
-          {/* Botón para alternar Giro Automático */}
-          <div className="visor-vr-glasses__screen-selector">
-            <button
-              className={`mode-btn ${autoRotar ? 'active' : ''}`}
-              onClick={() => setAutoRotar(!autoRotar)}
-              title="Alternar rotación automática de la cámara"
-              type="button"
-            >
-              <RotateCw size={14} style={{ marginRight: '4px', verticalAlign: 'middle', display: 'inline' }} />
-              {autoRotar ? 'Giro Activo' : 'Giro Auto.'}
-            </button>
-          </div>
-
-          {/* Botón para cambiar orientación Horizontal/Vertical */}
-          <button
-            className="visor-vr-glasses__close-btn"
-            onClick={toggleOrientacion}
-            title="Alternar orientación vertical/horizontal de pantalla"
-            type="button"
-          >
-            <Smartphone size={16} />
-            <span>Girar Pantalla</span>
-          </button>
-
-          {/* Botón de giroscopio en iOS/dispositivos seguros */}
-          {gyroPermission === 'prompt' && (
+      {/* 2. Cabecera de controles flotantes (Solo visible en vista plana/manual, se oculta en Pantalla Doble VR) */}
+      {!pantallaDoble && (
+        <div className="visor-vr-glasses__ui">
+          <div className="visor-vr-glasses__nav-group">
             <button
               className="visor-vr-glasses__close-btn"
-              style={{ background: '#f59e0b', color: '#fff', borderColor: '#d97706' }}
-              onClick={solicitarPermisoGiroscopio}
-              title="Solicitar permisos para el giroscopio de tu móvil"
+              onClick={onClose}
               type="button"
             >
-              <span>Activar Giroscopio</span>
+              <X size={18} />
+              <span>Salir de VR</span>
             </button>
-          )}
-        </div>
 
-        {panoramas.length > 1 && (
-          <div className="visor-vr-glasses__selector">
-            <span className="visor-vr-glasses__selector-title">
-              <Layers size={14} /> Habitaciones:
-            </span>
-            <div className="visor-vr-glasses__btns">
-              {panoramas.map((pano) => {
-                const habitacion = pano.descripcion?.includes('|')
-                  ? pano.descripcion.split('|')[1].trim()
-                  : pano.descripcion || 'Vista 360°';
-
-                return (
-                  <button
-                    key={pano.id}
-                    className={`visor-vr-glasses__pano-btn ${
-                      escenaActiva.id === pano.id ? 'active' : ''
-                    }`}
-                    onClick={() => setEscenaActiva(pano)}
-                    type="button"
-                  >
-                    {habitacion}
-                  </button>
-                );
-              })}
+            <div className="visor-vr-glasses__mode-selector">
+              <button
+                className={`mode-btn ${modoNavegacion === 'manual' ? 'active' : ''}`}
+                onClick={() => setModoNavegacion('manual')}
+                type="button"
+              >
+                Manual (Táctil)
+              </button>
+              <button
+                className={`mode-btn ${modoNavegacion === 'vr' ? 'active' : ''}`}
+                onClick={() => setModoNavegacion('vr')}
+                type="button"
+              >
+                VR (Gafas/Mando)
+              </button>
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Panel de Estado / Diagnóstico del Control Remoto */}
-      {showDebug && modoNavegacion === 'vr' && (
-        <div className="visor-vr-glasses__debug-panel">
-          <div className="visor-vr-glasses__debug-header">
-            <span className="visor-vr-glasses__debug-title">
-              <Gamepad size={14} /> Control Bluetooth VR
-            </span>
+            {/* Botón para cambiar orientación de pantalla */}
             <button
-              className="visor-vr-glasses__debug-close"
-              onClick={() => setShowDebug(false)}
-              title="Ocultar info"
+              className="visor-vr-glasses__close-btn"
+              onClick={toggleOrientacion}
+              title="Cambiar orientación de pantalla"
+              type="button"
             >
-              <X size={12} />
+              <Smartphone size={16} />
+              <span>Girar Pantalla</span>
             </button>
+
+            {/* Solicitar permisos de giroscopio si es necesario */}
+            {gyroPermission === 'prompt' && (
+              <button
+                className="visor-vr-glasses__close-btn"
+                style={{ background: '#f59e0b', color: '#fff', borderColor: '#d97706' }}
+                onClick={solicitarPermisoGiroscopio}
+                title="Activar sensor de movimiento"
+                type="button"
+              >
+                <span>Activar Giroscopio</span>
+              </button>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* 3. Selector de Habitaciones en la parte inferior (Solo visible en vista plana/manual) */}
+      {!pantallaDoble && panoramas.length > 1 && (
+        <div className="visor-vr-glasses__selector" onClick={(e) => e.stopPropagation()}>
+          <span className="visor-vr-glasses__selector-title">
+            <Layers size={14} /> <span>Habitaciones:</span>
+          </span>
+          <div className="visor-vr-glasses__btns">
+            {panoramas.map((pano) => {
+              const habitacion = pano.descripcion?.includes('|')
+                ? pano.descripcion.split('|')[1].trim()
+                : pano.descripcion || 'Vista 360°';
+
+              return (
+                <button
+                  key={pano.id}
+                  className={`visor-vr-glasses__pano-btn ${
+                    escenaActiva.id === pano.id ? 'active' : ''
+                  }`}
+                  onClick={() => setEscenaActiva(pano)}
+                  type="button"
+                >
+                  {habitacion}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Panel de Estado del Control Remoto (Solo PC/Desarrollo) */}
+      {showDebug && modoNavegacion === 'vr' && !pantallaDoble && (
+        <div className="visor-vr-glasses__debug-panel">
           <div className="visor-vr-glasses__debug-body">
             <div className="visor-vr-glasses__debug-row">
-              <span className="label">Estado:</span>
+              <span className="label">Mando Bluetooth:</span>
               <span className={`val ${gamepadInfo.connected ? 'connected' : 'searching'}`}>
-                {gamepadInfo.connected ? 'Gamepad Activo' : 'Buscando control...'}
+                {gamepadInfo.connected ? 'Conectado' : 'Buscando...'}
               </span>
             </div>
-            {gamepadInfo.connected && (
-              <div className="visor-vr-glasses__debug-row">
-                <span className="label">Dispositivo:</span>
-                <span className="val name">{gamepadInfo.name}</span>
-              </div>
-            )}
             <div className="visor-vr-glasses__debug-row">
-              <span className="label">Último comando:</span>
+              <span className="label">Comando:</span>
               <span className="val event">{lastEvent}</span>
-            </div>
-            <div className="visor-vr-glasses__debug-help">
-              Mapeo: A/Gatillo = Seleccionar | Joystick = Caminar | C/D o L1/R1 = Cambiar Habitación
             </div>
           </div>
         </div>
@@ -527,7 +574,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}
       >
         <a-assets>
-          {/* Cargar dinámicamente la imagen con cabeceras anónimas CORS solo si no es un blob local */}
           <img
             id={`pano-${escenaActiva.id}`}
             src={escenaActiva.archivo}
@@ -540,7 +586,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         <a-sky
           src={`#pano-${escenaActiva.id}`}
           rotation="0 -90 0"
-          animation={autoRotar ? "property: rotation; to: 0 270 0; dur: 60000; easing: linear; loop: true" : ""}
         ></a-sky>
 
         {/* Hotspots 3D Interactivos */}
@@ -554,7 +599,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               }
             }}
           >
-            {/* Esfera brillante interactiva */}
             <a-sphere
               radius="0.16"
               color="#3b82f6"
@@ -562,7 +606,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 800; loop: true"
             ></a-sphere>
 
-            {/* Aro de selección exterior */}
             <a-ring
               radius-inner="0.22"
               radius-outer="0.26"
@@ -570,7 +613,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               material="side: double; opacity: 0.8"
             ></a-ring>
 
-            {/* Etiqueta de Texto Flotante */}
             <a-text
               value={h.label}
               align="center"

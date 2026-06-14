@@ -130,55 +130,78 @@
 }
 
 .visor-vr-glasses__selector {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 12px 16px;
+  border-radius: 30px;
+  padding: 8px 18px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: auto; /* Reactivar clics */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  max-width: 350px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  max-width: 90vw;
+  z-index: 100001;
 }
 
 @media (max-width: 600px) {
   .visor-vr-glasses__selector {
-    max-width: 100%;
-    width: 100%;
+    bottom: 16px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    gap: 8px;
+    width: auto;
   }
 }
 
 .visor-vr-glasses__selector-title {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.7rem;
+  font-weight: 800;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .visor-vr-glasses__selector-title span {
+    display: none; /* Ocultar texto de 'Habitaciones' en móvil muy angosto */
+  }
 }
 
 .visor-vr-glasses__btns {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
   gap: 6px;
-  max-height: 120px;
-  overflow-y: auto;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none; /* Firefox */
+  padding: 2px 0;
+}
+
+.visor-vr-glasses__btns::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .visor-vr-glasses__pano-btn {
   background: rgba(255, 255, 255, 0.1);
   color: #e2e8f0;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 0.78rem;
-  font-weight: 500;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
@@ -191,12 +214,43 @@
   background: var(--color-primary, #3b82f6);
   color: #ffffff;
   border-color: var(--color-primary, #3b82f6);
-  font-weight: 600;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
 }
 
-/* Ocultar botones de VR por defecto de A-Frame en pantallas normales, 
-   dejando que el usuario use el nativo de WebXR en pantallas aptas */
+/* Rediseñar cabecera UI para evitar apilamientos */
+@media (max-width: 600px) {
+  .visor-vr-glasses__ui {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+
+  .visor-vr-glasses__nav-group {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 6px !important;
+  }
+
+  .visor-vr-glasses__close-btn,
+  .visor-vr-glasses__mode-selector,
+  .visor-vr-glasses__screen-selector {
+    padding: 3px !important;
+    border-radius: 6px;
+  }
+
+  .visor-vr-glasses__close-btn {
+    padding: 6px 10px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .visor-vr-glasses__close-btn span,
+  .visor-vr-glasses__screen-selector {
+    display: none !important; /* Ocultar texto y selectores secundarios en UI táctil móvil */
+  }
+}
+
 .a-enter-vr {
   z-index: 100002 !important;
 }
@@ -206,7 +260,7 @@
 
 /* Panel de estado y diagnóstico de control remoto */
 .visor-vr-glasses__debug-panel {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
   left: 24px;
   background: rgba(15, 23, 42, 0.85);
@@ -215,7 +269,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   padding: 12px 16px;
-  width: 320px;
+  width: 300px;
   z-index: 100001;
   color: #ffffff;
   pointer-events: auto;
@@ -226,102 +280,119 @@
 
 @media (max-width: 600px) {
   .visor-vr-glasses__debug-panel {
-    width: calc(100% - 32px);
-    left: 16px;
-    bottom: 16px;
-    padding: 10px 14px;
+    display: none !important; /* Ocultar panel de diagnóstico en móviles */
   }
 }
 
-.visor-vr-glasses__debug-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 6px;
-}
-
-.visor-vr-glasses__debug-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #60a5fa;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.visor-vr-glasses__debug-close {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
+/* Estilos de la tarjeta de instrucciones VR */
+.visor-vr-glasses__instructions-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
-  border-radius: 4px;
+  z-index: 200000;
+  padding: 24px;
 }
 
-.visor-vr-glasses__debug-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+.visor-vr-glasses__instructions-card {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 450px;
+  width: 100%;
+  color: #f8fafc;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  font-family: inherit;
 }
 
-.visor-vr-glasses__debug-body {
+.visor-vr-glasses__instructions-card h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #3b82f6;
+  text-align: center;
+}
+
+.visor-vr-glasses__instructions-card .subtitle {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.instruction-steps {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-.visor-vr-glasses__debug-row {
+.instruction-steps .step {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
-.visor-vr-glasses__debug-row .label {
-  color: #94a3b8;
-}
-
-.visor-vr-glasses__debug-row .val {
-  font-weight: 500;
+.instruction-steps .step-num {
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 800;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.8rem;
 }
 
-.visor-vr-glasses__debug-row .val.connected {
-  color: #4ade80;
+.instructions-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.visor-vr-glasses__debug-row .val.searching {
-  color: #f59e0b;
+.start-vr-btn {
+  background: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
 }
 
-.visor-vr-glasses__debug-row .val.name {
-  color: #e2e8f0;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.start-vr-btn:hover {
+  background: #2563eb;
 }
 
-.visor-vr-glasses__debug-row .val.event {
-  color: #3b82f6;
+.cancel-vr-btn {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
   font-weight: 600;
-  background: rgba(59, 130, 246, 0.15);
-  padding: 1px 6px;
-  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.visor-vr-glasses__debug-help {
-  margin-top: 4px;
-  font-size: 0.65rem;
-  color: #64748b;
-  line-height: 1.3;
-  border-top: 1px dashed rgba(255, 255, 255, 0.08);
-  padding-top: 6px;
+.cancel-vr-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
 }
