@@ -27,7 +27,14 @@
   border-radius: var(--radius-xl);
   padding: var(--spacing-2xl);
   box-shadow: var(--shadow-lg);
+  transition: background 0.3s, border-color 0.3s;
 }
+
+[data-theme="dark"] .auth-layout__card {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 
 .auth-layout__header {
   text-align: center;

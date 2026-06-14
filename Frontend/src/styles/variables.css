@@ -66,4 +66,35 @@
 
   /* Navbar */
   --navbar-height: 64px;
+  --color-navbar-bg: rgba(255, 255, 255, 0.95);
+
+  /* Aliases para compatibilidad */
+  --bg-card: var(--color-bg-card);
+  --text-color: var(--color-text);
+  --border-color: var(--color-border);
+  --text-muted: var(--color-text-muted);
+  --primary-color: var(--color-primary);
+  --primary-hover: var(--color-primary-dark);
+  --border-radius: var(--radius-lg);
+}
+
+/* ─── Modo Oscuro (Dark Mode) ──────────────────────────────── */
+[data-theme="dark"] {
+  /* Colores neutrales */
+  --color-bg: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-card: #1e293b;
+  --color-bg-hover: #334155;
+  --color-surface: #1e293b;
+  --color-border: #334155;
+  --color-text: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-navbar-bg: rgba(30, 41, 59, 0.95);
+
+  /* Sombras adaptadas al fondo oscuro */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(14, 165, 233, 0.15);
 }

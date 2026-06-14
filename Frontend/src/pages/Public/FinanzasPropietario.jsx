@@ -5,8 +5,7 @@ import {
 } from 'recharts';
 import reportesService from '../../services/reportesService';
 import FiltroReportes from '../../components/FiltroReportes';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
+
 import { Clock, TrendingUp, Wallet, ArrowDownRight, Activity, Download, FileSpreadsheet, FileText, PieChart as PieChartIcon } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import * as XLSX from 'xlsx';

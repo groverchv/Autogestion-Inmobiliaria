@@ -105,9 +105,9 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
 
   return (
     <div style={{ marginTop: '40px', borderTop: '1px solid var(--color-border)', paddingTop: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ fontSize: '1.3rem', fontWeight: 700, margin: 0 }}>Opiniones de Usuarios</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <StarRating rating={Math.round(promedio.promedio)} size="1.2rem" />
           <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>{promedio.promedio}/5</span>
           <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>({promedio.total} reseñas)</span>
@@ -140,7 +140,7 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {resenas.map(resena => (
             <div key={resena.id} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '8px', background: '#fff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '4px', alignItems: 'flex-start' }}>
                 <div style={{ fontWeight: 600 }}>{resena.usuario_nombre || resena.usuario_username}</div>
                 <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
                   {new Date(resena.creado).toLocaleDateString('es-BO', { year: 'numeric', month: 'long', day: 'numeric' })}

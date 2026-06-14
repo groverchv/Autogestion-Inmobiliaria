@@ -57,6 +57,21 @@ const useStore = create((set) => ({
   // ─── UI Global ────────────────────────────────────────────
   sidebarOpen: true,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+
+  // ─── Tema Global ──────────────────────────────────────────
+  theme: localStorage.getItem('theme') || 'system',
+  setTheme: (newTheme) => {
+    localStorage.setItem('theme', newTheme);
+    set({ theme: newTheme });
+    const root = document.documentElement;
+    if (newTheme === 'dark' || (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.setAttribute('data-theme', 'dark');
+      root.style.backgroundColor = '#0f172a';
+    } else {
+      root.setAttribute('data-theme', 'light');
+      root.style.backgroundColor = '#f8fafc';
+    }
+  },
 }));
 
 export default useStore;

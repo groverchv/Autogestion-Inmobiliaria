@@ -46,6 +46,7 @@ from .views import (
     AccesoRecorrido360ViewSet,
     BlockchainHistorialView,
     BlockchainStatsView,
+    AIReportView,
 )
 
 router = DefaultRouter()
@@ -79,5 +80,6 @@ router.register(r'panel/hotspots',  HotspotViewSet,         basename='panel-hots
 urlpatterns = [
     path('blockchain/stats/', BlockchainStatsView.as_view(), name='blockchain-stats'),
     path('blockchain/historial/<str:asset_id>/', BlockchainHistorialView.as_view(), name='blockchain-historial'),
+    path('reporte-ia/', AIReportView.as_view(), name='reporte-ia'),
     path('', include(router.urls)),
 ]

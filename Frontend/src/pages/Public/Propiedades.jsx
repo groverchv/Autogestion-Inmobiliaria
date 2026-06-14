@@ -3,8 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import inmuebleService from '../../services/inmuebleService';
 import useAuth from '../../hooks/useAuth';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
 import { Search, SlidersHorizontal, Trash2, Filter, X } from 'lucide-react';
 import './Propiedades.css';
 
@@ -108,12 +106,6 @@ const Propiedades = () => {
 
   return (
     <div className="propiedades-page">
-      <Navbar />
-
-      {isAuthenticated && (
-        <UserMenu />
-      )}
-
       <div className="propiedades-content">
 
         <div className="propiedades-filters-card">

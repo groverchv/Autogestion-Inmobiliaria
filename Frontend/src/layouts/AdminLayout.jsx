@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Home, Archive, FileText, Banknote,
-  CreditCard, History, Calendar, Bell, Heart, ChevronRight, ChevronLeft, LineChart, ShieldCheck
+  CreditCard, History, Calendar, Bell, Heart, ChevronRight, ChevronLeft, LineChart, ShieldCheck,
+  Sun, Moon, Monitor
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import useStore from '../store/store';
 import './AdminLayout.css';
 
 /**
@@ -13,6 +15,29 @@ import './AdminLayout.css';
  */
 const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const theme = useStore((state) => state.theme);
+  const setTheme = useStore((state) => state.setTheme);
+
+  const handleThemeCycle = () => {
+    let nextTheme = 'light';
+    if (theme === 'system') nextTheme = 'light';
+    else if (theme === 'light') nextTheme = 'dark';
+    else if (theme === 'dark') nextTheme = 'system';
+    setTheme(nextTheme);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setCollapsed(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Ejecutar al cargar
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const menuGroups = [
     {
@@ -58,7 +83,14 @@ const AdminLayout = () => {
 
   return (
     <div className={`admin-layout ${collapsed ? 'admin-layout--collapsed' : ''}`}>
-      <aside className="admin-layout__sidebar">
+      {/* Overlay para móvil */}
+      {mobileSidebarOpen && (
+        <div
+          className="admin-layout__mobile-overlay"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+      <aside className={`admin-layout__sidebar ${mobileSidebarOpen ? 'admin-layout__sidebar--mobile-open' : ''}`}>
         <div className="admin-layout__sidebar-header">
           <div className="admin-layout__brand">
             <Home className="admin-layout__brand-icon" size={collapsed ? 24 : 20} />
@@ -85,19 +117,40 @@ const AdminLayout = () => {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  onClick={() => setMobileSidebarOpen(false)}
                   className={({ isActive }) => `admin-layout__link ${isActive ? 'active' : ''}`}
                   title={item.label}
                 >
                   <span className="admin-layout__link-icon">{item.icon}</span>
-                  {!collapsed && <span className="admin-layout__link-text">{item.label}</span>}
+                  {(!collapsed || mobileSidebarOpen) && <span className="admin-layout__link-text">{item.label}</span>}
                 </NavLink>
               ))}
             </div>
           ))}
         </nav>
+        
+        <div className="admin-layout__sidebar-footer">
+          <button
+            className="admin-layout__theme-btn"
+            onClick={handleThemeCycle}
+            title={`Tema: ${theme === 'system' ? 'Sistema' : theme === 'light' ? 'Claro' : 'Oscuro'}`}
+          >
+            {theme === 'system' && <Monitor size={18} />}
+            {theme === 'light' && <Sun size={18} />}
+            {theme === 'dark' && <Moon size={18} />}
+            {(!collapsed || mobileSidebarOpen) && (
+              <span>
+                Tema: {theme === 'system' ? 'Sistema' : theme === 'light' ? 'Claro' : 'Oscuro'}
+              </span>
+            )}
+          </button>
+        </div>
       </aside>
       <div className="admin-layout__main">
-        <Navbar />
+        <Navbar
+          isSidebarOpen={mobileSidebarOpen}
+          onSidebarToggle={() => setMobileSidebarOpen(prev => !prev)}
+        />
         <div className="admin-layout__content">
           <Outlet />
         </div>

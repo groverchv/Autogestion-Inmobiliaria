@@ -520,7 +520,7 @@ class Cita(models.Model):
         db_table        = 'inmuebles_cita'
         verbose_name    = 'Cita'
         verbose_name_plural = 'Citas'
-        ordering        = ['fecha', 'hora_inicio']
+        ordering        = ['-fecha', '-hora_inicio']
         unique_together = ('inmueble', 'fecha', 'hora_inicio')
 
     def __str__(self):

@@ -25,8 +25,6 @@ import {
   Eye,
   Orbit,
 } from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
 import Modal from '../../components/Modal';
 import ModalRecorrido3D from '../../components/ModalRecorrido3D';
 import useAuth from '../../hooks/useAuth';

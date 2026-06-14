@@ -70,8 +70,10 @@ def create_seed_data():
         ('muerte', 'muertemuerte60@gmail.com', 'Muerte', 'Muerte', 'usuario', '78023575', '70100010', date(1990, 1, 1)),
     ]
     
+    # users mapea una clave_local del script con el objeto Usuario creado, para relacionar inmuebles/pagos.
+    # No representa el atributo 'username' del modelo de base de datos.
     users = {'admin': admin}
-    for uname, email, fn, ln, rol_n, ci, tel, fnac in usuarios_data:
+    for clave_local, email, fn, ln, rol_n, ci, tel, fnac in usuarios_data:
         user, created = Usuario.objects.get_or_create(
             email=email,
             defaults={
@@ -81,9 +83,9 @@ def create_seed_data():
             }
         )
         if created:
-            user.set_password('usuario123' if uname != 'muerte' else 'muerte60')
+            user.set_password('usuario123' if clave_local != 'muerte' else 'muerte60')
             user.save()
-        users[uname] = user
+        users[clave_local] = user
     print(f"  OK Usuarios creados: {len(users)} (admin + 10)")
 
     # ═══════════════════════════════════════════════════════════

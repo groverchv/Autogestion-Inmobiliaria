@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FileText, Eye, ChevronDown, ChevronUp, CheckCircle, XCircle, Clock, AlertTriangle, Home, User, Sparkles, Send, Bot, RotateCcw } from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
+import { FileText, ChevronDown, ChevronUp, CheckCircle, XCircle, Clock, AlertTriangle, Home, User, Sparkles, Send, Bot, RotateCcw, List, Ban, ShieldCheck, AlertOctagon, Zap, Wifi, Calendar, RefreshCw, AlertCircle, BookOpen, Building2, WifiOff } from 'lucide-react';
+
 import Modal from '../../components/Modal';
 import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
 import useAlertConfirm from '../../hooks/useAlertConfirm';
@@ -48,10 +47,10 @@ const MisContratos = () => {
 
   return (
     <div className="propiedades-page" style={{ paddingTop: '20px' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: 'clamp(12px, 4vw, 24px)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 700, margin: 0, color: '#1e293b' }}>Mis Contratos</h1>
+            <h1 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 700, margin: 0, color: '#1e293b' }}>Mis Contratos</h1>
             <p style={{ color: '#64748b', margin: '4px 0 0', fontSize: '0.9rem' }}>Contratos donde eres propietario o inquilino/comprador</p>
           </div>
         </div>
@@ -93,8 +92,8 @@ const MisContratos = () => {
                         {c.tipo_contrato_nombre || 'Sin tipo'} · {c.inmueble_direccion || ''}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right', minWidth: '140px' }}>
-                      <div style={{ fontWeight: 700, fontSize: '1.2rem', color: '#059669' }}>${c.monto} {c.moneda}</div>
+                    <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                      <div style={{ fontWeight: 700, fontSize: 'clamp(1rem, 3vw, 1.2rem)', color: '#059669' }}>${c.monto} {c.moneda}</div>
                       <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{c.inicio} → {c.fin || '∞'}</div>
                       <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
                         {esOwner(c) ? (
@@ -259,16 +258,16 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
 
   // Temas del contrato con sus chips — se van marcando conforme se hablan
   const TEMAS_CONTRATO = [
-    { id: 'clausulas',    emoji: '📋', label: 'Cláusulas',          pregunta: '¿Qué cláusulas recomiendas para este contrato?' },
-    { id: 'restricciones',emoji: '🚫', label: 'Restricciones',      pregunta: '¿Qué restricciones debería incluir el contrato?' },
-    { id: 'garantias',    emoji: '🛡️', label: 'Garantías',          pregunta: '¿Cómo debería estructurarse la garantía y el depósito?' },
-    { id: 'penalizaciones',emoji: '⚠️', label: 'Penalizaciones',   pregunta: '¿Qué penalizaciones recomiendas incluir si el inquilino incumple?' },
-    { id: 'servicios',    emoji: '💡', label: 'Servicios',          pregunta: '¿Qué servicios debería incluir o excluir el contrato?' },
-    { id: 'cancelacion',  emoji: '🗓️', label: 'Cancelación',       pregunta: '¿Cuál debería ser la política de cancelación del contrato?' },
-    { id: 'renovacion',   emoji: '🔄', label: 'Renovación',        pregunta: '¿Qué tipo de cláusula de renovación recomiendas?' },
-    { id: 'riesgos',      emoji: '⚡', label: 'Riesgos Legales',   pregunta: '¿Cuáles son los principales riesgos legales de este contrato?' },
-    { id: 'uso',          emoji: '🏠', label: 'Uso del Inmueble',  pregunta: '¿Qué condiciones de uso debo especificar en el contrato?' },
-    { id: 'antecedentes', emoji: '📄', label: 'Antecedentes',       pregunta: '¿Qué antecedentes del inmueble debo incluir en el contrato?' },
+    { id: 'clausulas',    icon: List,          label: 'Cláusulas',       pregunta: '¿Qué cláusulas recomiendas para este contrato?' },
+    { id: 'restricciones',icon: Ban,           label: 'Restricciones',   pregunta: '¿Qué restricciones debería incluir el contrato?' },
+    { id: 'garantias',    icon: ShieldCheck,   label: 'Garantías',       pregunta: '¿Cómo debería estructurarse la garantía y el depósito?' },
+    { id: 'penalizaciones',icon: AlertOctagon, label: 'Penalizaciones',  pregunta: '¿Qué penalizaciones recomiendas incluir si el inquilino incumple?' },
+    { id: 'servicios',    icon: Wifi,          label: 'Servicios',       pregunta: '¿Qué servicios debería incluir o excluir el contrato?' },
+    { id: 'cancelacion',  icon: Calendar,      label: 'Cancelación',    pregunta: '¿Cuál debería ser la política de cancelación del contrato?' },
+    { id: 'renovacion',   icon: RefreshCw,     label: 'Renovación',     pregunta: '¿Qué tipo de cláusula de renovación recomiendas?' },
+    { id: 'riesgos',      icon: Zap,           label: 'Riesgos Legales', pregunta: '¿Cuáles son los principales riesgos legales de este contrato?' },
+    { id: 'uso',          icon: Building2,     label: 'Uso del Inmueble',pregunta: '¿Qué condiciones de uso debo especificar en el contrato?' },
+    { id: 'antecedentes', icon: BookOpen,      label: 'Antecedentes',    pregunta: '¿Qué antecedentes del inmueble debo incluir en el contrato?' },
   ];
 
   // Retorna los temas que AUN NO se han discutido (se filtra por click del usuario)
@@ -291,7 +290,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
     } catch {
       setChatMensajes(prev => [...prev, {
         role: 'assistant',
-        content: '❌ Ocurrió un error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
+        content: 'Error al contactar al asistente. Verifica tu conexión e inténtalo de nuevo.'
       }]);
     } finally {
       setChatCargando(false);
@@ -344,41 +343,41 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
 
   const cfg = estadoConfig[c.estado] || estadoConfig.pendiente;
   const sectionStyle = { marginBottom: '20px' };
-  const titleStyle = { fontSize: '0.8rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' };
-  const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' };
-  const labelStyle = { color: '#64748b', fontWeight: 500 };
-  const valueStyle = { fontWeight: 600, color: '#1e293b', textAlign: 'right', maxWidth: '60%' };
+  const titleStyle = { fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' };
+  const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--color-border)', fontSize: '0.9rem' };
+  const labelStyle = { color: 'var(--color-text-secondary)', fontWeight: 500 };
+  const valueStyle = { fontWeight: 600, color: 'var(--color-text)', textAlign: 'right', maxWidth: '60%' };
 
   return (
     <div style={{ maxHeight: '70vh', overflowY: 'auto', padding: '4px' }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, #f8fafc, #e0e7ff)', borderRadius: '12px' }}>
-        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b' }}>CONTRATO DE {(c.tipo_contrato_nombre || 'INMUEBLE').toUpperCase()}</div>
-        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>Contrato N. {c.id} · Creado: {new Date(c.creado).toLocaleDateString('es-BO')}</div>
+      <div style={{ textAlign: 'center', marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, var(--color-bg-secondary), rgba(14, 165, 233, 0.15))', borderRadius: '12px' }}>
+        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)' }}>CONTRATO DE {(c.tipo_contrato_nombre || 'INMUEBLE').toUpperCase()}</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>Contrato N. {c.id} · Creado: {new Date(c.creado).toLocaleDateString('es-BO')}</div>
         <span style={{ display: 'inline-block', marginTop: '8px', background: cfg.bg, color: cfg.color, padding: '4px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>{cfg.label}</span>
       </div>
 
       {/* Partes */}
       <div style={sectionStyle}>
         <div style={titleStyle}>Partes del Contrato</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '16px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#6366f1', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+        <div className="contrato-partes-grid">
+          <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '14px', padding: '16px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
               <Home size={14} /> Propietario
             </div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>{c.propietario_nombre}</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>CI: {c.propietario_ci || 'N/A'}</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Tel: {c.propietario_telefono || 'N/A'}</div>
-            <div style={{ fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 500 }}>{c.propietario_email}</div>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{c.propietario_nombre}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>CI: {c.propietario_ci || 'N/A'}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Tel: {c.propietario_telefono || 'N/A'}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 500 }}>{c.propietario_email}</div>
           </div>
-          <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '16px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#6366f1', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+          <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '14px', padding: '16px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--color-primary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
               <User size={14} /> Inquilino / Comprador
             </div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>{c.inquilino_nombre}</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>CI: {c.inquilino_ci || 'N/A'}</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Tel: {c.inquilino_telefono || 'N/A'}</div>
-            <div style={{ fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 500 }}>{c.inquilino_email}</div>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{c.inquilino_nombre}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>CI: {c.inquilino_ci || 'N/A'}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Tel: {c.inquilino_telefono || 'N/A'}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 500 }}>{c.inquilino_email}</div>
           </div>
         </div>
       </div>
@@ -393,7 +392,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
       {/* Condiciones Económicas */}
       <div style={sectionStyle}>
         <div style={titleStyle}>Condiciones Económicas</div>
-        <div style={rowStyle}><span style={labelStyle}>Monto</span><span style={{ ...valueStyle, color: '#059669', fontSize: '1.1rem' }}>${c.monto} {c.moneda}</span></div>
+        <div style={rowStyle}><span style={labelStyle}>Monto</span><span style={{ ...valueStyle, color: 'var(--color-success)', fontSize: '1.1rem' }}>${c.monto} {c.moneda}</span></div>
         <div style={rowStyle}><span style={labelStyle}>Depósito/Garantía</span><span style={valueStyle}>${c.deposito} {c.moneda}</span></div>
         <div style={rowStyle}><span style={labelStyle}>Día de pago</span><span style={valueStyle}>Día {c.dia_pago} de cada mes</span></div>
         <div style={rowStyle}><span style={labelStyle}>Forma de pago</span><span style={valueStyle}>{c.forma_pago || 'Stripe'}</span></div>
@@ -401,26 +400,26 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
       </div>
 
       {/* Cláusulas Legales */}
-      {c.antecedentes && <div style={sectionStyle}><div style={titleStyle}>Antecedentes</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f0f9ff', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #bae6fd' }}>{c.antecedentes}</div></div>}
-      {c.clausulas && <div style={sectionStyle}><div style={titleStyle}>Cláusulas</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.clausulas}</div></div>}
-      {c.clausulas_especiales && <div style={sectionStyle}><div style={titleStyle}>Cláusulas Especiales</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#faf5ff', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #e9d5ff' }}>{c.clausulas_especiales}</div></div>}
-      {c.uso_exclusivo && <div style={sectionStyle}><div style={titleStyle}>Uso Exclusivo del Inmueble</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f0fdf4', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #bbf7d0' }}>{c.uso_exclusivo}</div></div>}
-      {c.condiciones_uso && <div style={sectionStyle}><div style={titleStyle}>Condiciones de Uso</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.condiciones_uso}</div></div>}
-      {c.penalidades && <div style={sectionStyle}><div style={titleStyle}>Penalidades</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#fef2f2', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.penalidades}</div></div>}
-      {c.politica_cancelacion && <div style={sectionStyle}><div style={titleStyle}>Política de Cancelación</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.politica_cancelacion}</div></div>}
-      {c.incluye_servicios && <div style={sectionStyle}><div style={titleStyle}>Servicios Incluidos</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f0fdf4', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.incluye_servicios}</div></div>}
-      {c.restricciones && <div style={sectionStyle}><div style={titleStyle}>Restricciones</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#fef3c7', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.restricciones}</div></div>}
-      {c.observaciones && <div style={sectionStyle}><div style={titleStyle}>Observaciones</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.observaciones}</div></div>}
-      {c.motivo_rechazo && <div style={sectionStyle}><div style={titleStyle}>Motivo de Rechazo</div><div style={{ fontSize: '0.88rem', color: '#dc2626', whiteSpace: 'pre-wrap', background: '#fee2e2', padding: '12px', borderRadius: '8px' }}>{c.motivo_rechazo}</div></div>}
+      {c.antecedentes && <div style={sectionStyle}><div style={titleStyle}>Antecedentes</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(14, 165, 233, 0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid rgba(14, 165, 233, 0.25)' }}>{c.antecedentes}</div></div>}
+      {c.clausulas && <div style={sectionStyle}><div style={titleStyle}>Cláusulas</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid var(--color-border)' }}>{c.clausulas}</div></div>}
+      {c.clausulas_especiales && <div style={sectionStyle}><div style={titleStyle}>Cláusulas Especiales</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(139, 92, 246, 0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid rgba(139, 92, 246, 0.25)' }}>{c.clausulas_especiales}</div></div>}
+      {c.uso_exclusivo && <div style={sectionStyle}><div style={titleStyle}>Uso Exclusivo del Inmueble</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(34, 197, 94, 0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid rgba(34, 197, 94, 0.25)' }}>{c.uso_exclusivo}</div></div>}
+      {c.condiciones_uso && <div style={sectionStyle}><div style={titleStyle}>Condiciones de Uso</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid var(--color-border)' }}>{c.condiciones_uso}</div></div>}
+      {c.penalidades && <div style={sectionStyle}><div style={titleStyle}>Penalidades</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(239, 68, 68, 0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid rgba(239, 68, 68, 0.25)' }}>{c.penalidades}</div></div>}
+      {c.politica_cancelacion && <div style={sectionStyle}><div style={titleStyle}>Política de Cancelación</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid var(--color-border)' }}>{c.politica_cancelacion}</div></div>}
+      {c.incluye_servicios && <div style={sectionStyle}><div style={titleStyle}>Servicios Incluidos</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(34, 197, 94, 0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid rgba(34, 197, 94, 0.25)' }}>{c.incluye_servicios}</div></div>}
+      {c.restricciones && <div style={sectionStyle}><div style={titleStyle}>Restricciones</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(245, 158, 11, 0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid rgba(245, 158, 11, 0.25)' }}>{c.restricciones}</div></div>}
+      {c.observaciones && <div style={sectionStyle}><div style={titleStyle}>Observaciones</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid var(--color-border)' }}>{c.observaciones}</div></div>}
+      {c.motivo_rechazo && <div style={sectionStyle}><div style={titleStyle}>Motivo de Rechazo</div><div style={{ fontSize: '0.88rem', color: 'var(--color-danger)', whiteSpace: 'pre-wrap', background: 'rgba(239, 68, 68, 0.12)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.25)' }}>{c.motivo_rechazo}</div></div>}
 
       {/* Trazabilidad inmutable en Blockchain */}
-      <div style={{ marginTop: '24px', borderTop: '2px solid #e2e8f0', paddingTop: '20px', marginBottom: '20px' }}>
+      <div style={{ marginTop: '24px', borderTop: '2px solid var(--color-border)', paddingTop: '20px', marginBottom: '20px' }}>
         <BlockchainAuditTrail assetId={`CON-${c.id}`} />
       </div>
 
       {/* Acciones del cliente */}
       {puedeAceptar && (
-        <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '16px', marginTop: '16px' }}>
+        <div style={{ borderTop: '2px solid var(--color-border)', paddingTop: '16px', marginTop: '16px' }}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
             <button onClick={handleAceptar} disabled={actionLoading} style={{
               flex: 1, background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff',
@@ -432,9 +431,9 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <input type="text" value={motivoRechazo} onChange={e => setMotivoRechazo(e.target.value)} placeholder="Motivo de rechazo (obligatorio para rechazar)..."
-              style={{ border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px', fontSize: '0.9rem', width: '100%' }} />
+              style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', color: 'var(--color-text)', borderRadius: '8px', padding: '10px', fontSize: '0.9rem', width: '100%' }} />
             <button onClick={handleRechazar} disabled={actionLoading} style={{
-              background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '10px',
+              background: 'rgba(239, 68, 68, 0.12)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px',
               padding: '10px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             }}>
@@ -472,8 +471,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
 
         {/* Área de mensajes */}
         <div style={{
-          height: '300px', overflowY: 'auto', border: '1px solid #e2e8f0',
-          borderRadius: '12px', padding: '12px', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+          height: '300px', overflowY: 'auto', border: '1px solid var(--color-border)',
+          borderRadius: '12px', padding: '12px', background: 'var(--color-bg)',
           display: 'flex', flexDirection: 'column', gap: '12px',
           scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent',
         }}>
@@ -500,16 +499,16 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
                 maxWidth: '78%',
                 background: msg.role === 'user'
                   ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
-                  : '#ffffff',
-                color: msg.role === 'user' ? '#fff' : '#1e293b',
+                  : 'var(--color-bg-card)',
+                color: msg.role === 'user' ? '#fff' : 'var(--color-text)',
                 borderRadius: msg.role === 'user' ? '18px 4px 18px 18px' : '4px 18px 18px 18px',
                 padding: '10px 14px',
                 fontSize: '0.84rem',
                 lineHeight: '1.6',
                 boxShadow: msg.role === 'user'
                   ? '0 3px 12px rgba(99,102,241,0.35)'
-                  : '0 2px 8px rgba(0,0,0,0.08)',
-                border: msg.role === 'assistant' ? '1px solid #e2e8f0' : 'none',
+                  : '0 2px 8px rgba(0,0,0,0.15)',
+                border: msg.role === 'assistant' ? '1px solid var(--color-border)' : 'none',
                 borderLeft: msg.role === 'assistant' ? '3px solid #8b5cf6' : 'none',
                 whiteSpace: 'pre-wrap',
               }}>
@@ -528,10 +527,10 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
                 <Bot size={13} color="#fff" />
               </div>
               <div style={{
-                background: '#fff', border: '1px solid #e2e8f0', borderLeft: '3px solid #8b5cf6',
+                background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderLeft: '3px solid #8b5cf6',
                 borderRadius: '4px 18px 18px 18px',
                 padding: '12px 18px', display: 'flex', gap: '5px', alignItems: 'center',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               }}>
                 {[0, 1, 2].map(i => (
                   <div key={i} style={{
@@ -602,7 +601,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    <span style={{ fontSize: '0.82rem' }}>{t.emoji}</span>
+                    {(() => { const IconComp = t.icon; return <IconComp size={13} />; })()}
                     {t.label}
                   </button>
                 ))}
@@ -621,14 +620,14 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
             placeholder="Escribe tu consulta al asistente legal..."
             disabled={chatCargando}
             style={{
-              flex: 1, border: '1.5px solid #e2e8f0', borderRadius: '12px',
+              flex: 1, border: '1.5px solid var(--color-border)', borderRadius: '12px',
               padding: '10px 16px', fontSize: '0.88rem', fontFamily: 'inherit',
-              background: '#fff', outline: 'none',
+              background: 'var(--color-bg-card)', color: 'var(--color-text)', outline: 'none',
               opacity: chatCargando ? 0.6 : 1,
               transition: 'border-color 0.15s, box-shadow 0.15s',
             }}
             onFocus={e => { e.target.style.borderColor = '#8b5cf6'; e.target.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.12)'; }}
-            onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
+            onBlur={e => { e.target.style.borderColor = 'var(--color-border)'; e.target.style.boxShadow = 'none'; }}
           />
           <button
             onClick={() => enviarMensaje()}
@@ -683,6 +682,16 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate, showAlert, showConfirm }
           50% { transform: translateY(-5px); }
         }
         .chips-scroll::-webkit-scrollbar { display: none; }
+        .contrato-partes-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        @media (max-width: 600px) {
+          .contrato-partes-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
     </div>
   );

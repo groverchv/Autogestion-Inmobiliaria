@@ -724,7 +724,7 @@ class CitaViewSet(viewsets.ModelViewSet):
         """Lista todas las citas del usuario (como cliente o propietario)."""
         citas = Cita.objects.filter(
             dj_models.Q(cliente=request.user) | dj_models.Q(propietario=request.user)
-        ).select_related('inmueble', 'cliente', 'propietario').order_by('fecha', 'hora_inicio')
+        ).select_related('inmueble', 'cliente', 'propietario').order_by('-fecha', '-hora_inicio')
         return Response(self.get_serializer(citas, many=True).data)
 
 
@@ -950,3 +950,95 @@ class AccesoRecorrido360ViewSet(viewsets.ModelViewSet):
         acceso.ultimo_acceso_visor = ahora
         acceso.save(update_fields=['visitas', 'ultimo_acceso_visor'])
         return Response({'success': True})
+
+
+class AIReportView(APIView):
+    """
+    Genera reportes dinámicos procesados por IA. Recibe el prompt del usuario, las columnas
+    y el listado completo de datos en JSON, y retorna los registros filtrados/ordenados
+    junto con un resumen textual analítico.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        import json
+        import requests
+        from django.conf import settings
+
+        prompt = request.data.get('prompt', '').strip()
+        data = request.data.get('data', [])
+        columns = request.data.get('columns', [])
+        title = request.data.get('title', 'Reporte')
+
+        if not prompt:
+            return Response({"error": "El prompt es requerido."}, status=400)
+
+        # Configurar llamada a Groq
+        api_key = getattr(settings, 'GROQ_API_KEY', None)
+        if not api_key:
+            return Response({"error": "La API Key de Groq no está configurada en el servidor."}, status=500)
+
+        # Formatear el contexto para la IA
+        context_data_str = json.dumps(data, ensure_ascii=False)
+        columns_str = json.dumps(columns, ensure_ascii=False)
+
+        system_prompt = """
+Eres un Analista de Datos Inteligente experto en gestión inmobiliaria.
+Tu tarea es analizar un listado de datos en formato JSON en base a la instrucción (prompt) del usuario.
+Debes realizar dos acciones:
+1. Filtrar, buscar o reordenar los registros del JSON según la instrucción del usuario. Retorna los registros modificados/filtrados exactos del JSON original.
+2. Escribir un resumen textual analítico breve y profesional (de 2 a 4 líneas) sobre los registros seleccionados (ej. cantidad de elementos, totales, porcentajes relevantes o conclusiones rápidas de negocio).
+
+CRITICAL RULE:
+- DEBES conservar todas las propiedades y llaves (keys) originales de cada objeto JSON (por ejemplo: username, email, first_name, last_name, rol_nombre, activo, etc.).
+- NO elimines, alteres ni dejes vacías ninguna de las propiedades que ya tenían los registros originales. Tu única función es decidir qué filas conservar o cómo ordenar el array, sin modificar la estructura interna de los objetos.
+
+Tu respuesta DEBE ser un objeto JSON válido con la siguiente estructura exacta:
+{
+  "datos": [ ...lista de registros JSON filtrados/ordenados con todas sus llaves originales... ],
+  "resumen": "Tu resumen textual descriptivo aquí."
+}
+
+NO agregues introducciones, explicaciones, ni bloques de código markdown (```json). Retorna únicamente el objeto JSON crudo listo para ser parseado.
+"""
+
+        user_content = f"""
+Título del Reporte: {title}
+Columnas Disponibles: {columns_str}
+Registros Originales (JSON): {context_data_str}
+
+Instrucción del usuario: {prompt}
+"""
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ],
+            "temperature": 0.2,
+            "max_tokens": 3000
+        }
+
+        try:
+            resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=60)
+            resp.raise_for_status()
+            ai_content = resp.json()['choices'][0]['message']['content'].strip()
+
+            # Limpiar posibles delimitadores markdown
+            if ai_content.startswith("```json"):
+                ai_content = ai_content[7:]
+            if ai_content.startswith("```"):
+                ai_content = ai_content[3:]
+            if ai_content.endswith("```"):
+                ai_content = ai_content[:-3]
+            ai_content = ai_content.strip()
+
+            result = json.loads(ai_content)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": f"Error al procesar el reporte con IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

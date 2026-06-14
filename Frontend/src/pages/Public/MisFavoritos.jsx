@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import useAuth from '../../hooks/useAuth';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
+
 import './Propiedades.css';
 
 const MisFavoritos = () => {

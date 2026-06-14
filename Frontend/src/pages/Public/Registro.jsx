@@ -69,11 +69,6 @@ const Registro = () => {
 
         {/* El campo username fue erradicado, nos basamos puramente en email */}
 
-        <div className="login__field">
-          <label htmlFor="email" className="login__label">Correo Electrónico</label>
-          <input id="email" type="email" className="login__input" value={formData.email} onChange={handleChange} required />
-        </div>
-
         {/* Fila: Nombre y Apellido */}
         <div style={{ display: 'flex', gap: '10px' }}>
           <div className="login__field" style={{ flex: 1 }}>
@@ -86,15 +81,25 @@ const Registro = () => {
           </div>
         </div>
 
-        {/* Fila: Teléfono y Cédula */}
+        <div className="login__field">
+          <label htmlFor="email" className="login__label">Correo Electrónico</label>
+          <input id="email" type="email" className="login__input" value={formData.email} onChange={handleChange} required />
+        </div>
+
+        <div className="login__field">
+          <label htmlFor="password" className="login__label">Contraseña</label>
+          <input id="password" type="password" className="login__input" value={formData.password} onChange={handleChange} required minLength="8" />
+        </div>
+
+        {/* Fila: Cédula y Teléfono */}
         <div style={{ display: 'flex', gap: '10px' }}>
-          <div className="login__field" style={{ flex: 1 }}>
-            <label htmlFor="telefono" className="login__label">Teléfono</label>
-            <input id="telefono" type="tel" className="login__input" value={formData.telefono} onChange={handleChange} />
-          </div>
           <div className="login__field" style={{ flex: 1 }}>
             <label htmlFor="ci" className="login__label">Cédula</label>
             <input id="ci" type="text" className="login__input" value={formData.ci} onChange={handleChange} />
+          </div>
+          <div className="login__field" style={{ flex: 1 }}>
+            <label htmlFor="telefono" className="login__label">Teléfono</label>
+            <input id="telefono" type="tel" className="login__input" value={formData.telefono} onChange={handleChange} />
           </div>
         </div>
 
@@ -110,11 +115,6 @@ const Registro = () => {
             style={{ colorScheme: 'dark' }} 
             required
           />
-        </div>
-
-        <div className="login__field">
-          <label htmlFor="password" className="login__label">Contraseña</label>
-          <input id="password" type="password" className="login__input" value={formData.password} onChange={handleChange} required minLength="8" />
         </div>
 
         <Button type="submit" fullWidth loading={loading} style={{ marginTop: '10px' }}>

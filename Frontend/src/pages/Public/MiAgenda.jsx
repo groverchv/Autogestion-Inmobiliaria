@@ -3,8 +3,7 @@ import {
   Calendar, Clock, MapPin, CheckCircle,
   XCircle, AlertCircle, Trash2,
 } from 'lucide-react';
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
+
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
@@ -156,15 +155,15 @@ const MiAgenda = () => {
                 <button key={t.key} onClick={() => setTab(t.key)}
                   style={{
                     padding: '10px 20px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                    background: tab === t.key ? '#0ea5e9' : '#f1f5f9',
-                    color: tab === t.key ? '#fff' : '#64748b',
+                    background: tab === t.key ? 'var(--color-primary)' : 'var(--color-bg-secondary)',
+                    color: tab === t.key ? '#fff' : 'var(--color-text-secondary)',
                     fontWeight: 600,
                     display: 'flex', alignItems: 'center', gap: '8px',
                   }}>
                   {t.icon} {t.label}
                   {t.count > 0 && (
                     <span style={{
-                      background: tab === t.key ? 'rgba(255,255,255,0.3)' : '#0ea5e9',
+                      background: tab === t.key ? 'rgba(255,255,255,0.3)' : 'var(--color-primary)',
                       color: '#fff', borderRadius: '10px', padding: '0 6px',
                       fontSize: '0.75rem', fontWeight: 700,
                     }}>
@@ -196,11 +195,11 @@ const MiAgenda = () => {
             /* ── TAB: EVENTOS ──────────────────────────────────────── */
             eventosOrdenados.length === 0 ? (
               <div style={{
-                background: '#fff', padding: '60px 20px', textAlign: 'center',
+                background: 'var(--color-bg-card)', padding: '60px 20px', textAlign: 'center',
                 borderRadius: '16px', border: '1px solid var(--color-border)',
               }}>
-                <h2 style={{ color: '#1e293b', marginBottom: '8px' }}>Tu agenda está vacía</h2>
-                <p style={{ color: '#64748b', marginBottom: '24px' }}>
+                <h2 style={{ color: 'var(--color-text)', marginBottom: '8px' }}>Tu agenda está vacía</h2>
+                <p style={{ color: 'var(--color-text-secondary)', marginBottom: '24px' }}>
                   Añade eventos, reuniones o recordatorios importantes.
                 </p>
                 <button onClick={() => setShowModal(true)}
@@ -215,7 +214,7 @@ const MiAgenda = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {eventosOrdenados.map(evento => (
                   <div key={evento.id} style={{
-                    background: '#fff', borderRadius: '12px', padding: '20px',
+                    background: 'var(--color-bg-card)', borderRadius: '12px', padding: '20px',
                     border: '1px solid var(--color-border)',
                     borderLeft: `4px solid ${evento.completado ? '#10b981' : '#0ea5e9'}`,
                     opacity: evento.completado ? 0.6 : 1,
@@ -226,13 +225,13 @@ const MiAgenda = () => {
                       style={{ transform: 'scale(1.5)', cursor: 'pointer', marginTop: '4px' }} />
                     <div style={{ flex: 1 }}>
                       <h3 style={{
-                        margin: '0 0 8px', color: '#1e293b',
+                        margin: '0 0 8px', color: 'var(--color-text)',
                         textDecoration: evento.completado ? 'line-through' : 'none',
                       }}>
                         {evento.titulo}
                       </h3>
                       {evento.descripcion && (
-                        <p style={{ margin: '0 0 12px', color: '#64748b', fontSize: '0.95rem' }}>
+                        <p style={{ margin: '0 0 12px', color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
                           {evento.descripcion}
                         </p>
                       )}
@@ -263,14 +262,14 @@ const MiAgenda = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {citas.length === 0 ? (
                 <div style={{
-                  background: '#fff', padding: '60px 20px', textAlign: 'center',
+                  background: 'var(--color-bg-card)', padding: '60px 20px', textAlign: 'center',
                   borderRadius: '16px', border: '1px solid var(--color-border)',
                 }}>
-                  <Clock size={48} color="#cbd5e1" style={{ margin: '0 auto 16px', display: 'block' }} />
-                  <h2 style={{ color: '#1e293b', marginBottom: '8px' }}>
+                  <Clock size={48} color="var(--color-text-muted)" style={{ margin: '0 auto 16px', display: 'block' }} />
+                  <h2 style={{ color: 'var(--color-text)', marginBottom: '8px' }}>
                     No tienes citas agendadas
                   </h2>
-                  <p style={{ color: '#64748b' }}>
+                  <p style={{ color: 'var(--color-text-secondary)' }}>
                     Ve al catálogo de propiedades y agenda una visita.
                   </p>
                 </div>
@@ -280,10 +279,10 @@ const MiAgenda = () => {
                   {citasFuturas.length > 0 && (
                     <div>
                       <h3 style={{
-                        color: '#1e293b', marginBottom: '16px', fontSize: '1rem',
+                        color: 'var(--color-text)', marginBottom: '16px', fontSize: '1rem',
                         fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px',
                       }}>
-                        <AlertCircle size={18} color="#0ea5e9" />
+                        <AlertCircle size={18} color="var(--color-primary)" />
                         Citas próximas ({citasFuturas.length})
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -292,10 +291,10 @@ const MiAgenda = () => {
                           const esProp = soyPropietario(cita);
                           return (
                             <div key={cita.id} style={{
-                              background: '#fff', borderRadius: '12px', padding: '20px',
-                              border: '1px solid #e2e8f0',
+                              background: 'var(--color-bg-card)', borderRadius: '12px', padding: '20px',
+                              border: '1px solid var(--color-border)',
                               borderLeft: `4px solid ${cita.estado === 'confirmada' ? '#10b981' : '#0ea5e9'}`,
-                              boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                              boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
                             }}>
                               <div style={{
                                 display: 'flex', justifyContent: 'space-between',
@@ -307,7 +306,7 @@ const MiAgenda = () => {
                                     display: 'flex', alignItems: 'center', gap: '10px',
                                     marginBottom: '8px', flexWrap: 'wrap',
                                   }}>
-                                    <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '1rem' }}>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '1rem' }}>
                                       {cita.inmueble_titulo}
                                     </span>
                                     <span style={{
@@ -318,8 +317,8 @@ const MiAgenda = () => {
                                       {cfg.label}
                                     </span>
                                     <span style={{
-                                      background: esProp ? '#ede9fe' : '#e0f2fe',
-                                      color: esProp ? '#7c3aed' : '#0284c7',
+                                      background: esProp ? 'rgba(124, 58, 237, 0.15)' : 'rgba(14, 165, 233, 0.15)',
+                                      color: esProp ? 'var(--color-secondary)' : 'var(--color-primary-light)',
                                       padding: '2px 10px', borderRadius: '20px',
                                       fontSize: '0.7rem', fontWeight: 600,
                                     }}>
@@ -330,22 +329,22 @@ const MiAgenda = () => {
                                   {/* Fecha y hora */}
                                   <div style={{
                                     display: 'flex', gap: '20px', fontSize: '0.9rem',
-                                    color: '#64748b', flexWrap: 'wrap',
+                                    color: 'var(--color-text-secondary)', flexWrap: 'wrap',
                                   }}>
                                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <Calendar size={15} color="#0ea5e9" />
+                                      <Calendar size={15} color="var(--color-primary)" />
                                       {new Date(cita.fecha + 'T00:00:00').toLocaleDateString('es-BO', {
                                         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                                       })}
                                     </span>
                                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <Clock size={15} color="#0ea5e9" />
+                                      <Clock size={15} color="var(--color-primary)" />
                                       {cita.hora_inicio?.slice(0, 5)} — {cita.hora_fin?.slice(0, 5)}
                                     </span>
                                   </div>
 
                                   {/* Contraparte */}
-                                  <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#94a3b8' }}>
+                                  <div style={{ marginTop: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                                     {esProp
                                       ? `Cliente: ${cita.cliente_nombre}`
                                       : `Propietario: ${cita.propietario_nombre}`}
@@ -353,7 +352,7 @@ const MiAgenda = () => {
 
                                   {/* Notas */}
                                   {cita.notas && (
-                                    <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#475569', fontStyle: 'italic' }}>
+                                    <div style={{ marginTop: '8px', fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
                                       "{cita.notas}"
                                     </div>
                                   )}
@@ -419,15 +418,15 @@ const MiAgenda = () => {
                           const esProp = soyPropietario(cita);
                           return (
                             <div key={cita.id} style={{
-                              background: '#f8fafc', borderRadius: '10px', padding: '14px 16px',
-                              border: '1px solid #e2e8f0', opacity: 0.8,
+                              background: 'var(--color-bg-secondary)', borderRadius: '10px', padding: '14px 16px',
+                              border: '1px solid var(--color-border)', opacity: 0.8,
                             }}>
                               <div style={{
                                 display: 'flex', justifyContent: 'space-between',
                                 alignItems: 'center', flexWrap: 'wrap', gap: '8px',
                               }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontWeight: 600, color: '#475569' }}>
+                                  <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>
                                     {cita.inmueble_titulo}
                                   </span>
                                   <span style={{
@@ -438,7 +437,7 @@ const MiAgenda = () => {
                                     {cfg.label}
                                   </span>
                                 </div>
-                                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                                   {new Date(cita.fecha + 'T00:00:00').toLocaleDateString('es-BO')}
                                   {' · '}{cita.hora_inicio?.slice(0, 5)}
                                   {' · '}{esProp ? `Cliente: ${cita.cliente_nombre}` : `Prop.: ${cita.propietario_nombre}`}
@@ -465,16 +464,16 @@ const MiAgenda = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
         }}>
           <div style={{
-            background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '600px',
+            background: 'var(--color-bg-card)', borderRadius: '16px', width: '100%', maxWidth: '600px',
             maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
             <div style={{
               padding: '20px 24px', borderBottom: '1px solid var(--color-border)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
-              <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Añadir Evento</h2>
+              <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--color-text)' }}>Añadir Evento</h2>
               <button onClick={() => setShowModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
                 &times;
               </button>
             </div>
@@ -482,15 +481,15 @@ const MiAgenda = () => {
             <div style={{ padding: '24px', overflowY: 'auto' }}>
               <form id="agendaForm" onSubmit={handleSubmitEvento}
                 style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#64748b' }}>
+                 <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                     Título *
                   </label>
                   <input required type="text" name="titulo" value={formData.titulo}
                     onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#64748b' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                     Ubicación
                   </label>
                   <input type="text" name="ubicacion" value={formData.ubicacion}
@@ -498,14 +497,14 @@ const MiAgenda = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#64748b' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                       Fecha / Hora Inicio *
                     </label>
                     <input required type="datetime-local" name="fecha_inicio" value={formData.fecha_inicio}
                       onChange={handleChange} className="propiedades-filter__input" style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#64748b' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                       Fecha / Hora Fin *
                     </label>
                     <input required type="datetime-local" name="fecha_fin" value={formData.fecha_fin}
@@ -513,7 +512,7 @@ const MiAgenda = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#64748b' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                     Descripción
                   </label>
                   <textarea name="descripcion" value={formData.descripcion} onChange={handleChange}
@@ -525,10 +524,10 @@ const MiAgenda = () => {
 
             <div style={{
               padding: '16px 24px', borderTop: '1px solid var(--color-border)',
-              display: 'flex', justifyContent: 'flex-end', gap: '12px', background: '#f8fafc',
+              display: 'flex', justifyContent: 'flex-end', gap: '12px', background: 'var(--color-bg-secondary)',
             }}>
               <button onClick={() => setShowModal(false)}
-                style={{ background: 'transparent', color: '#64748b', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
+                style={{ background: 'transparent', color: 'var(--color-text-secondary)', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>
                 Cancelar
               </button>
               <button form="agendaForm" type="submit" disabled={saving}

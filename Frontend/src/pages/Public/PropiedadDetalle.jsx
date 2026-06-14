@@ -22,8 +22,7 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-import Navbar from '../../components/Navbar';
-import UserMenu from '../../components/UserMenu';
+
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import './Propiedades.css';
@@ -232,7 +231,6 @@ const PropiedadDetalle = () => {
   if (loading) {
     return (
       <div className="propiedades-page">
-        <Navbar />
         <div className="propiedades-loading">Cargando detalles del inmueble...</div>
       </div>
     );
@@ -241,7 +239,6 @@ const PropiedadDetalle = () => {
   if (error || !inmueble) {
     return (
       <div className="propiedades-page">
-        <Navbar />
         <div className="propiedades-empty">
           <p>{error || 'Inmueble no encontrado.'}</p>
           <Link to="/propiedades" className="propiedad-card__cta" style={{ display: 'inline-block', marginTop: '16px' }}>Volver al catálogo</Link>
@@ -254,12 +251,6 @@ const PropiedadDetalle = () => {
 
   return (
     <div className="propiedades-page">
-      <Navbar />
-
-      {isAuthenticated && (
-        <UserMenu />
-      )}
-
       <div className="propiedades-content" style={{ maxWidth: '1000px', margin: '0 auto' }}>
         <Link to="/propiedades" style={{ marginBottom: '20px', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ChevronLeft size={18} /> Volver al catálogo

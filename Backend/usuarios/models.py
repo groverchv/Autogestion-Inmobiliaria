@@ -31,7 +31,7 @@ class Usuario(AbstractUser):
 
     class Meta:
         db_table = 'usuarios_usuario'
-        ordering = ['last_name', 'first_name']
+        ordering = ['-id']
 
     def __str__(self):
         return f'{self.get_full_name()} ({self.email})'

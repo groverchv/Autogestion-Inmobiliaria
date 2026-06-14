@@ -17,7 +17,7 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  background-color: var(--color-background-alt);
+  background-color: var(--color-bg-secondary);
 }
 
 .profile-modal__avatar {
@@ -79,7 +79,7 @@
   border-radius: 8px;
   font-size: 0.95rem;
   color: var(--color-text);
-  background-color: var(--color-background);
+  background-color: var(--color-bg);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   font-family: inherit;
 }
@@ -91,7 +91,7 @@
 }
 
 .profile-modal__input:disabled {
-  background-color: var(--color-background-alt);
+  background-color: var(--color-bg-secondary);
   color: var(--color-text-muted);
   cursor: not-allowed;
   border-color: var(--color-border);

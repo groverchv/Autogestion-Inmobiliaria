@@ -9,9 +9,8 @@ const ManageUsers = () => {
 
   const columns = [
     { key: 'id', label: 'ID' },
-    { key: 'username', label: 'Usuario' },
+    { key: 'first_name', label: 'Nombre Completo', render: (item) => `${item.first_name || ''} ${item.last_name || ''}`.trim() || '—' },
     { key: 'email', label: 'Email' },
-    { key: 'first_name', label: 'Nombre', render: (item) => `${item.first_name || ''} ${item.last_name || ''}`.trim() || '—' },
     { key: 'ci', label: 'CI' },
     { key: 'telefono', label: 'Teléfono' },
     { key: 'rol_nombre', label: 'Rol', render: (item) => (
@@ -25,11 +24,10 @@ const ManageUsers = () => {
   ];
 
   const formFields = [
-    { key: 'username', label: 'Nombre de Usuario', type: 'text', placeholder: 'ej: juanperez' },
-    { key: 'email', label: 'Email', type: 'email', placeholder: 'ej: juan@email.com' },
-    { key: 'password', label: 'Contraseña', type: 'password', placeholder: 'Mínimo 8 caracteres', required: false },
     { key: 'first_name', label: 'Nombre', type: 'text', placeholder: 'Juan' },
     { key: 'last_name', label: 'Apellido', type: 'text', placeholder: 'Pérez' },
+    { key: 'email', label: 'Email', type: 'email', placeholder: 'ej: juan@email.com' },
+    { key: 'password', label: 'Contraseña', type: 'password', placeholder: 'Mínimo 8 caracteres', required: false },
     { key: 'ci', label: 'CI (Cédula)', type: 'text', placeholder: 'ej: 12345678', required: false },
     { key: 'telefono', label: 'Teléfono', type: 'text', placeholder: 'ej: 70012345', required: false },
     { key: 'fecha_nacimiento', label: 'Fecha de Nacimiento', type: 'date', required: false },

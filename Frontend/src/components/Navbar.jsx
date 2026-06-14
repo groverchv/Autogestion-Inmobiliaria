@@ -20,8 +20,19 @@ import {
   LogOut,
   ChevronRight,
   ShieldAlert,
-  Home
+  Home,
+  LayoutDashboard,
+  Users,
+  Archive,
+  Banknote,
+  History,
+  LineChart,
+  ShieldCheck,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
+import useStore from '../store/store';
 import './Navbar.css';
 
 /**
@@ -29,12 +40,27 @@ import './Navbar.css';
  * En desktop, muestra enlaces de perfil y el dropdown normal.
  * En móvil, se convierte en un menú hamburguesa que abre un Sidebar/Drawer con todas las opciones.
  */
-const Navbar = () => {
+const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalSidebarToggle } = {}) => {
   const { user, isAuthenticated, logout } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
+  const isSidebarOpen = externalSidebarToggle !== undefined ? externalSidebarOpen : internalSidebarOpen;
+  const setIsSidebarOpen = externalSidebarToggle !== undefined
+    ? (val) => { if (typeof val === 'function') externalSidebarToggle(); else externalSidebarToggle(); }
+    : setInternalSidebarOpen;
   const [badges, setBadges] = useState({ notificaciones: 0, mensajes: 0 });
   const [expandedGroup, setExpandedGroup] = useState(null); // 'propiedades' | 'finanzas' | 'alertas' | null
   const location = useLocation();
+
+  const theme = useStore((state) => state.theme);
+  const setTheme = useStore((state) => state.setTheme);
+
+  const handleThemeCycle = () => {
+    let nextTheme = 'light';
+    if (theme === 'system') nextTheme = 'light';
+    else if (theme === 'light') nextTheme = 'dark';
+    else if (theme === 'dark') nextTheme = 'system';
+    setTheme(nextTheme);
+  };
 
   // Bloquear scroll de la página al abrir sidebar
   useEffect(() => {
@@ -71,6 +97,8 @@ const Navbar = () => {
       targetGroup = 'finanzas';
     } else if (path.startsWith('/notificaciones') || path.startsWith('/mensajes')) {
       targetGroup = 'alertas';
+    } else if (path.startsWith('/panel')) {
+      targetGroup = 'adminPanel';
     }
     
     const timer = setTimeout(() => {
@@ -94,11 +122,11 @@ const Navbar = () => {
       <nav className="navbar" id="main-navbar">
         <div className="navbar__container">
           <div className="navbar__left">
-            {/* Botón menú hamburguesa en móvil */}
+            {/* Botón menú hamburgesa en móvil */}
             {isAuthenticated && (
               <button 
                 className="navbar__hamburger" 
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={() => externalSidebarToggle ? externalSidebarToggle() : setInternalSidebarOpen(true)}
                 aria-label="Abrir menú de navegación"
               >
                 <Menu size={24} />
@@ -115,17 +143,31 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 {user?.rol === 'admin' && (
-                  <Link to="/panel/dashboard" className="navbar__btn navbar__btn--panel" style={{
-                    padding: '6px 14px',
-                    background: 'rgba(14,165,233,0.15)',
-                    color: '#0ea5e9',
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                  }}>
-                    Panel Admin
-                  </Link>
+                  location.pathname.startsWith('/panel') ? (
+                    <Link to="/" className="navbar__btn navbar__btn--panel" style={{
+                      padding: '6px 14px',
+                      background: 'rgba(14,165,233,0.15)',
+                      color: '#0ea5e9',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                    }}>
+                      Portal Público
+                    </Link>
+                  ) : (
+                    <Link to="/panel/dashboard" className="navbar__btn navbar__btn--panel" style={{
+                      padding: '6px 14px',
+                      background: 'rgba(14,165,233,0.15)',
+                      color: '#0ea5e9',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                    }}>
+                      Panel Admin
+                    </Link>
+                  )
                 )}
                 <UserDropdown />
               </>
@@ -141,7 +183,7 @@ const Navbar = () => {
       </nav>
 
       {/* MENÚ DESPLEGABLE SIDEBAR (MÓVIL) */}
-      {isSidebarOpen && (
+      {isSidebarOpen && !externalSidebarToggle && (
         <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}>
           <div className="sidebar-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="sidebar-drawer__header">
@@ -174,138 +216,226 @@ const Navbar = () => {
             {/* Listado de Enlaces en el sidebar */}
             <div className="sidebar-drawer__menu">
               {user?.rol === 'admin' && (
-                <Link 
-                  to="/panel/dashboard" 
-                  className="sidebar-drawer__item sidebar-drawer__item--admin"
-                  onClick={() => setIsSidebarOpen(false)}
-                >
-                  <ShieldAlert size={20} />
-                  <span>Panel Administrador</span>
-                  <ChevronRight size={16} className="sidebar-drawer__chevron" />
-                </Link>
+                <div className="sidebar-drawer__group" style={{ marginBottom: '10px' }}>
+                  <button 
+                    className={`sidebar-drawer__group-header ${isGroupActive(['/panel']) ? 'active' : ''}`}
+                    onClick={() => toggleAccordion('adminPanel')}
+                    style={{ 
+                      background: 'rgba(245, 158, 11, 0.06)',
+                      border: '1px dashed rgba(245, 158, 11, 0.25)',
+                      color: 'var(--color-secondary-dark)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <ShieldAlert size={20} style={{ color: 'var(--color-secondary)' }} />
+                      <span style={{ fontWeight: 600 }}>Administración</span>
+                    </div>
+                    <ChevronRight size={16} className={`sidebar-drawer__arrow ${expandedGroup === 'adminPanel' ? 'open' : ''}`} />
+                  </button>
+                  {expandedGroup === 'adminPanel' && (
+                    <div className="sidebar-drawer__sub-menu" style={{ borderColor: 'rgba(245, 158, 11, 0.25)' }}>
+                      <Link to="/panel/dashboard" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/dashboard' ? 'active' : ''}`}>
+                        <LayoutDashboard size={16} />
+                        <span>Dashboard</span>
+                      </Link>
+                      <Link to="/panel/blockchain" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/blockchain' ? 'active' : ''}`}>
+                        <ShieldCheck size={16} />
+                        <span>Blockchain</span>
+                      </Link>
+                      <Link to="/panel/usuarios" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/usuarios' ? 'active' : ''}`}>
+                        <Users size={16} />
+                        <span>Usuarios</span>
+                      </Link>
+                      <Link to="/panel/inmuebles" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/inmuebles' ? 'active' : ''}`}>
+                        <Home size={16} />
+                        <span>Inmuebles</span>
+                      </Link>
+                      <Link to="/panel/categorias" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/categorias' ? 'active' : ''}`}>
+                        <Archive size={16} />
+                        <span>Categorías</span>
+                      </Link>
+                      <Link to="/panel/agenda" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/agenda' ? 'active' : ''}`}>
+                        <Calendar size={16} />
+                        <span>Agenda</span>
+                      </Link>
+                      <Link to="/panel/contratos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/contratos' ? 'active' : ''}`}>
+                        <FileText size={16} />
+                        <span>Contratos</span>
+                      </Link>
+                      <Link to="/panel/tipo-contrato" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/tipo-contrato' ? 'active' : ''}`}>
+                        <CreditCard size={16} />
+                        <span>Tipos Contrato</span>
+                      </Link>
+                      <Link to="/panel/finanzas" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/finanzas' ? 'active' : ''}`}>
+                        <LineChart size={16} />
+                        <span>Finanzas</span>
+                      </Link>
+                      <Link to="/panel/pagos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/pagos' ? 'active' : ''}`}>
+                        <Banknote size={16} />
+                        <span>Pagos</span>
+                      </Link>
+                      <Link to="/panel/tipo-pagos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/tipo-pagos' ? 'active' : ''}`}>
+                        <CreditCard size={16} />
+                        <span>Tipos Pago</span>
+                      </Link>
+                      <Link to="/panel/historial-pagos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname === '/panel/historial-pagos' ? 'active' : ''}`}>
+                        <History size={16} />
+                        <span>Historial Pagos</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
               )}
 
-              {/* 1. Catálogo */}
-              <Link 
-                to="/propiedades" 
-                className={`sidebar-drawer__item ${location.pathname.startsWith('/propiedades') ? 'sidebar-drawer__item--active' : ''}`}
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <Search size={20} />
-                <span>Catálogo</span>
-                <ChevronRight size={16} className="sidebar-drawer__chevron" />
-              </Link>
+              {!location.pathname.startsWith('/panel') && (
+                <>
+                  {/* 1. Catálogo */}
+                  <Link 
+                    to="/propiedades" 
+                    className={`sidebar-drawer__item ${location.pathname.startsWith('/propiedades') ? 'sidebar-drawer__item--active' : ''}`}
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <Search size={20} />
+                    <span>Catálogo</span>
+                    <ChevronRight size={16} className="sidebar-drawer__chevron" />
+                  </Link>
 
-              {/* 2. Grupo: Propiedades (Accordion) */}
-              <div className="sidebar-drawer__group">
-                <button 
-                  className={`sidebar-drawer__group-header ${isGroupActive(['/mis-inmuebles', '/mi-agenda', '/favoritos']) ? 'active' : ''}`}
-                  onClick={() => toggleAccordion('propiedades')}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Building2 size={20} />
-                    <span>Propiedades</span>
+                  {/* 2. Grupo: Propiedades (Accordion) */}
+                  <div className="sidebar-drawer__group">
+                    <button 
+                      className={`sidebar-drawer__group-header ${isGroupActive(['/mis-inmuebles', '/mi-agenda', '/favoritos']) ? 'active' : ''}`}
+                      onClick={() => toggleAccordion('propiedades')}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Building2 size={20} />
+                        <span>Propiedades</span>
+                      </div>
+                      <ChevronRight size={16} className={`sidebar-drawer__arrow ${expandedGroup === 'propiedades' ? 'open' : ''}`} />
+                    </button>
+                    {expandedGroup === 'propiedades' && (
+                      <div className="sidebar-drawer__sub-menu">
+                        <Link to="/mis-inmuebles" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-inmuebles') ? 'active' : ''}`}>
+                          <Building2 size={16} />
+                          <span>Mis Inmuebles</span>
+                        </Link>
+                        <Link to="/mi-agenda" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mi-agenda') ? 'active' : ''}`}>
+                          <Calendar size={16} />
+                          <span>Mi Agenda</span>
+                        </Link>
+                        <Link to="/favoritos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/favoritos') ? 'active' : ''}`}>
+                          <Heart size={16} />
+                          <span>Favoritos</span>
+                        </Link>
+                      </div>
+                    )}
                   </div>
-                  <ChevronRight size={16} className={`sidebar-drawer__arrow ${expandedGroup === 'propiedades' ? 'open' : ''}`} />
-                </button>
-                {expandedGroup === 'propiedades' && (
-                  <div className="sidebar-drawer__sub-menu">
-                    <Link to="/mis-inmuebles" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-inmuebles') ? 'active' : ''}`}>
-                      <Building2 size={16} />
-                      <span>Mis Inmuebles</span>
-                    </Link>
-                    <Link to="/mi-agenda" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mi-agenda') ? 'active' : ''}`}>
-                      <Calendar size={16} />
-                      <span>Mi Agenda</span>
-                    </Link>
-                    <Link to="/favoritos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/favoritos') ? 'active' : ''}`}>
-                      <Heart size={16} />
-                      <span>Favoritos</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
 
-              {/* 3. Grupo: Trámites y Finanzas (Accordion) */}
-              <div className="sidebar-drawer__group">
-                <button 
-                  className={`sidebar-drawer__group-header ${isGroupActive(['/mis-contratos', '/mis-pagos', '/mis-finanzas']) ? 'active' : ''}`}
-                  onClick={() => toggleAccordion('finanzas')}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <FileText size={20} />
-                    <span>Trámites y Finanzas</span>
+                  {/* 3. Grupo: Trámites y Finanzas (Accordion) */}
+                  <div className="sidebar-drawer__group">
+                    <button 
+                      className={`sidebar-drawer__group-header ${isGroupActive(['/mis-contratos', '/mis-pagos', '/mis-finanzas']) ? 'active' : ''}`}
+                      onClick={() => toggleAccordion('finanzas')}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <FileText size={20} />
+                        <span>Trámites y Finanzas</span>
+                      </div>
+                      <ChevronRight size={16} className={`sidebar-drawer__arrow ${expandedGroup === 'finanzas' ? 'open' : ''}`} />
+                    </button>
+                    {expandedGroup === 'finanzas' && (
+                      <div className="sidebar-drawer__sub-menu">
+                        <Link to="/mis-contratos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-contratos') ? 'active' : ''}`}>
+                          <FileText size={16} />
+                          <span>Mis Contratos</span>
+                        </Link>
+                        <Link to="/mis-pagos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-pagos') ? 'active' : ''}`}>
+                          <CreditCard size={16} />
+                          <span>Mis Pagos</span>
+                        </Link>
+                        <Link to="/mis-finanzas" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-finanzas') ? 'active' : ''}`}>
+                          <TrendingUp size={16} />
+                          <span>Mis Finanzas</span>
+                        </Link>
+                      </div>
+                    )}
                   </div>
-                  <ChevronRight size={16} className={`sidebar-drawer__arrow ${expandedGroup === 'finanzas' ? 'open' : ''}`} />
-                </button>
-                {expandedGroup === 'finanzas' && (
-                  <div className="sidebar-drawer__sub-menu">
-                    <Link to="/mis-contratos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-contratos') ? 'active' : ''}`}>
-                      <FileText size={16} />
-                      <span>Mis Contratos</span>
-                    </Link>
-                    <Link to="/mis-pagos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-pagos') ? 'active' : ''}`}>
-                      <CreditCard size={16} />
-                      <span>Mis Pagos</span>
-                    </Link>
-                    <Link to="/mis-finanzas" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-finanzas') ? 'active' : ''}`}>
-                      <TrendingUp size={16} />
-                      <span>Mis Finanzas</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
 
-              {/* 4. Grupo: Mensajería (Accordion) */}
-              <div className="sidebar-drawer__group">
-                <button 
-                  className={`sidebar-drawer__group-header ${isGroupActive(['/mensajes', '/notificaciones']) ? 'active' : ''}`}
-                  onClick={() => toggleAccordion('alertas')}
-                  style={{ position: 'relative' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <MessageSquare size={20} />
-                    <span>Mensajería</span>
-                  </div>
-                  {(badges.notificaciones + badges.mensajes) > 0 && (
-                    <span className="sidebar-drawer__badge-dot" />
-                  )}
-                  <ChevronRight size={16} className={`sidebar-drawer__arrow ${expandedGroup === 'alertas' ? 'open' : ''}`} />
-                </button>
-                {expandedGroup === 'alertas' && (
-                  <div className="sidebar-drawer__sub-menu">
-                    <Link to="/notificaciones" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/notificaciones') ? 'active' : ''}`} style={{ position: 'relative' }}>
-                      <Bell size={16} />
-                      <span>Notificaciones</span>
-                      {badges.notificaciones > 0 && (
-                        <span className="sidebar-drawer__badge">{badges.notificaciones}</span>
+                  {/* 4. Grupo: Mensajería (Accordion) */}
+                  <div className="sidebar-drawer__group">
+                    <button 
+                      className={`sidebar-drawer__group-header ${isGroupActive(['/mensajes', '/notificaciones']) ? 'active' : ''}`}
+                      onClick={() => toggleAccordion('alertas')}
+                      style={{ position: 'relative' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <MessageSquare size={20} />
+                        <span>Mensajería</span>
+                      </div>
+                      {(badges.notificaciones + badges.mensajes) > 0 && (
+                        <span className="sidebar-drawer__badge-dot" />
                       )}
-                    </Link>
-                    <Link to="/mensajes" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mensajes') ? 'active' : ''}`} style={{ position: 'relative' }}>
-                      <MessageSquare size={16} />
-                      <span>Mensajes</span>
-                      {badges.mensajes > 0 && (
-                        <span className="sidebar-drawer__badge">{badges.mensajes}</span>
-                      )}
-                    </Link>
+                      <ChevronRight size={16} className={`sidebar-drawer__arrow ${expandedGroup === 'alertas' ? 'open' : ''}`} />
+                    </button>
+                    {expandedGroup === 'alertas' && (
+                      <div className="sidebar-drawer__sub-menu">
+                        <Link to="/notificaciones" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/notificaciones') ? 'active' : ''}`} style={{ position: 'relative' }}>
+                          <Bell size={16} />
+                          <span>Notificaciones</span>
+                          {badges.notificaciones > 0 && (
+                            <span className="sidebar-drawer__badge">{badges.notificaciones}</span>
+                          )}
+                        </Link>
+                        <Link to="/mensajes" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mensajes') ? 'active' : ''}`} style={{ position: 'relative' }}>
+                          <MessageSquare size={16} />
+                          <span>Mensajes</span>
+                          {badges.mensajes > 0 && (
+                            <span className="sidebar-drawer__badge">{badges.mensajes}</span>
+                          )}
+                        </Link>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* 5. Perfil */}
-              <Link 
-                to="/perfil" 
-                className={`sidebar-drawer__item ${location.pathname.startsWith('/perfil') ? 'sidebar-drawer__item--active' : ''}`}
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <User size={20} />
-                <span>Mi Perfil</span>
-                <ChevronRight size={16} className="sidebar-drawer__chevron" />
-              </Link>
+                  {/* 5. Perfil */}
+                  <Link 
+                    to="/perfil" 
+                    className={`sidebar-drawer__item ${location.pathname.startsWith('/perfil') ? 'sidebar-drawer__item--active' : ''}`}
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <User size={20} />
+                    <span>Mi Perfil</span>
+                    <ChevronRight size={16} className="sidebar-drawer__chevron" />
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Botón de cerrar sesión al final */}
-            <div className="sidebar-drawer__footer">
+            <div className="sidebar-drawer__footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                className="sidebar-drawer__theme-btn"
+                onClick={handleThemeCycle}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  background: 'var(--color-bg-secondary)',
+                  color: 'var(--color-text)',
+                  border: 'none',
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  justifyContent: 'center',
+                }}
+              >
+                {theme === 'system' && <><Monitor size={18} /> <span>Tema: Sistema</span></>}
+                {theme === 'light' && <><Sun size={18} /> <span>Tema: Claro</span></>}
+                {theme === 'dark' && <><Moon size={18} /> <span>Tema: Oscuro</span></>}
+              </button>
+
               <button 
                 className="sidebar-drawer__logout-btn" 
                 onClick={() => {

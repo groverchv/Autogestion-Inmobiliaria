@@ -370,7 +370,7 @@ def obtener_balance_propietario(usuario, filtros: dict) -> dict:
     pagos_detalle = (
         pagos_qs
         .select_related('contrato__inmueble', 'contrato__tipo_contrato', 'usuario')
-        .order_by('fecha')
+        .order_by('-fecha')
     )
 
     extracto_pagos: list[dict] = []
