@@ -82,7 +82,7 @@ CHANNEL_LAYERS = {
 
 # ─── Base de Datos ───────────────────────────────────────────────
 db_url = os.getenv('DATABASE_URL')
-if db_url:
+if db_url and (db_url.startswith('postgres://') or db_url.startswith('postgresql://')):
     from urllib.parse import urlparse
     url = urlparse(db_url)
     DATABASES = {
@@ -99,11 +99,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-            'NAME': os.getenv('DB_NAME', 'autogestion'),
+            'NAME': os.getenv('DB_NAME', 'railway'),
             'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'diego12948850'),
-            'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-            'PORT': os.getenv('DB_PORT', '5433'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'qFzjpZHipslPYrdKARseUmjViIsUBEsf'),
+            'HOST': os.getenv('DB_HOST', 'Postgres.railway.internal'),
+            'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
 
