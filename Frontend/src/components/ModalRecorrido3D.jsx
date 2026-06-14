@@ -368,7 +368,13 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
         </div>
       )}
       {showVRGlasses && (
-        <VisorVRGlasses panoramas={panoramas} onClose={() => setShowVRGlasses(false)} />
+        <VisorVRGlasses 
+          panoramas={panoramas.map(pano => ({
+            ...pano,
+            archivo: blobUrls[pano.id] || pano.archivo
+          }))} 
+          onClose={() => setShowVRGlasses(false)} 
+        />
       )}
     </div>
   );
