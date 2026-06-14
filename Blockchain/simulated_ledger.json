@@ -2622,6 +2622,26 @@
         }
       ],
       "blockHash": "2fd4f0d863457ddee0813394b1765248437051605b821313fa774f30014deeaa"
+    },
+    {
+      "blockNumber": 130,
+      "prevHash": "2fd4f0d863457ddee0813394b1765248437051605b821313fa774f30014deeaa",
+      "timestamp": "2026-06-14T03:30:53.270Z",
+      "transactions": [
+        {
+          "txId": "tx_092632957bc07b41c77c6068a8abcc5b",
+          "timestamp": "2026-06-14T03:30:53.270Z",
+          "txName": "registrarInmueble",
+          "args": {
+            "id": "INM-34",
+            "titulo": "Casa Moderna La Guardia",
+            "propietarioId": "USR-2",
+            "direccion": "La Guardia, Zona Centro - Calle Principal La Guardia",
+            "hashTituloPropiedad": "0fddebc23dd309842acceedbfd6aae7a0abfbaee6b845cd5f76b6532d56b4d63"
+          }
+        }
+      ],
+      "blockHash": "d3fe4f28e42aba46abdda9467e61eef484c85c4a47029710e862f55e8ac4adb3"
     }
   ],
   "worldState": {
@@ -3526,6 +3546,17 @@
       "tipoPago": "Efectivo",
       "stripeTransactionId": "",
       "timestamp": "2026-06-14T03:29:35.426Z"
+    },
+    "INM-34": {
+      "docType": "inmueble",
+      "id": "INM-34",
+      "titulo": "Casa Moderna La Guardia",
+      "propietarioId": "USR-2",
+      "direccion": "La Guardia, Zona Centro - Calle Principal La Guardia",
+      "estado": "disponible",
+      "verificacionEstado": "verificado",
+      "hashTituloPropiedad": "0fddebc23dd309842acceedbfd6aae7a0abfbaee6b845cd5f76b6532d56b4d63",
+      "timestamp": "2026-06-14T03:30:53.270Z"
     }
   }
 }

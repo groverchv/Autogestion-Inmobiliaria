@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Compass, Home, Eye, EyeOff } from 'lucide-react';
+import { X } from 'lucide-react';
 import 'pannellum/build/pannellum.css';
 import 'pannellum';
 import VisorVRGlasses from './VisorVRGlasses';
@@ -163,7 +163,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
           crossOrigin: 'anonymous',
           autoRotate: 0,
           compass: false,
-          showZoomCtrl: true,
+          showZoomCtrl: false,
           showFullscreenCtrl: false,
           mouseZoom: true,
           draggable: true,
@@ -225,37 +225,26 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
 
   return (
     <div className="modal-recorrido">
-      {/* ─── Encabezado Flotante (Glassmorphic) ─── */}
-      <div className={`modal-recorrido__header ${!uiVisible ? 'modal-recorrido__header--hidden' : ''}`}>
-        <div className="modal-recorrido__header-info">
-          <div className="modal-recorrido__compass-box">
-            <Compass className="modal-recorrido__compass-icon" size={24} />
-          </div>
-          <div>
-            <span className="modal-recorrido__badge">RECORRIDO INTERACTIVO IA</span>
-            <h1 className="modal-recorrido__title">{tituloPropiedad}</h1>
-            <p className="modal-recorrido__room-desc">
-              Habitación actual: <strong>{activePano?.descripcion || 'Cargando...'}</strong>
-            </p>
-          </div>
-        </div>
-
-        <button
-          className="modal-recorrido__close-btn"
-          onClick={onClose}
-          aria-label="Cerrar recorrido"
-          type="button"
-        >
-          <X size={20} />
-          <span>Cerrar</span>
-        </button>
-      </div>
-
-      {/* ─── Controles Flotantes Inmersivos ─── */}
-      <div className="modal-recorrido__floating-controls">
-        {!uiVisible && (
+      {/* ─── Botones de Control Mínimos ─── */}
+      {!cargandoDescarga && (
+        <div className="modal-recorrido__top-controls">
           <button
-            className="modal-recorrido__minimal-close-btn"
+            className="modal-recorrido__vr-btn-minimal"
+            onClick={() => setShowVRGlasses(true)}
+            type="button"
+            title="Activar Modo Gafas VR"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0 -20 0"/>
+              <path d="M6 12c1.5-1 2.5-1 6 0s4.5 1 6 0"/>
+              <circle cx="9" cy="12" r="1.5"/>
+              <circle cx="15" cy="12" r="1.5"/>
+            </svg>
+            <span>Modo Gafas VR</span>
+          </button>
+
+          <button
+            className="modal-recorrido__close-btn-minimal"
             onClick={onClose}
             aria-label="Cerrar recorrido"
             type="button"
@@ -263,48 +252,8 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
           >
             <X size={20} />
           </button>
-        )}
-        <button
-          className={`modal-recorrido__toggle-ui-btn ${!uiVisible ? 'modal-recorrido__toggle-ui-btn--active' : ''}`}
-          onClick={() => setUiVisible(!uiVisible)}
-          aria-label={uiVisible ? "Ocultar interfaz" : "Mostrar interfaz"}
-          type="button"
-          title={uiVisible ? "Ocultar interfaz para visión inmersiva" : "Mostrar interfaz"}
-        >
-          {uiVisible ? <EyeOff size={20} /> : <Eye size={20} />}
-        </button>
-        {!cargandoDescarga && (
-          <button
-            className="modal-recorrido__vr-btn"
-            onClick={() => setShowVRGlasses(true)}
-            type="button"
-            title="Activar Modo Gafas VR"
-            style={{
-              background: 'var(--color-primary, #3b82f6)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '10px 16px',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0 -20 0"/>
-              <path d="M6 12c1.5-1 2.5-1 6 0s4.5 1 6 0"/>
-              <circle cx="9" cy="12" r="1.5"/>
-              <circle cx="15" cy="12" r="1.5"/>
-            </svg>
-            {uiVisible && <span>Modo Gafas VR</span>}
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ─── Pantalla de Carga Inmersiva ─── */}
       {cargandoDescarga && (
@@ -331,42 +280,6 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
         id="modal-pannellum-container"
       />
 
-      {/* ─── Carrusel Inferior de Teletransportación (Glassmorphic) ─── */}
-      {!cargandoDescarga && panoramas.length > 0 && (
-        <div className={`modal-recorrido__carousel-container ${!uiVisible ? 'modal-recorrido__carousel-container--hidden' : ''}`}>
-          <div className="modal-recorrido__carousel-header">
-            <span>HABITACIONES DISPONIBLES ({panoramas.length})</span>
-            <span className="modal-recorrido__tip">Haz clic en una habitación para viajar al instante</span>
-          </div>
-          <div className="modal-recorrido__carousel">
-            {panoramas.map((pano) => {
-              const isActive = pano.id === escenaActivaId;
-              return (
-                <button
-                  key={pano.id}
-                  className={`modal-recorrido__thumb-card ${isActive ? 'modal-recorrido__thumb-card--active' : ''}`}
-                  onClick={() => handleSceneTeleport(pano.id)}
-                  type="button"
-                >
-                  <div className="modal-recorrido__thumb-img-wrapper">
-                    {pano.archivo ? (
-                      <img src={pano.archivo} alt={pano.descripcion} className="modal-recorrido__thumb-img" />
-                    ) : (
-                      <div className="modal-recorrido__thumb-placeholder">
-                        <Home size={20} />
-                      </div>
-                    )}
-                    {isActive && <div className="modal-recorrido__thumb-glow" />}
-                  </div>
-                  <span className="modal-recorrido__thumb-label">
-                    {pano.descripcion || 'Habitación'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
       {showVRGlasses && (
         <VisorVRGlasses 
           panoramas={panoramas.map(pano => ({

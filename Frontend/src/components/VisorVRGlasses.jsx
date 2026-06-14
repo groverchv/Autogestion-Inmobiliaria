@@ -16,12 +16,14 @@ const VRIcon = ({ size = 20, style = {} }) => (
 
 const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [escenaActiva, setEscenaActiva] = useState(panoramas[0] || null);
-  const [lastEvent, setLastEvent] = useState('Ninguno (Presiona botones en tu control)');
   const [gamepadInfo, setGamepadInfo] = useState({ connected: false, name: '' });
-  const showDebug = false; // Oculto por defecto, constante para debug
   const [pantallaDoble, setPantallaDoble] = useState(false);
   const [gyroPermission, setGyroPermission] = useState('unknown');
   const [mostrarInstrucciones, setMostrarInstrucciones] = useState(true);
+
+  // Estados para simular controles de videojuegos (rotación y zoom)
+  const [rigRotation, setRigRotation] = useState(0); // Giro horizontal
+  const [fov, setFov] = useState(80); // Zoom (Field of View)
 
   const sensorInicializado = useRef(false);
   const escenaActivaRef = useRef(escenaActiva);
@@ -114,7 +116,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       const isLandscape = screen.orientation?.type.includes('landscape');
       const target = isLandscape ? 'portrait' : 'landscape';
 
-      // Lock de orientación generalmente requiere pantalla completa
       if (!document.fullscreenElement) {
         const docEl = document.documentElement;
         if (docEl.requestFullscreen) {
@@ -152,7 +153,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   };
 
   useEffect(() => {
-    // Sincronizar salida de VR nativo (ej: al presionar 'Back' físico en VR de A-Frame)
     const sceneEl = document.querySelector('a-scene');
     if (!sceneEl) return;
 
@@ -169,12 +169,10 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   }, [escenaActiva]);
 
   useEffect(() => {
-    // Importar A-Frame dinámicamente en el montaje para evitar errores de SSR / Node.js
     import('aframe');
   }, []);
 
   const triggerActiveHotspot = () => {
-    setLastEvent('Botón Seleccionar (Gatillo/Enter)');
     const cursorEl = document.querySelector('a-cursor');
     if (cursorEl && cursorEl.components.cursor) {
       const intersectedEl = cursorEl.components.cursor.intersectedEl;
@@ -197,8 +195,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       nextEscena = currentPanos[0];
     }
     setEscenaActiva(nextEscena);
-    const nombre = nextEscena.descripcion?.includes('|') ? nextEscena.descripcion.split('|')[1].trim() : nextEscena.descripcion || 'Siguiente';
-    setLastEvent(`Siguiente habitación: ${nombre}`);
   };
 
   const goToPrevRoom = () => {
@@ -214,8 +210,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       prevEscena = currentPanos[currentPanos.length - 1];
     }
     setEscenaActiva(prevEscena);
-    const nombre = prevEscena.descripcion?.includes('|') ? prevEscena.descripcion.split('|')[1].trim() : prevEscena.descripcion || 'Anterior';
-    setLastEvent(`Habitación anterior: ${nombre}`);
   };
 
   // 1. Escuchar botones en modo Teclado (Key Mode)
@@ -223,9 +217,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     const handleKeyDown = (e) => {
       const key = e.key;
       const keyLower = key?.toLowerCase();
-
-      // Debug: Mostrar qué tecla se recibió
-      setLastEvent(`Tecla: "${key}"`);
 
       // Botón @ (Mapeado a la tecla @, o gatillo en algunos teclados)
       if (key === '@' || keyLower === '@') {
@@ -235,17 +226,31 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       }
 
       // Botón A (Siguiente imagen)
-      if (keyLower === 'a' || key === 'ArrowRight' || key === 'VolumeUp' || key === 'AudioVolumeUp' || key === 'MediaTrackNext' || key === 'PageDown') {
+      if (keyLower === 'a' || key === 'VolumeUp' || key === 'AudioVolumeUp' || key === 'MediaTrackNext' || key === 'PageDown') {
         e.preventDefault();
         goToNextRoom();
         return;
       }
 
       // Botón B (Imagen anterior)
-      if (keyLower === 'b' || key === 'ArrowLeft' || key === 'VolumeDown' || key === 'AudioVolumeDown' || key === 'MediaTrackPrevious' || key === 'PageUp') {
+      if (keyLower === 'b' || key === 'VolumeDown' || key === 'AudioVolumeDown' || key === 'MediaTrackPrevious' || key === 'PageUp') {
         e.preventDefault();
         goToPrevRoom();
         return;
+      }
+
+      // Teclas de dirección alternativas para giro y zoom (Keyboard fallbacks)
+      if (key === 'ArrowRight') {
+        setRigRotation(prev => (prev + 5) % 360);
+      }
+      if (key === 'ArrowLeft') {
+        setRigRotation(prev => (prev - 5 + 360) % 360);
+      }
+      if (key === 'ArrowUp') {
+        setFov(prev => Math.max(30, prev - 2)); // zoom in
+      }
+      if (key === 'ArrowDown') {
+        setFov(prev => Math.min(100, prev + 2)); // zoom out
       }
 
       // Otros botones de Gatillo / Selección / Fallback
@@ -269,7 +274,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   useEffect(() => {
     let gamepadTimer;
     let lastButtonStates = {};
-    let activeJoystickKeys = { w: false, a: false, s: false, d: false };
 
     const checkGamepads = () => {
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -287,47 +291,46 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
           setGamepadInfo({ connected: true, name: activeGamepad.id });
         }
 
-        // Leer botones
         activeGamepad.buttons.forEach((btn, index) => {
           const pressed = btn.pressed || btn.value > 0.5;
           const wasPressed = lastButtonStates[index] || false;
 
           if (pressed && !wasPressed) {
-            setLastEvent(`Botón Gamepad #${index}`);
             // Mapeo adaptado al control del usuario:
             if (index === 0) {
-              // Botón A -> Siguiente Imagen
-              goToNextRoom();
+              goToNextRoom(); // Botón A -> Siguiente Imagen
             } else if (index === 1) {
-              // Botón B -> Imagen Anterior
-              goToPrevRoom();
+              goToPrevRoom(); // Botón B -> Imagen Anterior
             } else {
-              // Botón @ / Trigger / Cualquier otro -> Seleccionar hotspot apuntado
-              triggerActiveHotspot();
+              triggerActiveHotspot(); // Botón @ / Trigger -> Seleccionar hotspot apuntado
             }
           }
           lastButtonStates[index] = pressed;
         });
 
-        // Simular WASD / Palanca analógica para caminar hacia adelante y atrás
+        // Ejes del Joystick / Palanca analógica
         const axisX = activeGamepad.axes[0]; // -1 izquierda, 1 derecha
         const axisY = activeGamepad.axes[1]; // -1 arriba, 1 abajo
-        const threshold = 0.35;
+        const threshold = 0.25;
 
-        const setEmulatedKey = (key, press) => {
-          if (press && !activeJoystickKeys[key]) {
-            activeJoystickKeys[key] = true;
-            window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
-          } else if (!press && activeJoystickKeys[key]) {
-            activeJoystickKeys[key] = false;
-            window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
-          }
-        };
+        // 1. Giro horizontal con el Joystick (Izquierda / Derecha)
+        if (Math.abs(axisX) > threshold) {
+          setRigRotation(prev => {
+            let nextRot = prev - axisX * 1.5; // Ajusta la velocidad de rotación
+            if (nextRot < 0) nextRot += 360;
+            if (nextRot > 360) nextRot -= 360;
+            return nextRot;
+          });
+        }
 
-        setEmulatedKey('w', axisY < -threshold); // Joystick arriba -> Avanzar (W)
-        setEmulatedKey('s', axisY > threshold);  // Joystick abajo -> Retroceder (S)
-        setEmulatedKey('a', axisX < -threshold); // Izquierda
-        setEmulatedKey('d', axisX > threshold);  // Derecha
+        // 2. Acercar / Alejar (Zoom) con el Joystick (Arriba / Abajo)
+        if (Math.abs(axisY) > threshold) {
+          setFov(prev => {
+            // axisY es negativo arriba (Zoom In / Acercar) y positivo abajo (Zoom Out / Alejar)
+            let nextFov = prev + axisY * 0.8; // Ajusta la velocidad del zoom
+            return Math.max(30, Math.min(100, nextFov)); // Clampar fov entre 30 y 100
+          });
+        }
       } else {
         if (gamepadInfo.connected) {
           setGamepadInfo({ connected: false, name: '' });
@@ -341,12 +344,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
 
     return () => {
       cancelAnimationFrame(gamepadTimer);
-      // Limpiar teclas emuladas activas
-      Object.keys(activeJoystickKeys).forEach(key => {
-        if (activeJoystickKeys[key]) {
-          window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
-        }
-      });
     };
   }, [gamepadInfo, onClose]);
 
@@ -355,7 +352,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     const phi = (pitch * Math.PI) / 180;
     const theta = (yaw * Math.PI) / 180;
 
-    // Fórmulas de conversión matemática a espacio 3D A-Frame
     const x = radius * Math.cos(phi) * Math.sin(theta);
     const y = radius * Math.sin(phi);
     const z = -radius * Math.cos(phi) * Math.cos(theta);
@@ -416,7 +412,9 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               <div className="step">
                 <span className="step-num">🕹️</span>
                 <div>
-                  <strong>Desplazarte:</strong> Empuja la palanca o joystick hacia <strong>adelante</strong> para avanzar en el espacio o hacia <strong>atrás</strong> para retroceder.
+                  <strong>Joystick / Palanca:</strong>
+                  <br />• Empuja hacia **arriba / abajo** para hacer **Zoom (Acercar / Alejar)**.
+                  <br />• Mueve hacia los **lados (izquierda / derecha)** para **girar la cámara** cómodamente sin torcer tu cuello.
                 </div>
               </div>
             </div>
@@ -507,24 +505,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         </div>
       )}
 
-      {/* Panel de Estado del Control Remoto (Solo PC/Desarrollo) */}
-      {showDebug && !pantallaDoble && (
-        <div className="visor-vr-glasses__debug-panel">
-          <div className="visor-vr-glasses__debug-body">
-            <div className="visor-vr-glasses__debug-row">
-              <span className="label">Mando Bluetooth:</span>
-              <span className={`val ${gamepadInfo.connected ? 'connected' : 'searching'}`}>
-                {gamepadInfo.connected ? 'Conectado' : 'Buscando...'}
-              </span>
-            </div>
-            <div className="visor-vr-glasses__debug-row">
-              <span className="label">Comando:</span>
-              <span className="val event">{lastEvent}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Escena VR en A-Frame */}
       <a-scene 
         embedded 
@@ -587,18 +567,20 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
           </a-entity>
         ))}
 
-        {/* Cámara con controles de mirada y movimiento (WASD / Joystick del mando) */}
-        <a-camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true; mouseEnabled: true" wasd-controls="enabled: true; fly: false; acceleration: 65">
-          <a-cursor
-            color="#3b82f6"
-            fuse="true"
-            fuse-timeout="1500"
-            design="ring"
-            animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
-            animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
-            animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
-          ></a-cursor>
-        </a-camera>
+        {/* Rig de la Cámara para rotación artificial del mando y fov para zoom */}
+        <a-entity id="camera-rig" rotation={`0 ${rigRotation} 0`}>
+          <a-camera fov={fov} look-controls="magicWindowTrackingEnabled: true; touchEnabled: true; mouseEnabled: true" wasd-controls="enabled: false">
+            <a-cursor
+              color="#3b82f6"
+              fuse="true"
+              fuse-timeout="1500"
+              design="ring"
+              animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+              animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+              animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1"
+            ></a-cursor>
+          </a-camera>
+        </a-entity>
       </a-scene>
     </div>
   );
