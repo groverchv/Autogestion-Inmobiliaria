@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Compass, Home, Eye, EyeOff } from 'lucide-react';
 import 'pannellum/build/pannellum.css';
 import 'pannellum';
+import VisorVRGlasses from './VisorVRGlasses';
 import './ModalRecorrido3D.css';
 
 /**
@@ -23,6 +24,7 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
   const [loadingText, setLoadingText] = useState('Iniciando recorrido virtual...');
   const [escenaActivaId, setEscenaActivaId] = useState(null);
   const [uiVisible, setUiVisible] = useState(true);
+  const [showVRGlasses, setShowVRGlasses] = useState(false);
 
   // 1. Pre-descargar todos los panoramas para evadir CORS y acelerar transiciones
   useEffect(() => {
@@ -271,6 +273,37 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
         >
           {uiVisible ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
+        {!cargandoDescarga && (
+          <button
+            className="modal-recorrido__vr-btn"
+            onClick={() => setShowVRGlasses(true)}
+            type="button"
+            title="Activar Modo Gafas VR"
+            style={{
+              background: 'var(--color-primary, #3b82f6)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '10px 16px',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0 -20 0"/>
+              <path d="M6 12c1.5-1 2.5-1 6 0s4.5 1 6 0"/>
+              <circle cx="9" cy="12" r="1.5"/>
+              <circle cx="15" cy="12" r="1.5"/>
+            </svg>
+            {uiVisible && <span>Modo Gafas VR</span>}
+          </button>
+        )}
       </div>
 
       {/* ─── Pantalla de Carga Inmersiva ─── */}
@@ -333,6 +366,9 @@ const ModalRecorrido3D = ({ panoramas = [], tituloPropiedad = '', onClose }) => 
             })}
           </div>
         </div>
+      )}
+      {showVRGlasses && (
+        <VisorVRGlasses panoramas={panoramas} onClose={() => setShowVRGlasses(false)} />
       )}
     </div>
   );

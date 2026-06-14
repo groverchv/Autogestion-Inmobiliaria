@@ -152,7 +152,8 @@ def create_seed_data():
                 'direccion': direccion_obj,
                 'superficie': Decimal(str(sup)), 'habitaciones': hab,
                 'banos': banos, 'garaje': garaje, 'estado': estado,
-                'gps': f'-16.5{idx:03d}, -68.0{idx:03d}'
+                'gps': f'-16.5{idx:03d}, -68.0{idx:03d}',
+                'modelo_3d': 'https://raw.githubusercontent.com/GoogleWebComponents/model-viewer/master/packages/shared-assets/models/Astronaut.glb' if idx == 1 else None
             }
         )
         

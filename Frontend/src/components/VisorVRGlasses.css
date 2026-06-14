@@ -1,0 +1,132 @@
+.visor-vr-glasses {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100000; /* Asegurar que quede encima de todo el layout */
+  background: #000000;
+}
+
+/* UI Flotante por encima del Canvas de A-Frame */
+.visor-vr-glasses__ui {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 100001; /* Mayor que el Canvas */
+  pointer-events: none; /* No bloquear clics en la escena, pero los botones si son clickeables */
+}
+
+@media (max-width: 600px) {
+  .visor-vr-glasses__ui {
+    flex-direction: column;
+    gap: 12px;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+  }
+}
+
+.visor-vr-glasses__close-btn {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  pointer-events: auto; /* Reactivar clics */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+}
+
+.visor-vr-glasses__close-btn:hover {
+  background: #ef4444;
+  border-color: #f87171;
+  transform: translateY(-1px);
+}
+
+.visor-vr-glasses__selector {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto; /* Reactivar clics */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  max-width: 350px;
+}
+
+@media (max-width: 600px) {
+  .visor-vr-glasses__selector {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+.visor-vr-glasses__selector-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.visor-vr-glasses__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.visor-vr-glasses__pano-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.visor-vr-glasses__pano-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.visor-vr-glasses__pano-btn.active {
+  background: var(--color-primary, #3b82f6);
+  color: #ffffff;
+  border-color: var(--color-primary, #3b82f6);
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+/* Ocultar botones de VR por defecto de A-Frame en pantallas normales, 
+   dejando que el usuario use el nativo de WebXR en pantallas aptas */
+.a-enter-vr {
+  z-index: 100002 !important;
+}
+.a-enter-ar {
+  display: none !important;
+}

@@ -89,6 +89,7 @@ class Inmueble(models.Model):
     )
     # Coordenadas GPS
     gps = models.CharField(max_length=100, null=True, blank=True, help_text="Coordenadas GPS (ej. -17.7898, -63.1939)")
+    modelo_3d = models.CharField(max_length=500, null=True, blank=True, help_text="URL del modelo 3D (.glb) para visualización AR")
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
