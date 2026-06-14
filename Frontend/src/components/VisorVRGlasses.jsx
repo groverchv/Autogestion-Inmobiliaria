@@ -11,6 +11,8 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [pantallaDoble, setPantallaDoble] = useState(false);
   const [autoRotar, setAutoRotar] = useState(false); // Desactivado por defecto
   const [gyroPermission, setGyroPermission] = useState('unknown');
+  
+  const sensorInicializado = useRef(false);
 
   useEffect(() => {
     // Verificar si se requiere solicitar permisos de giroscopio (iOS)
@@ -24,6 +26,23 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     }
   }, []);
 
+  const reloadLookControls = () => {
+    const sceneEl = document.querySelector('a-scene');
+    if (sceneEl) {
+      const cameraEl = sceneEl.querySelector('a-camera');
+      if (cameraEl) {
+        cameraEl.removeAttribute('look-controls');
+        setTimeout(() => {
+          cameraEl.setAttribute(
+            'look-controls',
+            'magicWindowTrackingEnabled: true; touchEnabled: true; mouseEnabled: true'
+          );
+          console.log('look-controls re-initialized successfully');
+        }, 80);
+      }
+    }
+  };
+
   const solicitarPermisoGiroscopio = async (silencioso = false) => {
     if (
       typeof DeviceOrientationEvent !== 'undefined' &&
@@ -33,13 +52,8 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         const permissionState = await DeviceOrientationEvent.requestPermission();
         setGyroPermission(permissionState);
         if (permissionState === 'granted') {
-          const sceneEl = document.querySelector('a-scene');
-          if (sceneEl) {
-            const cameraEl = sceneEl.querySelector('a-camera');
-            if (cameraEl && cameraEl.components['look-controls']) {
-              cameraEl.components['look-controls'].setupMagicWindow();
-            }
-          }
+          reloadLookControls();
+          sensorInicializado.current = true;
           if (!silencioso) {
             alert('¡Permiso de sensor de movimiento concedido!');
           }
@@ -56,6 +70,8 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       }
     } else {
       setGyroPermission('granted');
+      reloadLookControls();
+      sensorInicializado.current = true;
       if (!silencioso) {
         alert('El sensor de movimiento ya está activo y soportado.');
       }
@@ -65,6 +81,9 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const handleVisorClick = () => {
     if (gyroPermission === 'prompt') {
       solicitarPermisoGiroscopio(true);
+    } else if (!sensorInicializado.current) {
+      reloadLookControls();
+      sensorInicializado.current = true;
     }
   };
 
