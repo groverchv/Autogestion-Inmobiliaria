@@ -57,17 +57,20 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       {/* Escena VR en A-Frame */}
       <a-scene embedded style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}>
         <a-assets>
-          {/* Cargar dinámicamente la imagen con cabeceras anónimas CORS */}
-          <img
-            id={`pano-${escenaActiva.id}`}
-            src={`${escenaActiva.archivo}`}
-            crossOrigin="anonymous"
-            alt={escenaActiva.descripcion}
-          />
+          {panoramas.map((pano) => (
+            <img
+              key={pano.id}
+              id={`pano-${pano.id}`}
+              src={pano.archivo}
+              crossOrigin="anonymous"
+              alt={pano.descripcion}
+            />
+          ))}
         </a-assets>
 
         {/* Esfera 360° */}
         <a-sky
+          key={escenaActiva.id}
           src={`#pano-${escenaActiva.id}`}
           rotation="0 -90 0"
           animation="property: rotation; to: 0 270 0; dur: 60000; easing: linear; loop: true"
