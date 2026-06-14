@@ -8,8 +8,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from usuarios.models import Usuario, Agenda, Notificacion, Chat, Mensaje, Bloqueo, Resena
-from inmuebles.models import TipoInmueble, Inmueble, Publicacion, Multimedia, Direccion, TipoContrato, Contrato, Comision
-from pagos.models import TipoPago, Pago, HistorialPago, ConfiguracionSistema
+from inmuebles.models import (
+    TipoInmueble, Inmueble, Publicacion, Multimedia, Direccion, TipoContrato, Contrato, Comision,
+    Hotspot, Favorito, Cita, HorarioDisponible, VerificacionTitulo, AccesoRecorrido360
+)
+from pagos.models import (
+    TipoPago, Pago, HistorialPago, ConfiguracionSistema, DetallePago, TipoPlan, Plan, TransaccionStripe
+)
+
 
 def create_seed_data():
     print("Creando datos semilla...")
@@ -23,10 +29,24 @@ def create_seed_data():
     Notificacion.objects.all().delete()
     Agenda.objects.all().delete()
     Comision.objects.all().delete()
+    
+    AccesoRecorrido360.objects.all().delete()
+    Cita.objects.all().delete()
+    HorarioDisponible.objects.all().delete()
+    VerificacionTitulo.objects.all().delete()
+    Favorito.objects.all().delete()
+    Hotspot.objects.all().delete()
+    
     HistorialPago.objects.all().delete()
+    DetallePago.objects.all().delete()
+    TransaccionStripe.objects.all().delete()
     Pago.objects.all().delete()
     ConfiguracionSistema.objects.all().delete()
     Contrato.objects.all().delete()
+    
+    Plan.objects.all().delete()
+    TipoPlan.objects.all().delete()
+    
     Multimedia.objects.all().delete()
     Publicacion.objects.all().delete()
     Inmueble.objects.all().delete()
@@ -502,20 +522,204 @@ def create_seed_data():
     )
     print("  OK Bloqueos de usuarios: 2")
 
+    # ═══════════════════════════════════════════════════════════
+    #  NUEVAS TABLAS ADICIONALES
+    # ═══════════════════════════════════════════════════════════
+    from datetime import time
+    from django.utils import timezone
+
+    # 1. PANORAMAS 360 y HOTSPOTS
+    print("Creando panoramas y hotspots...")
+    inm_1 = inm_list[0]
+    pan1, _ = Multimedia.objects.get_or_create(
+        inmueble=inm_1,
+        archivo="https://res.cloudinary.com/dwerzrgya/image/upload/v1776445025/panorama1.jpg",
+        defaults={'principal': False, 'tipo': 'panorama360', 'descripcion': 'Sala Principal 360'}
+    )
+    pan2, _ = Multimedia.objects.get_or_create(
+        inmueble=inm_1,
+        archivo="https://res.cloudinary.com/dwerzrgya/image/upload/v1776445025/panorama2.jpg",
+        defaults={'principal': False, 'tipo': 'panorama360', 'descripcion': 'Cocina Americana 360'}
+    )
+    
+    Hotspot.objects.get_or_create(
+        inmueble=inm_1,
+        escena_origen=pan1,
+        escena_destino=pan2,
+        defaults={
+            'pitch': 10.0,
+            'yaw': 45.0,
+            'texto_ayuda': 'Ir a Cocina'
+        }
+    )
+    Hotspot.objects.get_or_create(
+        inmueble=inm_1,
+        escena_origen=pan2,
+        escena_destino=pan1,
+        defaults={
+            'pitch': -5.0,
+            'yaw': 180.0,
+            'texto_ayuda': 'Volver a Sala'
+        }
+    )
+    print("  OK Hotspots creados: 2")
+
+    # 2. FAVORITOS
+    Favorito.objects.get_or_create(usuario=users['propietario2'], inmueble=inm_list[0])
+    Favorito.objects.get_or_create(usuario=users['propietario3'], inmueble=inm_list[1])
+    print("  OK Favoritos creados: 2")
+
+    # 3. CITAS
+    Cita.objects.get_or_create(
+        inmueble=inm_list[0],
+        fecha=date.today() + timedelta(days=2),
+        hora_inicio=time(14, 0),
+        defaults={
+            'cliente': users['propietario2'],
+            'propietario': inm_list[0].propietario,
+            'hora_fin': time(15, 0),
+            'estado': 'pendiente',
+            'notas': 'Visita guiada para ver acabados de la cocina.'
+        }
+    )
+    Cita.objects.get_or_create(
+        inmueble=inm_list[1],
+        fecha=date.today() + timedelta(days=3),
+        hora_inicio=time(10, 0),
+        defaults={
+            'cliente': users['propietario3'],
+            'propietario': inm_list[1].propietario,
+            'hora_fin': time(11, 0),
+            'estado': 'confirmada',
+            'notas': 'Llevar documentos originales.'
+        }
+    )
+    print("  OK Citas creadas: 2")
+
+    # 4. HORARIOS DISPONIBLES
+    HorarioDisponible.objects.get_or_create(
+        propietario=users['propietario1'],
+        dia_semana=0,
+        hora_inicio=time(9, 0),
+        hora_fin=time(12, 0),
+        defaults={'activo': True}
+    )
+    HorarioDisponible.objects.get_or_create(
+        propietario=users['propietario1'],
+        dia_semana=5,
+        hora_inicio=time(14, 0),
+        hora_fin=time(18, 0),
+        defaults={'activo': True}
+    )
+    print("  OK Horarios Disponibles creados: 2")
+
+    # 5. VERIFICACIONES DE TÍTULO
+    VerificacionTitulo.objects.get_or_create(
+        inmueble=inm_list[0],
+        defaults={
+            'solicitado_por': users['propietario1'],
+            'archivo_titulo': 'https://res.cloudinary.com/dwerzrgya/image/upload/v1776445025/titulo1.pdf',
+            'texto_ocr': 'Folio Real Matrícula 701101234. Propietario: Juan Pérez. Gravámenes: Ninguno.',
+            'resultado_ia': {'valido': True, 'analisis': 'Documento legalmente verificado y libre de gravamen.'},
+            'estado': 'verificado',
+            'score_confianza': 98,
+            'resumen_publico': 'Título de propiedad verificado libre de cargas.'
+        }
+    )
+    print("  OK Verificaciones de Título creadas: 1")
+
+    # 6. ACCESOS RECORRIDO 360
+    AccesoRecorrido360.objects.get_or_create(
+        inmueble=inm_list[0],
+        cliente=users['propietario2'],
+        propietario=users['propietario1'],
+        defaults={
+            'fecha_expiracion': timezone.now() + timedelta(days=7),
+            'activo': True,
+            'visitas': 2
+        }
+    )
+    print("  OK Accesos Recorrido 360 creados: 1")
+
+    # 7. DETALLES DE PAGO
+    for p in Pago.objects.all()[:3]:
+        DetallePago.objects.get_or_create(
+            pago=p,
+            concepto='Alquiler mensual básico',
+            defaults={'monto': p.monto}
+        )
+    print("  OK Detalles de Pago creados: 3")
+
+    # 8. PLANES DE SUSCRIPCIÓN
+    tp_mensual, _ = TipoPlan.objects.get_or_create(nombre='Mensual', defaults={'descripcion': 'Planes de cobro mensual'})
+    tp_anual, _ = TipoPlan.objects.get_or_create(nombre='Anual', defaults={'descripcion': 'Planes de cobro anual con descuento'})
+    
+    Plan.objects.get_or_create(
+        nombre='Plan Básico',
+        precio=Decimal('99.00'),
+        defaults={
+            'tipo_plan': tp_mensual,
+            'descripcion': 'Hasta 5 inmuebles.',
+            'duracion': 1,
+            'max_inmuebles': 5,
+            'max_usuarios': 1,
+            'activo': True
+        }
+    )
+    Plan.objects.get_or_create(
+        nombre='Plan Premium',
+        precio=Decimal('299.00'),
+        defaults={
+            'tipo_plan': tp_mensual,
+            'descripcion': 'Inmuebles ilimitados y soporte prioritario.',
+            'duracion': 1,
+            'max_inmuebles': 100,
+            'max_usuarios': 5,
+            'activo': True
+        }
+    )
+    print("  OK Planes de Suscripción creados: 2")
+
+    # 9. TRANSACCIONES STRIPE
+    contrato_stripe = list(contratos.values())[0]
+    TransaccionStripe.objects.get_or_create(
+        stripe_session_id='cs_test_a1b2c3d4e5f6',
+        defaults={
+            'contrato': contrato_stripe,
+            'pagador': contrato_stripe.inquilino,
+            'propietario': contrato_stripe.inmueble.propietario,
+            'tipo_operacion': 'alquiler',
+            'monto': contrato_stripe.monto,
+            'moneda': 'usd',
+            'descripcion': 'Pago de mensualidad mediante Stripe checkout',
+            'stripe_payment_intent': 'pi_test_123456789',
+            'estado': 'completada'
+        }
+    )
+    print("  OK Transacciones Stripe creadas: 1")
+
     print("\n  OK Datos semilla creados exitosamente.")
     print("  ----------------------------------------------")
     print("  [+] USUARIOS:           11 (admin + 10 propietarios)")
     print("  [+] INMUEBLES:          10 (Santa Cruz y La Guardia, 1 por usuario)")
-    print("  [+] MULTIMEDIA:         41 fotos de Cloudinary")
+    print("  [+] MULTIMEDIA:         43 fotos (incluyendo 2 panoramas 360)")
+    print("  [+] HOTSPOTS:           2 puntos de navegación 360")
+    print("  [+] FAVORITOS:          2 registrados")
+    print("  [+] CITAS:              2 agendadas")
+    print("  [+] HORARIOS DISP.:     2 configurados")
+    print("  [+] VERIF. TÍTULOS:     1 verificada en blockchain")
+    print("  [+] ACCESOS 360:        1 activo")
     print("  [+] CONTRATOS:          5 (Alquiler, Venta, Anticretico, Mixto)")
-    print("  [+] PAGOS:              8 (con historial)")
+    print("  [+] PAGOS:              8 (con desglose de detalles)")
     print("  [+] AGENDA:             8 eventos programados")
     print("  [+] NOTIFICACIONES:     10 alertas")
     print("  [+] CHATS:              4 (con 16 mensajes)")
     print("  [+] RESENAS:            10 calificaciones")
     print("  [+] BLOQUEOS:           2 usuarios bloqueados")
+    print("  [+] PLANES / SUSC.:     2 planes comerciales")
+    print("  [+] STRIPE TXS:         1 transacción de prueba")
     print("  ----------------------------------------------")
-    print("  [!] Acceso Admin:       admin / admin123")
+    print("  [!] Acceso Admin:       admin@autogestion.bo / admin123")
     print("  [!] Otros usuarios:     usuario123")
     print("  ----------------------------------------------")
 
