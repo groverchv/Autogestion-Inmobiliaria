@@ -68,12 +68,10 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
           ))}
         </a-assets>
 
-        {/* Esfera 360° */}
         <a-sky
           key={escenaActiva.id}
           src={`#pano-${escenaActiva.id}`}
           rotation="0 -90 0"
-          animation="property: rotation; to: 0 270 0; dur: 60000; easing: linear; loop: true"
         ></a-sky>
 
         {/* Cámara con controles de mirada interactivos */}
