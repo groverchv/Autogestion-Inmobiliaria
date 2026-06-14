@@ -18,7 +18,7 @@ import './Visor360.css';
  *
  * @param {{ panoramas: Array<{id: number, archivo: string, descripcion: string}> }} props
  */
-const Visor360 = ({ panoramas = [], tituloPropiedad = '', accesoId = null }) => {
+const Visor360 = ({ panoramas = [], accesoId = null }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const viewerRef = useRef(null);
@@ -98,6 +98,19 @@ const Visor360 = ({ panoramas = [], tituloPropiedad = '', accesoId = null }) => 
 
   // ─── Inicializar / Actualizar Pannellum ──────────────────────────────
   const inicializarVisor = useCallback(async () => {
+    if (isModalOpen) {
+      // Destruir instancia previa para liberar WebGL context antes de abrir el modal full screen
+      if (viewerInstanceRef.current) {
+        try {
+          viewerInstanceRef.current.destroy();
+        } catch {
+          // Ignorar
+        }
+        viewerInstanceRef.current = null;
+      }
+      return;
+    }
+
     if (!escenaActiva || !viewerRef.current) return;
 
     setCargando(true);
@@ -179,7 +192,7 @@ const Visor360 = ({ panoramas = [], tituloPropiedad = '', accesoId = null }) => 
       console.error('Error inicializando Pannellum:', error);
       setCargando(false);
     }
-  }, [escenaActiva]);
+  }, [escenaActiva, isModalOpen]);
 
   useEffect(() => {
     inicializarVisor();
@@ -198,7 +211,7 @@ const Visor360 = ({ panoramas = [], tituloPropiedad = '', accesoId = null }) => 
         objectUrlRef.current = null;
       }
     };
-  }, [inicializarVisor]);
+  }, [inicializarVisor, isModalOpen]);
 
   // Escuchar eventos de pantalla completa para sincronizar estado e íconos
   useEffect(() => {
@@ -276,7 +289,6 @@ const Visor360 = ({ panoramas = [], tituloPropiedad = '', accesoId = null }) => 
       {isModalOpen && (
         <ModalRecorrido3D
           panoramas={panoramas}
-          tituloPropiedad={tituloPropiedad}
           onClose={() => setIsModalOpen(false)}
         />
       )}
