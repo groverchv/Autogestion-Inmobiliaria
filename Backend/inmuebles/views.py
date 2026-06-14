@@ -549,16 +549,18 @@ Estás ayudando a un PROPIETARIO a crear un contrato para su inmueble.
 CONTEXTO DEL CONTRATO:
 - Inmueble: {contexto.get('inmueble_titulo', 'No especificado')}
 - Tipo de contrato: {contexto.get('tipo_contrato', 'No definido aún')}
-- Monto: {contexto.get('monto', 'No definido')} {contexto.get('moneda', 'BOB')}
+- Monto base: {contexto.get('monto', 'No definido')} {contexto.get('moneda', 'BOB')}
 - Vigencia: desde {contexto.get('inicio', 'No definido')} hasta {contexto.get('fin', 'Indefinido')}
 
-TU ROL:
-- Eres el Abogado del PROPIETARIO: oriéntalo para proteger sus intereses
-- Sugiere cláusulas concretas, restricciones y penalidades apropiadas
-- Ayúdalo a definir condiciones de uso, servicios incluidos y garantías
-- Cuando el usuario te pida redactar una cláusula, hazlo en formato legal formal boliviano
-- Responde de forma concisa (máximo 250 palabras), directa y estructurada
-- No inventar datos, basarte en lo que el propietario te dice"""
+TU ROL Y MEMORIA:
+- Eres el Abogado del PROPIETARIO: oriéntalo para proteger sus intereses.
+- Analiza y recuerda con precisión toda la conversación. Si el propietario te dice un dato (ej. "quiero 2 meses de garantía" o "el día de pago será el 5"), reconócelo, confírmalo y detállalo.
+- Informa activamente que el sistema extraerá automáticamente estos datos del chat para rellenar los campos del contrato final.
+- Sugiere cláusulas concretas, restricciones y penalidades apropiadas.
+- Ayúdalo a definir condiciones de uso, servicios incluidos y el monto de garantía (ej. recomendar 1 o 2 meses de alquiler como depósito de garantía estándar).
+- Cuando el usuario te pida redactar una cláusula, hazlo en formato legal formal boliviano.
+- Responde de forma concisa (máximo 250 palabras), directa y estructurada.
+- No inventar datos, basarte en lo que el propietario te dice."""
 
             messages = [{"role": "system", "content": system_prompt}]
             messages.extend(mensajes)

@@ -735,7 +735,14 @@ def crear_contrato_con_ia(propietario, datos: dict, historial_chat: list):
     from django.contrib.auth import get_user_model
     User = get_user_model()
 
-    # 1. Enriquecer cláusulas con Groq si hay historial de chat
+    # 1. Valores por defecto iniciales provistos por el formulario
+    monto_val = datos['monto']
+    deposito_val = datos.get('deposito', '0')
+    try:
+        dia_pago_val = int(datos.get('dia_pago', 1))
+    except (ValueError, TypeError):
+        dia_pago_val = 1
+
     clausulas_ia = datos.get('clausulas', '')
     restricciones_ia = datos.get('restricciones', '')
     penalidades_ia = datos.get('penalidades', '')
@@ -752,19 +759,24 @@ def crear_contrato_con_ia(propietario, datos: dict, historial_chat: list):
             )
             prompt_extraccion = f"""Eres un asistente legal boliviano. A continuación hay una conversación entre un propietario y un asistente legal sobre las condiciones de un contrato inmobiliario.
 
+Monto de alquiler base: {datos.get('monto')} {datos.get('moneda', 'BOB')}
+
 CONVERSACIÓN:
 {conversacion_texto}
 
-TAREA: Extrae y sintetiza ÚNICAMENTE las condiciones específicas que el propietario quiere en el contrato.
-Devuelve un JSON con exactamente estas claves (solo el JSON puro, sin bloques de código):
+TAREA: Extrae y sintetiza las condiciones específicas que el propietario quiere en el contrato.
+Devuelve un JSON con exactamente estas claves (solo el JSON puro, sin bloques de código ni markdown):
 {{
   "clausulas": "Cláusulas principales mencionadas o acordadas",
   "restricciones": "Restricciones específicas del propietario",
   "penalidades": "Penalidades acordadas",
   "condiciones_uso": "Condiciones de uso del inmueble",
-  "incluye_servicios": "Servicios incluidos o excluidos"
+  "incluye_servicios": "Servicios incluidos o excluidos",
+  "monto": "Monto de alquiler mensual numérico (solo dígitos) si se acordó/cambió en el chat (sino null)",
+  "deposito": "Monto de garantía/depósito numérico (solo dígitos) si se acordó/cambió en el chat. Ej. si se acordaron 2 meses de garantía, calcula 2 * monto base (sino null)",
+  "dia_pago": "Día del mes para pago (número entre 1 y 31) si se acordó/cambió en el chat (sino null)"
 }}
-Si no se mencionó un campo, devuelve cadena vacía. Responde SOLO el JSON."""
+Responde SOLO el JSON."""
 
             try:
                 headers_req = {
@@ -790,6 +802,7 @@ Si no se mencionó un campo, devuelve cadena vacía. Responde SOLO el JSON."""
                 if content.endswith("```"):
                     content = content[:-3]
                 extraido = json.loads(content.strip())
+                
                 if extraido.get('clausulas'):
                     clausulas_ia = extraido['clausulas']
                 if extraido.get('restricciones'):
@@ -800,6 +813,23 @@ Si no se mencionó un campo, devuelve cadena vacía. Responde SOLO el JSON."""
                     condiciones_uso_ia = extraido['condiciones_uso']
                 if extraido.get('incluye_servicios'):
                     incluye_servicios_ia = extraido['incluye_servicios']
+
+                # Extraer monto, depósito/garantía y día de pago de la memoria/chat
+                if extraido.get('monto'):
+                    try:
+                        monto_val = str(int(float(extraido['monto'])))
+                    except (ValueError, TypeError):
+                        pass
+                if extraido.get('deposito'):
+                    try:
+                        deposito_val = str(int(float(extraido['deposito'])))
+                    except (ValueError, TypeError):
+                        pass
+                if extraido.get('dia_pago'):
+                    try:
+                        dia_pago_val = int(extraido['dia_pago'])
+                    except (ValueError, TypeError):
+                        pass
             except Exception as e:
                 print(f"[crear_contrato_con_ia] Error extrayendo datos con IA: {e}")
 
@@ -821,12 +851,12 @@ Si no se mencionó un campo, devuelve cadena vacía. Responde SOLO el JSON."""
             inquilino=inquilino,
             chat=chat_obj,
             tipo_contrato=tipo_contrato,
-            monto=datos['monto'],
+            monto=monto_val,
             moneda=datos.get('moneda', 'BOB'),
             inicio=datos['inicio'],
             fin=datos.get('fin') or None,
-            deposito=datos.get('deposito', '0'),
-            dia_pago=datos.get('dia_pago', 1),
+            deposito=deposito_val,
+            dia_pago=dia_pago_val,
             clausulas=clausulas_ia,
             restricciones=restricciones_ia,
             penalidades=penalidades_ia,
