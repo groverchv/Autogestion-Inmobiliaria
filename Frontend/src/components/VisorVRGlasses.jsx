@@ -308,10 +308,36 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
           lastButtonStates[index] = pressed;
         });
 
-        // Ejes del Joystick / Palanca analógica
-        const axisX = activeGamepad.axes[0]; // -1 izquierda, 1 derecha
-        const axisY = activeGamepad.axes[1]; // -1 arriba, 1 abajo
-        const threshold = 0.25;
+        // Ejes del Joystick / Palanca analógica - Búsqueda robusta en todos los ejes
+        let axisX = 0;
+        let axisY = 0;
+        const threshold = 0.20; // Zona muerta ligeramente más sensible
+
+        // 1. Intentamos con los ejes estándar 0 y 1
+        if (activeGamepad.axes.length >= 2) {
+          axisX = activeGamepad.axes[0];
+          axisY = activeGamepad.axes[1];
+        }
+
+        // 2. Si no hay señal en 0 y 1, probamos los ejes alternativos (2, 3) comunes en mandos VR
+        if (Math.abs(axisX) < 0.05 && Math.abs(axisY) < 0.05 && activeGamepad.axes.length >= 4) {
+          axisX = activeGamepad.axes[2];
+          axisY = activeGamepad.axes[3];
+        }
+
+        // 3. Si sigue sin haber señal, buscamos en cualquier eje disponible que tenga movimiento
+        if (Math.abs(axisX) < 0.05 && Math.abs(axisY) < 0.05) {
+          for (let j = 0; j < activeGamepad.axes.length; j++) {
+            const val = activeGamepad.axes[j];
+            if (Math.abs(val) > threshold) {
+              if (j % 2 === 0) {
+                axisX = val;
+              } else {
+                axisY = val;
+              }
+            }
+          }
+        }
 
         // 1. Giro horizontal con el Joystick (Izquierda / Derecha)
         if (Math.abs(axisX) > threshold) {
@@ -347,6 +373,14 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     };
   }, [gamepadInfo, onClose]);
 
+  // Reactivamente actualizar el FOV de la cámara de A-Frame para zoom instantáneo
+  useEffect(() => {
+    const cameraEl = document.querySelector('a-camera');
+    if (cameraEl) {
+      cameraEl.setAttribute('camera', 'fov', fov);
+    }
+  }, [fov]);
+
   // 2. Convertir coordenadas esféricas (pitch, yaw) a coordenadas cartesianas 3D (x, y, z)
   const getPositionFromPitchYaw = (pitch, yaw, radius = 3.5) => {
     const phi = (pitch * Math.PI) / 180;
@@ -369,9 +403,17 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         const desc = destinoPano.descripcion || '';
         label = desc.includes('|') ? desc.split('|')[1].trim() : desc;
       }
+      let labelText = label ? label.toUpperCase().trim() : 'IR A HABITACIÓN';
+      const needsPrefix = !labelText.startsWith('IR A') && 
+                          !labelText.startsWith('REGRESAR A') && 
+                          !labelText.startsWith('ENTRAR A') && 
+                          !labelText.startsWith('VOLVER A');
+      if (needsPrefix && label) {
+        labelText = `IR A: ${labelText}`;
+      }
       return {
         ...h,
-        label: label.toUpperCase(),
+        label: labelText,
         position: getPositionFromPitchYaw(h.pitch, h.yaw),
         destinoPano,
       };
@@ -555,15 +597,21 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               material="side: double; opacity: 0.8"
             ></a-ring>
 
-            <a-text
-              value={h.label}
-              align="center"
-              position="0 0.45 0"
-              scale="0.8 0.8 0.8"
-              color="#ffffff"
-              font="kells"
-              width="4"
-            ></a-text>
+            <a-entity position="0 0.5 0" rotation="0 0 0">
+              <a-plane
+                width="1.8"
+                height="0.4"
+                color="#0f172a"
+                material="opacity: 0.8; shader: flat; transparent: true"
+              ></a-plane>
+              <a-text
+                value={h.label}
+                align="center"
+                color="#ffffff"
+                width="4.2"
+                position="0 0 0.02"
+              ></a-text>
+            </a-entity>
           </a-entity>
         ))}
 
