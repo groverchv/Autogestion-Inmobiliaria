@@ -892,4 +892,163 @@ Responde SOLO el JSON."""
         )
 
     return contrato
+
+
+def editar_contrato_con_ia(contrato, propietario, datos: dict, historial_chat: list):
+    """Actualiza un contrato existente enriqueciendo las cláusulas con la IA
+    y guardando los campos actualizados.
+
+    Args:
+        contrato: Instancia de Contrato a editar
+        propietario: Usuario propietario
+        datos: Dict con campos a actualizar: tipo_contrato_id, monto, moneda, inicio, fin, deposito, dia_pago
+        historial_chat: Lista [{role, content}]
+    """
+    from .models import TipoContrato
+    from usuarios.models import Mensaje
+    from django.conf import settings
+    from django.db import transaction
+    import requests
+    import json
+
+    # 1. Valores base
+    monto_val = datos.get('monto', contrato.monto)
+    deposito_val = datos.get('deposito', contrato.deposito)
+    try:
+        dia_pago_val = int(datos.get('dia_pago', contrato.dia_pago))
+    except (ValueError, TypeError):
+        dia_pago_val = contrato.dia_pago
+
+    clausulas_ia = contrato.clausulas
+    restricciones_ia = contrato.restricciones
+    penalidades_ia = contrato.penalidades
+    condiciones_uso_ia = contrato.condiciones_uso
+    incluye_servicios_ia = contrato.incluye_servicios
+
+    # Extraer si hay historial
+    if historial_chat and len(historial_chat) > 1:
+        api_key = settings.GROQ_API_KEY
+        if api_key:
+            conversacion_texto = '\n'.join(
+                f"{'Propietario' if m['role'] == 'user' else 'Abogado IA'}: {m['content']}"
+                for m in historial_chat
+                if m.get('content', '').strip()
+            )
+            prompt_extraccion = f"""Eres un asistente legal boliviano. A continuación hay una conversación entre un propietario y un asistente legal sobre las condiciones de un contrato inmobiliario.
+
+Monto de alquiler base: {monto_val} {datos.get('moneda', contrato.moneda)}
+
+CONVERSACIÓN:
+{conversacion_texto}
+
+TAREA: Extrae y sintetiza las condiciones específicas que el propietario quiere en el contrato.
+Devuelve un JSON con exactamente estas claves (solo el JSON puro, sin bloques de código ni markdown):
+{{
+  "clausulas": "Cláusulas principales mencionadas o acordadas",
+  "restricciones": "Restricciones específicas del propietario",
+  "penalidades": "Penalidades acordadas",
+  "condiciones_uso": "Condiciones de uso del inmueble",
+  "incluye_servicios": "Servicios incluidos o excluidos",
+  "monto": "Monto de alquiler mensual numérico (solo dígitos) si se acordó/cambió en el chat (sino null)",
+  "deposito": "Monto de garantía/depósito numérico (solo dígitos) si se acordó/cambió en el chat. Ej. si se acordaron 2 meses de garantía, calcula 2 * monto base (sino null)",
+  "dia_pago": "Día del mes para pago (número entre 1 y 31) si se acordó/cambió en el chat (sino null)"
+}}
+Responde SOLO el JSON."""
+
+            try:
+                headers_req = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": "Eres un asistente legal boliviano. Extrae condiciones contractuales de conversaciones y responde solo con JSON puro."},
+                        {"role": "user", "content": prompt_extraccion}
+                    ],
+                    "temperature": 0.2,
+                    "max_tokens": 1024
+                }
+                resp = requests.post(GROQ_API_URL, json=payload, headers=headers_req, timeout=30)
+                resp.raise_for_status()
+                content = resp.json()['choices'][0]['message']['content'].strip()
+                for prefix in ["```json", "```"]:
+                    if content.startswith(prefix):
+                        content = content[len(prefix):]
+                if content.endswith("```"):
+                    content = content[:-3]
+                extraido = json.loads(content.strip())
+
+                if extraido.get('clausulas'):
+                    clausulas_ia = extraido['clausulas']
+                if extraido.get('restricciones'):
+                    restricciones_ia = extraido['restricciones']
+                if extraido.get('penalidades'):
+                    penalidades_ia = extraido['penalidades']
+                if extraido.get('condiciones_uso'):
+                    condiciones_uso_ia = extraido['condiciones_uso']
+                if extraido.get('incluye_servicios'):
+                    incluye_servicios_ia = extraido['incluye_servicios']
+
+                # Extraer numéricos
+                if extraido.get('monto'):
+                    try:
+                        monto_val = str(int(float(extraido['monto'])))
+                    except (ValueError, TypeError):
+                        pass
+                if extraido.get('deposito'):
+                    try:
+                        deposito_val = str(int(float(extraido['deposito'])))
+                    except (ValueError, TypeError):
+                        pass
+                if extraido.get('dia_pago'):
+                    try:
+                        dia_pago_val = int(extraido['dia_pago'])
+                    except (ValueError, TypeError):
+                        pass
+            except Exception as e:
+                print(f"[editar_contrato_con_ia] Error extrayendo con IA: {e}")
+
+    # 2. Actualizar campos
+    tipo_contrato = TipoContrato.objects.get(id=datos['tipo_contrato_id']) if datos.get('tipo_contrato_id') else contrato.tipo_contrato
+    
+    with transaction.atomic():
+        contrato.tipo_contrato = tipo_contrato
+        contrato.monto = monto_val
+        contrato.moneda = datos.get('moneda', contrato.moneda)
+        contrato.inicio = datos.get('inicio', contrato.inicio)
+        contrato.fin = datos.get('fin') or None
+        contrato.deposito = deposito_val
+        contrato.dia_pago = dia_pago_val
+        contrato.clausulas = clausulas_ia
+        contrato.restricciones = restricciones_ia
+        contrato.penalidades = penalidades_ia
+        contrato.condiciones_uso = condiciones_uso_ia
+        contrato.incluye_servicios = incluye_servicios_ia
+        # Si fue rechazado, vuelve a 'enviado' para revisión
+        if contrato.estado == 'rechazado':
+            contrato.estado = 'enviado'
+            contrato.motivo_rechazo = ''
+        contrato.save()
+
+        # Enviar mensaje de actualización al chat
+        if contrato.chat:
+            Mensaje.objects.create(
+                chat=contrato.chat,
+                remitente=propietario,
+                tipo='texto',
+                contenido=(
+                    f'📋 CONTRATO ACTUALIZADO\n'
+                    f'Propiedad: {contrato.inmueble.titulo}\n'
+                    f'Tipo: {tipo_contrato.nombre}\n'
+                    f'Monto: ${contrato.monto} {contrato.moneda}\n'
+                    f'Período: {contrato.inicio} → {contrato.fin or "Indefinido"}\n'
+                    f'───────────────\n'
+                    f'CONTRATO_REVIEW:{contrato.id}:END'
+                ),
+            )
+            contrato.chat.save()
+
+    return contrato
+
 

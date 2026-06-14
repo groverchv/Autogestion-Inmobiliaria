@@ -238,6 +238,7 @@ const MisMensajes = () => {
 
   // ─── Estado del nuevo Creador de Contrato con IA ───────────
   const [showContratoIAModal, setShowContratoIAModal] = useState(false);
+  const [contratoEdicion, setContratoEdicion] = useState(null);
 
   // ─── Estado de Detalle de Contrato (Asistente IA) ──────────
   const [showDetalleContratoModal, setShowDetalleContratoModal] = useState(false);
@@ -732,6 +733,19 @@ const MisMensajes = () => {
     }
   };
 
+  const abrirContratoIAEdicion = async (idContrato) => {
+    setContratoLoading(true);
+    try {
+      const res = await api.get(`/inmuebles/contratos/${idContrato}/`);
+      setContratoEdicion(res.data);
+      setShowContratoIAModal(true);
+    } catch {
+      mostrarMensaje('Error', 'No se pudo cargar el detalle del contrato.', 'error');
+    } finally {
+      setContratoLoading(false);
+    }
+  };
+
   const abrirModalContrato = async (idContrato = null) => {
     setContratoLoading(true);
     setShowContratoModal(true);
@@ -1030,7 +1044,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
             </button>
             {isMine && (
               <button
-                onClick={() => abrirModalContrato(contratoId)}
+                onClick={() => abrirContratoIAEdicion(contratoId)}
                 style={{
                   flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
                   background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none',

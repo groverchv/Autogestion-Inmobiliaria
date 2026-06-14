@@ -434,13 +434,43 @@ class ContratoViewSet(viewsets.ModelViewSet):
             pdf_content = generar_contrato_pdf_con_ia(
                 contrato.id, request.user, instrucciones_usuario
             )
-            
             if pdf_content:
                 response = HttpResponse(pdf_content, content_type='application/pdf')
                 response['Content-Disposition'] = f'attachment; filename="Contrato_IA_{contrato.id}.pdf"'
                 return response
             else:
                 return Response({'error': 'No se pudo generar el PDF con IA'}, status=400)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=True, methods=['post'], url_path='editar-con-ia')
+    def editar_con_ia(self, request, pk=None):
+        """Edita un contrato existente usando la IA para enriquecer las cláusulas
+        a partir del historial de chat.
+
+        POST body:
+          - tipo_contrato_id (int), monto (str), moneda (str)
+          - inicio (YYYY-MM-DD), fin (YYYY-MM-DD, opcional)
+          - deposito (str), dia_pago (int)
+          - historial_chat: [{role: 'user'|'assistant', content: str}]
+        """
+        from .services import editar_contrato_con_ia
+
+        contrato = self.get_object()
+        if contrato.inmueble.propietario != request.user:
+            return Response({'error': 'Solo el propietario del inmueble puede editar contratos.'}, status=403)
+
+        if contrato.estado in ['aceptado', 'activo', 'finalizado', 'cancelado']:
+            return Response({'error': f'No se puede editar un contrato en estado {contrato.estado}.'}, status=400)
+
+        try:
+            contrato_actualizado = editar_contrato_con_ia(
+                contrato=contrato,
+                propietario=request.user,
+                datos=request.data,
+                historial_chat=request.data.get('historial_chat', [])
+            )
+            return Response(ContratoSerializer(contrato_actualizado).data)
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 

@@ -84,6 +84,14 @@ const contratoService = {
     const { data } = await api.post('/inmuebles/contratos/crear-con-ia/', params);
     return data;
   },
+
+  /**
+   * Actualiza un contrato existente con ayuda de la IA.
+   */
+  editarConIA: async (id, params) => {
+    const { data } = await api.post(`/inmuebles/contratos/${id}/editar-con-ia/`, params);
+    return data;
+  },
 };
 
 export default contratoService;

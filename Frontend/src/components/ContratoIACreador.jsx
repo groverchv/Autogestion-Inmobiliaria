@@ -10,7 +10,7 @@ import contratoService from '../services/contratoService';
  * Columna der: Formulario simplificado con datos básicos (tipo, monto, fechas).
  * Al enviar: llama a /contratos/crear-con-ia/ → crea el contrato y lo manda al cliente.
  */
-const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviado, onClose }) => {
+const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviado, onClose, contratoEdicion }) => {
   // ── Formulario básico ───────────────────────────────────────
   const inquilinoId = selectedChat?.participante1 === user?.id
     ? selectedChat?.participante2
@@ -56,11 +56,48 @@ const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviad
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes]);
 
-  // Cargar borrador desde localStorage al cambiar de chat
+  // Cargar borrador desde localStorage o contratoEdicion al cambiar de chat o contrato
   useEffect(() => {
     if (!selectedChat?.id) return;
     setIniciado(false);
 
+    if (contratoEdicion) {
+      const editKey = `contrato_ia_edit_draft_${contratoEdicion.id}`;
+      const savedEdit = localStorage.getItem(editKey);
+      if (savedEdit) {
+        try {
+          const parsed = JSON.parse(savedEdit);
+          if (parsed.form) setForm(parsed.form);
+          if (parsed.mensajes) setMensajes(parsed.mensajes);
+          if (parsed.chipsUsados) setChipsUsados(parsed.chipsUsados);
+          setIniciado(true);
+          return;
+        } catch (e) {
+          console.error("Error al parsear el borrador de edición:", e);
+        }
+      }
+
+      setForm({
+        tipo_contrato_id: contratoEdicion.tipo_contrato || '',
+        monto: contratoEdicion.monto || '',
+        moneda: contratoEdicion.moneda || 'BOB',
+        inicio: contratoEdicion.inicio || new Date().toISOString().split('T')[0],
+        fin: contratoEdicion.fin || '',
+        deposito: contratoEdicion.deposito || '0',
+        dia_pago: contratoEdicion.dia_pago || '5',
+      });
+      
+      const saludoEdicion = `¡Hola! Soy tu **Abogado IA**. Estoy listo para ayudarte a editar la propuesta del contrato #${contratoEdicion.id}.
+
+Puedes consultarme sobre las cláusulas, penalidades o restricciones que deseas cambiar, o pedirme redactar un nuevo texto legal para actualizar el contrato.`;
+      
+      setMensajes([{ role: 'assistant', content: saludoEdicion }]);
+      setChipsUsados([]);
+      setIniciado(true);
+      return;
+    }
+
+    // Modo creación
     const key = `contrato_ia_draft_${selectedChat.id}`;
     const saved = localStorage.getItem(key);
 
@@ -77,7 +114,6 @@ const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviad
       }
     }
 
-    // Saludo inicial por defecto si no hay borrador previo
     const saludo = `¡Hola! Soy tu **Abogado IA**. Voy a ayudarte a redactar el contrato para el inmueble **${selectedChat?.inmueble_titulo || 'la propiedad'}**.
 
 Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato, monto y fecha de inicio), y usa este chat para definir las cláusulas especiales, restricciones y condiciones que quieres incluir.
@@ -96,19 +132,41 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
     setMensajes([{ role: 'assistant', content: saludo }]);
     setChipsUsados([]);
     setIniciado(true);
-  }, [selectedChat?.id, tiposContrato]);
+  }, [selectedChat?.id, contratoEdicion, tiposContrato]);
 
   // Guardar automáticamente el borrador en localStorage cuando cambie algún campo
   useEffect(() => {
     if (!selectedChat?.id || !iniciado) return;
 
-    const key = `contrato_ia_draft_${selectedChat.id}`;
+    const key = contratoEdicion
+      ? `contrato_ia_edit_draft_${contratoEdicion.id}`
+      : `contrato_ia_draft_${selectedChat.id}`;
+
     const dataToSave = { form, mensajes, chipsUsados };
     localStorage.setItem(key, JSON.stringify(dataToSave));
-  }, [form, mensajes, chipsUsados, selectedChat?.id, iniciado]);
+  }, [form, mensajes, chipsUsados, selectedChat?.id, contratoEdicion, iniciado]);
 
   // Función para reiniciar el chat limpiando localStorage
   const handleReiniciar = () => {
+    if (contratoEdicion) {
+      localStorage.removeItem(`contrato_ia_edit_draft_${contratoEdicion.id}`);
+      setForm({
+        tipo_contrato_id: contratoEdicion.tipo_contrato || '',
+        monto: contratoEdicion.monto || '',
+        moneda: contratoEdicion.moneda || 'BOB',
+        inicio: contratoEdicion.inicio || new Date().toISOString().split('T')[0],
+        fin: contratoEdicion.fin || '',
+        deposito: contratoEdicion.deposito || '0',
+        dia_pago: contratoEdicion.dia_pago || '5',
+      });
+      const saludoEdicion = `¡Hola! Soy tu **Abogado IA**. Estoy listo para ayudarte a editar la propuesta del contrato #${contratoEdicion.id}.
+
+Puedes consultarme sobre las cláusulas, penalidades o restricciones que deseas cambiar, o pedirme redactar un nuevo texto legal para actualizar el contrato.`;
+      setMensajes([{ role: 'assistant', content: saludoEdicion }]);
+      setChipsUsados([]);
+      return;
+    }
+
     if (selectedChat?.id) {
       localStorage.removeItem(`contrato_ia_draft_${selectedChat.id}`);
     }
@@ -177,7 +235,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
       // Filtrar el saludo inicial (primer mensaje de la IA) del historial
       const historialChat = mensajes.filter((m, idx) => !(m.role === 'assistant' && idx === 0));
 
-      await contratoService.crearConIA({
+      const params = {
         inmueble_id: selectedChat.inmueble,
         inquilino_id: inquilinoId,
         chat_id: selectedChat.id,
@@ -189,11 +247,18 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         deposito: form.deposito,
         dia_pago: parseInt(form.dia_pago),
         historial_chat: historialChat,
-      });
+      };
 
-      // Eliminar borrador al crear exitosamente
-      if (selectedChat?.id) {
-        localStorage.removeItem(`contrato_ia_draft_${selectedChat.id}`);
+      if (contratoEdicion) {
+        await contratoService.editarConIA(contratoEdicion.id, params);
+        if (contratoEdicion?.id) {
+          localStorage.removeItem(`contrato_ia_edit_draft_${contratoEdicion.id}`);
+        }
+      } else {
+        await contratoService.crearConIA(params);
+        if (selectedChat?.id) {
+          localStorage.removeItem(`contrato_ia_draft_${selectedChat.id}`);
+        }
       }
 
       setExitoso(true);
@@ -205,7 +270,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
       console.error(err);
       setMensajes(prev => [...prev, {
         role: 'assistant',
-        content: `❌ Error al crear el contrato: ${err.response?.data?.error || 'Error desconocido'}. Verifica que todos los campos estén completos.`
+        content: `❌ Error al guardar el contrato: ${err.response?.data?.error || 'Error desconocido'}. Verifica que todos los campos estén completos.`
       }]);
     } finally {
       setEnviando(false);
@@ -225,10 +290,10 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
           <CheckCircle2 size={32} color="#fff" />
         </div>
         <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>
-          ¡Contrato enviado al cliente!
+          {contratoEdicion ? '¡Contrato actualizado!' : '¡Contrato enviado al cliente!'}
         </div>
         <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-          El cliente recibirá una notificación y podrá revisarlo desde el chat.
+          {contratoEdicion ? 'El borrador se actualizó correctamente con las nuevas cláusulas.' : 'El cliente recibirá una notificación y podrá revisarlo desde el chat.'}
         </div>
       </div>
     );
@@ -250,8 +315,12 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               <Bot size={17} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>Abogado IA · Creador de Contratos</div>
-              <div style={{ fontSize: '0.7rem', color: '#8b5cf6' }}>Powered by Llama 3.3 · Derecho Inmobiliario Boliviano</div>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>
+                Abogado IA · {contratoEdicion ? 'Editor' : 'Creador'} de Contratos
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#8b5cf6' }}>
+                {contratoEdicion ? `Editando Contrato #${contratoEdicion.id}` : 'Powered by Llama 3.3 · Derecho Inmobiliario Boliviano'}
+              </div>
             </div>
           </div>
           <button
@@ -562,9 +631,9 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
           }}
         >
           {enviando ? (
-            <><Loader2 size={16} className="animate-spin" /> Enviando al cliente...</>
+            <><Loader2 size={16} className="animate-spin" /> {contratoEdicion ? 'Guardando cambios...' : 'Enviando al cliente...'}</>
           ) : (
-            <><FileSignature size={16} /> Crear y Enviar al Cliente</>
+            <><FileSignature size={16} /> {contratoEdicion ? 'Actualizar y Enviar al Cliente' : 'Crear y Enviar al Cliente'}</>
           )}
         </button>
       </div>
