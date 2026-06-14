@@ -2,12 +2,23 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { X, Layers, Gamepad, Smartphone } from 'lucide-react';
 import './VisorVRGlasses.css';
 
+const VRIcon = ({ size = 20, style = {} }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', ...style }}
+  >
+    <path d="M21 7H3c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h3.2c1 .7 2.4 1 3.8 1s2.8-.3 3.8-1H21c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM7.5 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm9 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+  </svg>
+);
+
 const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [escenaActiva, setEscenaActiva] = useState(panoramas[0] || null);
   const [lastEvent, setLastEvent] = useState('Ninguno (Presiona botones en tu control)');
   const [gamepadInfo, setGamepadInfo] = useState({ connected: false, name: '' });
-  const [showDebug, setShowDebug] = useState(false); // Oculto por defecto
-  const [modoNavegacion, setModoNavegacion] = useState('vr'); // Por defecto directamente en modo VR/Gafas
+  const showDebug = false; // Oculto por defecto, constante para debug
   const [pantallaDoble, setPantallaDoble] = useState(false);
   const [gyroPermission, setGyroPermission] = useState('unknown');
   const [mostrarInstrucciones, setMostrarInstrucciones] = useState(true);
@@ -380,7 +391,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       {mostrarInstrucciones && (
         <div className="visor-vr-glasses__instructions-overlay">
           <div className="visor-vr-glasses__instructions-card" onClick={(e) => e.stopPropagation()}>
-            <h3>🕶️ Instrucciones de Recorrido VR</h3>
+            <h3><VRIcon size={26} style={{ color: '#3b82f6' }} /> Instrucciones de Recorrido VR</h3>
             <p className="subtitle">Uso de tus Gafas VR y Mando Bluetooth:</p>
             
             <div className="instruction-steps">
@@ -419,6 +430,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
                 }}
                 type="button"
               >
+                <VRIcon size={18} style={{ color: '#fff', marginRight: '8px' }} />
                 Empezar Recorrido (Pantalla Doble)
               </button>
             </div>
@@ -520,12 +532,16 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}
       >
         <a-assets>
-          <img
-            id={`pano-${escenaActiva.id}`}
-            src={escenaActiva.archivo}
-            crossOrigin={escenaActiva.archivo?.startsWith('blob:') ? undefined : 'anonymous'}
-            alt={escenaActiva.descripcion}
-          />
+          {/* Pre-cargar todos los panoramas para transiciones instantáneas y evitar pantallas blancas */}
+          {panoramas.map((pano) => (
+            <img
+              key={`pano-asset-${pano.id}`}
+              id={`pano-${pano.id}`}
+              src={pano.archivo}
+              crossOrigin={pano.archivo?.startsWith('blob:') ? undefined : 'anonymous'}
+              alt={pano.descripcion}
+            />
+          ))}
         </a-assets>
 
         {/* Esfera 360° */}
