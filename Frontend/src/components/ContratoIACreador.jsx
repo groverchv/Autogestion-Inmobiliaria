@@ -18,7 +18,7 @@ const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviad
 
   const [form, setForm] = useState({
     tipo_contrato_id: tiposContrato[0]?.id || '',
-    monto: '',
+    monto: selectedChat?.inmueble_precio || '',
     moneda: 'BOB',
     inicio: new Date().toISOString().split('T')[0],
     fin: '',
@@ -122,7 +122,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
 
     setForm({
       tipo_contrato_id: tiposContrato[0]?.id || '',
-      monto: '',
+      monto: selectedChat?.inmueble_precio || '',
       moneda: 'BOB',
       inicio: new Date().toISOString().split('T')[0],
       fin: '',
@@ -178,7 +178,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
 
     setForm({
       tipo_contrato_id: tiposContrato[0]?.id || '',
-      monto: '',
+      monto: selectedChat?.inmueble_precio || '',
       moneda: 'BOB',
       inicio: new Date().toISOString().split('T')[0],
       fin: '',
@@ -525,7 +525,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               type="number"
               value={form.monto}
               onChange={e => setForm({ ...form, monto: e.target.value })}
-              placeholder="1500"
+              placeholder="Ej. 1500"
               style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
             />
           </div>
