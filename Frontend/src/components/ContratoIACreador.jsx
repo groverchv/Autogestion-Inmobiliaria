@@ -56,18 +56,80 @@ const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviad
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensajes]);
 
-  // Saludo inicial
+  // Cargar borrador desde localStorage al cambiar de chat
   useEffect(() => {
-    if (!iniciado) {
-      setIniciado(true);
-      const saludo = `¡Hola! Soy tu **Abogado IA**. Voy a ayudarte a redactar el contrato para el inmueble **${selectedChat?.inmueble_titulo || 'la propiedad'}**.
+    if (!selectedChat?.id) return;
+    setIniciado(false);
+
+    const key = `contrato_ia_draft_${selectedChat.id}`;
+    const saved = localStorage.getItem(key);
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.form) setForm(parsed.form);
+        if (parsed.mensajes) setMensajes(parsed.mensajes);
+        if (parsed.chipsUsados) setChipsUsados(parsed.chipsUsados);
+        setIniciado(true);
+        return;
+      } catch (e) {
+        console.error("Error al parsear el borrador del contrato IA:", e);
+      }
+    }
+
+    // Saludo inicial por defecto si no hay borrador previo
+    const saludo = `¡Hola! Soy tu **Abogado IA**. Voy a ayudarte a redactar el contrato para el inmueble **${selectedChat?.inmueble_titulo || 'la propiedad'}**.
 
 Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato, monto y fecha de inicio), y usa este chat para definir las cláusulas especiales, restricciones y condiciones que quieres incluir.
 
 ¿Por dónde te gustaría empezar? Puedes clickear uno de los temas de abajo o escribirme directamente.`;
-      setMensajes([{ role: 'assistant', content: saludo }]);
+
+    setForm({
+      tipo_contrato_id: tiposContrato[0]?.id || '',
+      monto: '',
+      moneda: 'BOB',
+      inicio: new Date().toISOString().split('T')[0],
+      fin: '',
+      deposito: '0',
+      dia_pago: '5',
+    });
+    setMensajes([{ role: 'assistant', content: saludo }]);
+    setChipsUsados([]);
+    setIniciado(true);
+  }, [selectedChat?.id, tiposContrato]);
+
+  // Guardar automáticamente el borrador en localStorage cuando cambie algún campo
+  useEffect(() => {
+    if (!selectedChat?.id || !iniciado) return;
+
+    const key = `contrato_ia_draft_${selectedChat.id}`;
+    const dataToSave = { form, mensajes, chipsUsados };
+    localStorage.setItem(key, JSON.stringify(dataToSave));
+  }, [form, mensajes, chipsUsados, selectedChat?.id, iniciado]);
+
+  // Función para reiniciar el chat limpiando localStorage
+  const handleReiniciar = () => {
+    if (selectedChat?.id) {
+      localStorage.removeItem(`contrato_ia_draft_${selectedChat.id}`);
     }
-  }, [iniciado, selectedChat]);
+    const saludo = `¡Hola! Soy tu **Abogado IA**. Voy a ayudarte a redactar el contrato para el inmueble **${selectedChat?.inmueble_titulo || 'la propiedad'}**.
+
+Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato, monto y fecha de inicio), y usa este chat para definir las cláusulas especiales, restricciones y condiciones que quieres incluir.
+
+¿Por dónde te gustaría empezar? Puedes clickear uno de los temas de abajo o escribirme directamente.`;
+
+    setForm({
+      tipo_contrato_id: tiposContrato[0]?.id || '',
+      monto: '',
+      moneda: 'BOB',
+      inicio: new Date().toISOString().split('T')[0],
+      fin: '',
+      deposito: '0',
+      dia_pago: '5',
+    });
+    setMensajes([{ role: 'assistant', content: saludo }]);
+    setChipsUsados([]);
+  };
 
   // Llamada a la IA — usa el endpoint de chat-ia del contrato temporal
   // Como no existe contrato aún, usamos un endpoint genérico pasando contexto manual
@@ -129,6 +191,11 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         historial_chat: historialChat,
       });
 
+      // Eliminar borrador al crear exitosamente
+      if (selectedChat?.id) {
+        localStorage.removeItem(`contrato_ia_draft_${selectedChat.id}`);
+      }
+
       setExitoso(true);
       setTimeout(() => {
         onContratoEnviado?.();
@@ -188,7 +255,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             </div>
           </div>
           <button
-            onClick={() => { setMensajes([]); setIniciado(false); setChipsUsados([]); }}
+            onClick={handleReiniciar}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
             title="Reiniciar chat"
           >
