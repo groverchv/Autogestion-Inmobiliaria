@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Layers, Gamepad, Wifi } from 'lucide-react';
+import { X, Layers, Gamepad, RotateCw, Smartphone } from 'lucide-react';
 import './VisorVRGlasses.css';
 
 const VisorVRGlasses = ({ panoramas = [], onClose }) => {
@@ -9,6 +9,76 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [showDebug, setShowDebug] = useState(true);
   const [modoNavegacion, setModoNavegacion] = useState('manual'); // 'manual' o 'vr'
   const [pantallaDoble, setPantallaDoble] = useState(false);
+  const [autoRotar, setAutoRotar] = useState(false); // Desactivado por defecto
+  const [gyroPermission, setGyroPermission] = useState('unknown');
+
+  useEffect(() => {
+    // Verificar si se requiere solicitar permisos de giroscopio (iOS)
+    if (
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function'
+    ) {
+      setGyroPermission('prompt');
+    } else {
+      setGyroPermission('granted');
+    }
+  }, []);
+
+  const solicitarPermisoGiroscopio = async () => {
+    if (
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function'
+    ) {
+      try {
+        const permissionState = await DeviceOrientationEvent.requestPermission();
+        setGyroPermission(permissionState);
+        if (permissionState === 'granted') {
+          const sceneEl = document.querySelector('a-scene');
+          if (sceneEl) {
+            const cameraEl = sceneEl.querySelector('a-camera');
+            if (cameraEl && cameraEl.components['look-controls']) {
+              cameraEl.components['look-controls'].setupMagicWindow();
+            }
+          }
+          alert('¡Permiso de sensor de movimiento concedido!');
+        } else {
+          alert('Permiso de giroscopio denegado.');
+        }
+      } catch (err) {
+        console.error('Error al solicitar permiso de giroscopio:', err);
+        alert('Error al solicitar permiso: ' + err.message);
+      }
+    } else {
+      setGyroPermission('granted');
+      alert('El sensor de movimiento ya está activo y soportado.');
+    }
+  };
+
+  const toggleOrientacion = async () => {
+    try {
+      const isLandscape = screen.orientation?.type.includes('landscape');
+      const target = isLandscape ? 'portrait' : 'landscape';
+
+      // Lock de orientación generalmente requiere pantalla completa
+      if (!document.fullscreenElement) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) {
+          await docEl.webkitRequestFullscreen();
+        }
+      }
+
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock(target);
+      } else {
+        alert('Gira físicamente tu móvil para cambiar entre vertical y horizontal.');
+      }
+    } catch (err) {
+      console.warn('No se pudo bloquear la orientación:', err);
+      alert('Para cambiar de vista vertical/horizontal, activa la rotación automática en tu móvil y gíralo.');
+    }
+  };
 
   const togglePantallaDoble = (doble) => {
     const sceneEl = document.querySelector('a-scene');
@@ -310,6 +380,43 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               Pantalla Doble
             </button>
           </div>
+
+          {/* Botón para alternar Giro Automático */}
+          <div className="visor-vr-glasses__screen-selector">
+            <button
+              className={`mode-btn ${autoRotar ? 'active' : ''}`}
+              onClick={() => setAutoRotar(!autoRotar)}
+              title="Alternar rotación automática de la cámara"
+              type="button"
+            >
+              <RotateCw size={14} style={{ marginRight: '4px', verticalAlign: 'middle', display: 'inline' }} />
+              {autoRotar ? 'Giro Activo' : 'Giro Auto.'}
+            </button>
+          </div>
+
+          {/* Botón para cambiar orientación Horizontal/Vertical */}
+          <button
+            className="visor-vr-glasses__close-btn"
+            onClick={toggleOrientacion}
+            title="Alternar orientación vertical/horizontal de pantalla"
+            type="button"
+          >
+            <Smartphone size={16} />
+            <span>Girar Pantalla</span>
+          </button>
+
+          {/* Botón de giroscopio en iOS/dispositivos seguros */}
+          {gyroPermission === 'prompt' && (
+            <button
+              className="visor-vr-glasses__close-btn"
+              style={{ background: '#f59e0b', color: '#fff', borderColor: '#d97706' }}
+              onClick={solicitarPermisoGiroscopio}
+              title="Solicitar permisos para el giroscopio de tu móvil"
+              type="button"
+            >
+              <span>Activar Giroscopio</span>
+            </button>
+          )}
         </div>
 
         {panoramas.length > 1 && (
@@ -400,7 +507,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         <a-sky
           src={`#pano-${escenaActiva.id}`}
           rotation="0 -90 0"
-          animation="property: rotation; to: 0 270 0; dur: 60000; easing: linear; loop: true"
+          animation={autoRotar ? "property: rotation; to: 0 270 0; dur: 60000; easing: linear; loop: true" : ""}
         ></a-sky>
 
         {/* Hotspots 3D Interactivos */}
@@ -444,7 +551,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
         ))}
 
         {/* Cámara con controles de mirada y movimiento (WASD / Joystick del mando) */}
-        <a-camera look-controls wasd-controls="enabled: true; fly: false; acceleration: 65">
+        <a-camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true; mouseEnabled: true" wasd-controls="enabled: true; fly: false; acceleration: 65">
           {modoNavegacion === 'vr' && (
             <a-cursor
               color="#3b82f6"
