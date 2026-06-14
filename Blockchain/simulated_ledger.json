@@ -2538,6 +2538,90 @@
         }
       ],
       "blockHash": "5761c57be4af204b8fbe6fde2bf630db97e7c75ac4b6421fc1268048aa44bfe1"
+    },
+    {
+      "blockNumber": 126,
+      "prevHash": "5761c57be4af204b8fbe6fde2bf630db97e7c75ac4b6421fc1268048aa44bfe1",
+      "timestamp": "2026-06-14T03:29:31.068Z",
+      "transactions": [
+        {
+          "txId": "tx_1c602c5bf8111d0819100806cbc5fdbb",
+          "timestamp": "2026-06-14T03:29:31.068Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-37",
+            "contratoId": "CON-35",
+            "monto": 1800,
+            "fecha": "2026-06-13",
+            "tipoPago": "Efectivo",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "2dc0ea9716b152bf55b21b2b503c5331fddf75455f7fe2bb5a42e2f0c05dfae2"
+    },
+    {
+      "blockNumber": 127,
+      "prevHash": "2dc0ea9716b152bf55b21b2b503c5331fddf75455f7fe2bb5a42e2f0c05dfae2",
+      "timestamp": "2026-06-14T03:29:33.216Z",
+      "transactions": [
+        {
+          "txId": "tx_4379234d743c9968a93ca1cea91b58ee",
+          "timestamp": "2026-06-14T03:29:33.216Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-39",
+            "contratoId": "CON-37",
+            "monto": 450000,
+            "fecha": "2026-06-08",
+            "tipoPago": "Tarjeta de Crédito",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "dad7d157b0a7bb969432b2e02caa7e6f85459c94147a724db9c1f8de7068a17c"
+    },
+    {
+      "blockNumber": 128,
+      "prevHash": "dad7d157b0a7bb969432b2e02caa7e6f85459c94147a724db9c1f8de7068a17c",
+      "timestamp": "2026-06-14T03:29:34.316Z",
+      "transactions": [
+        {
+          "txId": "tx_ef2180feab04401de5bddeefbbca8526",
+          "timestamp": "2026-06-14T03:29:34.316Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-40",
+            "contratoId": "CON-38",
+            "monto": 4500,
+            "fecha": "2026-06-03",
+            "tipoPago": "QR",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "98c84a43fd99bb48e9b217771ab168d03acb87be67e4de0c6c43476a7ac43252"
+    },
+    {
+      "blockNumber": 129,
+      "prevHash": "98c84a43fd99bb48e9b217771ab168d03acb87be67e4de0c6c43476a7ac43252",
+      "timestamp": "2026-06-14T03:29:35.426Z",
+      "transactions": [
+        {
+          "txId": "tx_ad7255353b80d94f47c663e832cc0c05",
+          "timestamp": "2026-06-14T03:29:35.426Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-41",
+            "contratoId": "CON-38",
+            "monto": 4500,
+            "fecha": "2026-05-04",
+            "tipoPago": "Efectivo",
+            "stripeTransactionId": ""
+          }
+        }
+      ],
+      "blockHash": "2fd4f0d863457ddee0813394b1765248437051605b821313fa774f30014deeaa"
     }
   ],
   "worldState": {
@@ -3310,22 +3394,22 @@
     "PAG-39": {
       "docType": "pago",
       "id": "PAG-39",
-      "contratoId": "CON-25",
-      "monto": 4500,
-      "fecha": "2026-06-03",
-      "tipoPago": "QR",
+      "contratoId": "CON-37",
+      "monto": 450000,
+      "fecha": "2026-06-08",
+      "tipoPago": "Tarjeta de Crédito",
       "stripeTransactionId": "",
-      "timestamp": "2026-06-14T01:26:12.227Z"
+      "timestamp": "2026-06-14T03:29:33.216Z"
     },
     "PAG-40": {
       "docType": "pago",
       "id": "PAG-40",
-      "contratoId": "CON-25",
+      "contratoId": "CON-38",
       "monto": 4500,
-      "fecha": "2026-05-04",
-      "tipoPago": "Efectivo",
+      "fecha": "2026-06-03",
+      "tipoPago": "QR",
       "stripeTransactionId": "",
-      "timestamp": "2026-06-14T01:26:12.247Z"
+      "timestamp": "2026-06-14T03:29:34.316Z"
     },
     "INM-41": {
       "docType": "inmueble",
@@ -3422,6 +3506,26 @@
       },
       "estado": "activo",
       "timestamp": "2026-06-14T03:29:25.375Z"
+    },
+    "PAG-37": {
+      "docType": "pago",
+      "id": "PAG-37",
+      "contratoId": "CON-35",
+      "monto": 1800,
+      "fecha": "2026-06-13",
+      "tipoPago": "Efectivo",
+      "stripeTransactionId": "",
+      "timestamp": "2026-06-14T03:29:31.068Z"
+    },
+    "PAG-41": {
+      "docType": "pago",
+      "id": "PAG-41",
+      "contratoId": "CON-38",
+      "monto": 4500,
+      "fecha": "2026-05-04",
+      "tipoPago": "Efectivo",
+      "stripeTransactionId": "",
+      "timestamp": "2026-06-14T03:29:35.426Z"
     }
   }
 }
