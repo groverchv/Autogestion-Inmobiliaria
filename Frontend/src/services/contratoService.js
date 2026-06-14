@@ -61,6 +61,29 @@ const contratoService = {
     const { data } = await api.post(`/inmuebles/contratos/${id}/chat-ia/`, { mensajes });
     return data.respuesta;
   },
+
+  /**
+   * Crea un contrato con ayuda de la IA y lo envía al cliente directamente.
+   * El backend extrae las cláusulas del historial de chat con la IA.
+   *
+   * @param {Object} params
+   * @param {number} params.inmueble_id
+   * @param {number} params.inquilino_id
+   * @param {number} params.chat_id
+   * @param {number} params.tipo_contrato_id
+   * @param {string} params.monto
+   * @param {string} params.moneda
+   * @param {string} params.inicio       - YYYY-MM-DD
+   * @param {string} [params.fin]        - YYYY-MM-DD (opcional)
+   * @param {string} [params.deposito]
+   * @param {number} [params.dia_pago]
+   * @param {Array}  params.historial_chat - [{role, content}]
+   * @returns {Promise<Object>} Contrato creado
+   */
+  crearConIA: async (params) => {
+    const { data } = await api.post('/inmuebles/contratos/crear-con-ia/', params);
+    return data;
+  },
 };
 
 export default contratoService;

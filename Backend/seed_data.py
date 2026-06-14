@@ -77,6 +77,24 @@ def create_seed_data():
     else:
         admin = Usuario.objects.get(email='admin@autogestion.bo')
 
+    if not Usuario.objects.filter(email='diego@gmail.com').exists():
+        diego = Usuario(
+            email='diego@gmail.com',
+            rol='admin',
+            first_name='Diego',
+            last_name='Garcia',
+            ci='12948850',
+            telefono='78945612',
+            is_staff=True,
+            is_superuser=True,
+            is_active=True,
+        )
+        diego.set_password('admin123')
+        diego.save()
+        print("  OK User: diego@gmail.com / admin123")
+    else:
+        diego = Usuario.objects.get(email='diego@gmail.com')
+
     usuarios_data = [
         ('propietario1', 'juan.perez@gmail.com', 'Juan', 'Pérez', 'usuario', '1234567', '70011001', date(1985, 3, 15)),
         ('propietario2', 'maria.torres@gmail.com', 'María', 'Torres', 'usuario', '2345678', '70022002', date(1990, 7, 22)),
@@ -92,7 +110,7 @@ def create_seed_data():
     
     # users mapea una clave_local del script con el objeto Usuario creado, para relacionar inmuebles/pagos.
     # No representa el atributo 'username' del modelo de base de datos.
-    users = {'admin': admin}
+    users = {'admin': admin, 'diego': diego}
     for clave_local, email, fn, ln, rol_n, ci, tel, fnac in usuarios_data:
         user, created = Usuario.objects.get_or_create(
             email=email,
@@ -134,6 +152,7 @@ def create_seed_data():
         ('Casa Económica', 'propietario8', 'Casa', 'Casa económica: 2 tiendas, 1 Habitación, Baño, Cocina, Sala, Patio amplio, Garage. Documentos en orden.', 'Calle Richardo', 'Santa Cruz', 'Zona Centro', 864050, 374.70, 1, 1, False, 'disponible'),
         ('Casa Potosí', 'propietario9', 'Casa', 'Casa en venta a buen precio.', 'Calle Potosí', 'Santa Cruz', 'Zona Centro', 250600, 2400, 2, 3, True, 'disponible'),
         ('Casa Cambodromo', 'muerte', 'Casa', 'Casa grande en zona residencial.', 'Calle Cambodromo', 'Santa Cruz', 'Zona Centro', 865040, 3000, 6, 3, True, 'disponible'),
+        ('Casa zona 2do anillo', 'diego', 'Casa', 'elegante casa entre Av.doble via y 2do anillo', 'Manuela Velasco', 'Santa Cruz', '2do anillo', 100000.00, 11250.00, 5, 5, True, 'disponible'),
     ]
     
     inmuebles = {}
@@ -144,6 +163,10 @@ def create_seed_data():
             calle=dir_
         )
 
+        gps_val = '-17.799690252631134, -63.1928899884224' if titulo == 'Casa zona 2do anillo' else f'-16.5{idx:03d}, -68.0{idx:03d}'
+        largo_val = Decimal('150.00') if titulo == 'Casa zona 2do anillo' else None
+        ancho_val = Decimal('75.00') if titulo == 'Casa zona 2do anillo' else None
+
         inm, _ = Inmueble.objects.get_or_create(
             titulo=titulo,
             defaults={
@@ -152,7 +175,9 @@ def create_seed_data():
                 'direccion': direccion_obj,
                 'superficie': Decimal(str(sup)), 'habitaciones': hab,
                 'banos': banos, 'garaje': garaje, 'estado': estado,
-                'gps': f'-16.5{idx:03d}, -68.0{idx:03d}',
+                'gps': gps_val,
+                'largo': largo_val,
+                'ancho': ancho_val,
                 'modelo_3d': 'https://raw.githubusercontent.com/GoogleWebComponents/model-viewer/master/packages/shared-assets/models/Astronaut.glb' if idx == 1 else None
             }
         )
@@ -246,6 +271,8 @@ def create_seed_data():
         (10, "https://res.cloudinary.com/dwerzrgya/image/upload/v1776447047/wtaztxodqjrfgakvwhan.jpg", True),
         (10, "https://res.cloudinary.com/dwerzrgya/image/upload/v1776447049/che9u7laxv2l49j6vgba.jpg", False),
         (10, "https://res.cloudinary.com/dwerzrgya/image/upload/v1776447049/brwg9ljso5osrt443qzp.jpg", False),
+        # Inmueble 11: Casa zona 2do anillo (ID 11)
+        (11, "https://res.cloudinary.com/dwerzrgya/image/upload/v1781387317/v9j2lcylveshcrk5kb8d.jpg", True),
     ]
     
     media_count = 0
@@ -701,9 +728,9 @@ def create_seed_data():
 
     print("\n  OK Datos semilla creados exitosamente.")
     print("  ----------------------------------------------")
-    print("  [+] USUARIOS:           11 (admin + 10 propietarios)")
-    print("  [+] INMUEBLES:          10 (Santa Cruz y La Guardia, 1 por usuario)")
-    print("  [+] MULTIMEDIA:         43 fotos (incluyendo 2 panoramas 360)")
+    print("  [+] USUARIOS:           12 (admin + diego + 10 propietarios)")
+    print("  [+] INMUEBLES:          11 (Santa Cruz y La Guardia, 1 por usuario)")
+    print("  [+] MULTIMEDIA:         43 fotos (incluyendo 2 panoramas 360 y foto de diego)")
     print("  [+] HOTSPOTS:           2 puntos de navegación 360")
     print("  [+] FAVORITOS:          2 registrados")
     print("  [+] CITAS:              2 agendadas")

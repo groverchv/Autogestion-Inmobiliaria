@@ -477,6 +477,113 @@ class ContratoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
+    @action(detail=False, methods=['post'], url_path='crear-con-ia')
+    def crear_con_ia(self, request):
+        """Crea un contrato con ayuda de la IA y lo envía al cliente directamente.
+
+        El propietario chatea con el Asistente Legal IA para definir condiciones,
+        luego envía el historial + datos básicos. La IA extrae las cláusulas de
+        la conversación y crea el contrato ya en estado 'enviado'.
+
+        POST body:
+          - inmueble_id (int), inquilino_id (int), chat_id (int)
+          - tipo_contrato_id (int), monto (str), moneda (str)
+          - inicio (YYYY-MM-DD), fin (YYYY-MM-DD, opcional)
+          - deposito (str), dia_pago (int)
+          - historial_chat: [{role: 'user'|'assistant', content: str}]
+        """
+        from .services import crear_contrato_con_ia
+
+        campos_req = ['inmueble_id', 'inquilino_id', 'tipo_contrato_id', 'monto', 'inicio']
+        for campo in campos_req:
+            if not request.data.get(campo):
+                return Response({'error': f'El campo "{campo}" es obligatorio.'}, status=400)
+
+        # Solo el propietario del inmueble puede crear contratos
+        try:
+            from .models import Inmueble
+            inmueble = Inmueble.objects.get(id=request.data['inmueble_id'])
+            if inmueble.propietario != request.user:
+                return Response({'error': 'Solo el propietario del inmueble puede crear contratos.'}, status=403)
+        except Inmueble.DoesNotExist:
+            return Response({'error': 'Inmueble no encontrado.'}, status=404)
+
+        try:
+            contrato = crear_contrato_con_ia(
+                propietario=request.user,
+                datos=request.data,
+                historial_chat=request.data.get('historial_chat', [])
+            )
+            return Response(ContratoSerializer(contrato).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=False, methods=['post'], url_path='chat-creador-ia')
+    def chat_creador_ia(self, request):
+        """Chat con el Abogado IA para CREAR un contrato (sin contrato existente).
+
+        Permite al propietario consultar condiciones, cláusulas y restricciones
+        antes de crear el contrato. No necesita un contrato_id existente.
+
+        POST body:
+          - mensajes: [{role, content}] — historial de la conversación
+          - contexto: {inmueble_titulo, tipo_contrato, monto, moneda, inicio, fin}
+        """
+        try:
+            import requests as http_requests
+            from django.conf import settings
+
+            mensajes = request.data.get('mensajes', [])
+            contexto = request.data.get('contexto', {})
+
+            if not mensajes:
+                return Response({'error': 'Se requieren mensajes.'}, status=400)
+
+            api_key = settings.GROQ_API_KEY
+            if not api_key:
+                return Response({'error': 'API Key de Groq no configurada.'}, status=500)
+
+            system_prompt = f"""Eres un abogado especialista en derecho inmobiliario boliviano con 20 años de experiencia.
+Estás ayudando a un PROPIETARIO a crear un contrato para su inmueble.
+
+CONTEXTO DEL CONTRATO:
+- Inmueble: {contexto.get('inmueble_titulo', 'No especificado')}
+- Tipo de contrato: {contexto.get('tipo_contrato', 'No definido aún')}
+- Monto: {contexto.get('monto', 'No definido')} {contexto.get('moneda', 'BOB')}
+- Vigencia: desde {contexto.get('inicio', 'No definido')} hasta {contexto.get('fin', 'Indefinido')}
+
+TU ROL:
+- Eres el Abogado del PROPIETARIO: oriéntalo para proteger sus intereses
+- Sugiere cláusulas concretas, restricciones y penalidades apropiadas
+- Ayúdalo a definir condiciones de uso, servicios incluidos y garantías
+- Cuando el usuario te pida redactar una cláusula, hazlo en formato legal formal boliviano
+- Responde de forma concisa (máximo 250 palabras), directa y estructurada
+- No inventar datos, basarte en lo que el propietario te dice"""
+
+            messages = [{"role": "system", "content": system_prompt}]
+            messages.extend(mensajes)
+
+            payload = {
+                "model": "llama-3.3-70b-versatile",
+                "messages": messages,
+                "temperature": 0.6,
+                "max_tokens": 800,
+            }
+            headers_req = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            resp = http_requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                json=payload, headers=headers_req, timeout=30
+            )
+            resp.raise_for_status()
+            respuesta = resp.json()['choices'][0]['message']['content']
+            return Response({'respuesta': respuesta})
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
 
 class ComisionViewSet(viewsets.ModelViewSet):
     """CRUD para comisiones."""
@@ -798,6 +905,14 @@ class VerificacionTituloViewSet(viewsets.ModelViewSet):
         )
 
         try:
+            # Leer los bytes locales del archivo para procesarlo sin descargar de nuevo (bypasseando restricciones de Cloudinary raw)
+            archivo.seek(0)
+            file_bytes = archivo.read()
+            archivo.seek(0)
+        except Exception:
+            file_bytes = None
+
+        try:
             is_pdf = archivo.name.lower().endswith('.pdf')
             upload_data = cloudinary.uploader.upload(
                 archivo,
@@ -809,7 +924,7 @@ class VerificacionTituloViewSet(viewsets.ModelViewSet):
             return Response({'error': f'Error al subir archivo a Cloudinary: {str(upload_err)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         try:
-            verificacion = verificar_titulo_con_ia(inmueble.id, archivo_url, request.user)
+            verificacion = verificar_titulo_con_ia(inmueble.id, archivo_url, request.user, file_bytes=file_bytes)
             serializer = self.get_serializer(verificacion)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as ocr_err:
