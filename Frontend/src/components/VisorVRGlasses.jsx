@@ -226,14 +226,14 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       }
 
       // Botón A (Siguiente imagen)
-      if (keyLower === 'a' || key === 'VolumeUp' || key === 'AudioVolumeUp' || key === 'MediaTrackNext' || key === 'PageDown') {
+      if (keyLower === 'a') {
         e.preventDefault();
         goToNextRoom();
         return;
       }
 
       // Botón B (Imagen anterior)
-      if (keyLower === 'b' || key === 'VolumeDown' || key === 'AudioVolumeDown' || key === 'MediaTrackPrevious' || key === 'PageUp') {
+      if (keyLower === 'b') {
         e.preventDefault();
         goToPrevRoom();
         return;
@@ -251,6 +251,24 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       }
       if (key === 'ArrowDown') {
         setFov(prev => Math.min(100, prev + 2)); // zoom out
+      }
+
+      // Mapeo del Joystick en modo Teclado/Multimedia (Giro y Zoom)
+      if (key === 'VolumeUp' || key === 'AudioVolumeUp') {
+        e.preventDefault();
+        setFov(prev => Math.max(30, prev - 3)); // Zoom In (Acercar)
+      }
+      if (key === 'VolumeDown' || key === 'AudioVolumeDown') {
+        e.preventDefault();
+        setFov(prev => Math.min(100, prev + 3)); // Zoom Out (Alejar)
+      }
+      if (key === 'MediaTrackNext' || key === 'PageDown') {
+        e.preventDefault();
+        setRigRotation(prev => (prev + 8) % 360); // Giro Derecha
+      }
+      if (key === 'MediaTrackPrevious' || key === 'PageUp') {
+        e.preventDefault();
+        setRigRotation(prev => (prev - 8 + 360) % 360); // Giro Izquierda
       }
 
       // Otros botones de Gatillo / Selección / Fallback
