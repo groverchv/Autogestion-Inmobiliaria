@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Send, RotateCcw, FileSignature, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Bot, Send, RotateCcw, FileSignature, Loader2, CheckCircle2, Sparkles, Mic, MicOff } from 'lucide-react';
 import api from '../services/api';
 import contratoService from '../services/contratoService';
 
@@ -28,6 +28,72 @@ const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviad
 
   const [enviando, setEnviando] = useState(false);
   const [exitoso, setExitoso] = useState(false);
+
+  // ── Voz / Reconocimiento de voz ─────────────────────────────
+  const [grabando, setGrabando] = useState(false);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+  }, []);
+
+  const toggleGrabacion = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta el reconocimiento de voz. Te sugerimos usar Google Chrome o Microsoft Edge.");
+      return;
+    }
+
+    if (grabando) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setGrabando(false);
+    } else {
+      try {
+        const rec = new SpeechRecognition();
+        rec.lang = 'es-BO';
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+
+        rec.onstart = () => {
+          setGrabando(true);
+        };
+
+        rec.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          setInput(prev => prev ? prev + ' ' + transcript : transcript);
+        };
+
+        rec.onerror = (e) => {
+          console.error("Error en reconocimiento de voz:", e);
+          setGrabando(false);
+        };
+
+        rec.onend = () => {
+          setGrabando(false);
+        };
+
+        recognitionRef.current = rec;
+        rec.start();
+      } catch (err) {
+        console.error("Error al iniciar reconocimiento:", err);
+        setGrabando(false);
+      }
+    }
+  };
 
   // ── Chat IA ─────────────────────────────────────────────────
   const [mensajes, setMensajes] = useState([]);
@@ -460,16 +526,34 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviarMensaje()}
-            placeholder="Cuéntame qué condiciones quieres en el contrato..."
+            placeholder={grabando ? "Escuchando voz..." : "Cuéntame qué condiciones quieres en el contrato..."}
             disabled={cargando}
             style={{
               flex: 1, border: '1.5px solid #e2e8f0', borderRadius: '10px',
               padding: '9px 14px', fontSize: '0.85rem', outline: 'none',
-              background: '#fff', opacity: cargando ? 0.6 : 1,
+              background: grabando ? '#fef2f2' : '#fff',
+              borderColor: grabando ? '#ef4444' : '#e2e8f0',
+              opacity: cargando ? 0.6 : 1,
             }}
-            onFocus={e => { e.target.style.borderColor = '#8b5cf6'; }}
-            onBlur={e => { e.target.style.borderColor = '#e2e8f0'; }}
+            onFocus={e => { if (!grabando) e.target.style.borderColor = '#8b5cf6'; }}
+            onBlur={e => { if (!grabando) e.target.style.borderColor = '#e2e8f0'; }}
           />
+          <button
+            onClick={toggleGrabacion}
+            disabled={cargando}
+            style={{
+              width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+              background: grabando ? '#ef4444' : '#f1f5f9',
+              border: '1.5px solid ' + (grabando ? '#ef4444' : '#cbd5e1'),
+              cursor: 'pointer',
+              color: grabando ? '#fff' : '#64748b',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              animation: grabando ? 'pulse-red 1.5s infinite' : 'none',
+            }}
+            title={grabando ? "Detener dictado por voz" : "Dictar por voz"}
+          >
+            {grabando ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
           <button
             onClick={() => enviarMensaje()}
             disabled={!input.trim() || cargando}
@@ -645,6 +729,10 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         }
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-red {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.05); }
+        }
       `}</style>
     </div>
   );
