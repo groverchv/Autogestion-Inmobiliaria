@@ -1673,7 +1673,10 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                         )}
                         {esOwner && (
                           <button
-                            onClick={() => setShowContratoIAModal(true)}
+                            onClick={() => {
+                              setContratoEdicion(null);
+                              setShowContratoIAModal(true);
+                            }}
                             style={{
                               background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
                               border: 'none',
@@ -2387,8 +2390,11 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
       {/* Modal de Creación de Contrato con IA */}
       <Modal
         isOpen={showContratoIAModal}
-        onClose={() => setShowContratoIAModal(false)}
-        title="Crear Contrato con Asistente Legal IA"
+        onClose={() => {
+          setShowContratoIAModal(false);
+          setContratoEdicion(null);
+        }}
+        title={contratoEdicion ? "Editar Contrato con Asistente Legal IA" : "Crear Contrato con Asistente Legal IA"}
         size="xl"
       >
         {selectedChat && (
@@ -2396,13 +2402,18 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
             selectedChat={selectedChat}
             user={user}
             tiposContrato={tiposContrato}
+            contratoEdicion={contratoEdicion}
             onContratoEnviado={() => {
               setShowContratoIAModal(false);
+              setContratoEdicion(null);
               if (selectedChat) {
                 fetchMensajes(selectedChat.id);
               }
             }}
-            onClose={() => setShowContratoIAModal(false)}
+            onClose={() => {
+              setShowContratoIAModal(false);
+              setContratoEdicion(null);
+            }}
           />
         )}
       </Modal>

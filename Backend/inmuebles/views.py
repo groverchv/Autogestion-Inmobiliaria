@@ -574,13 +574,28 @@ class ContratoViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'API Key de Groq no configurada.'}, status=500)
 
             system_prompt = f"""Eres un abogado especialista en derecho inmobiliario boliviano con 20 años de experiencia.
-Estás ayudando a un PROPIETARIO a crear un contrato para su inmueble.
+Estás ayudando a un PROPIETARIO a crear o editar un contrato para su inmueble.
 
 CONTEXTO DEL CONTRATO:
 - Inmueble: {contexto.get('inmueble_titulo', 'No especificado')}
 - Tipo de contrato: {contexto.get('tipo_contrato', 'No definido aún')}
 - Monto base: {contexto.get('monto', 'No definido')} {contexto.get('moneda', 'BOB')}
 - Vigencia: desde {contexto.get('inicio', 'No definido')} hasta {contexto.get('fin', 'Indefinido')}
+- Depósito de Garantía: {contexto.get('deposito', '0')} {contexto.get('moneda', 'BOB')}
+- Día de pago mensual: {contexto.get('dia_pago', '5')}
+"""
+            if contexto.get('clausulas'):
+                system_prompt += f"\n- Cláusulas del Contrato Existente:\n{contexto.get('clausulas')}"
+            if contexto.get('condiciones_uso'):
+                system_prompt += f"\n- Condiciones de uso existentes:\n{contexto.get('condiciones_uso')}"
+            if contexto.get('penalidades'):
+                system_prompt += f"\n- Penalidades existentes:\n{contexto.get('penalidades')}"
+            if contexto.get('restricciones'):
+                system_prompt += f"\n- Restricciones existentes:\n{contexto.get('restricciones')}"
+            if contexto.get('incluye_servicios'):
+                system_prompt += f"\n- Servicios incluidos existentes:\n{contexto.get('incluye_servicios')}"
+
+            system_prompt += """
 
 TU ROL Y MEMORIA:
 - Eres el Abogado del PROPIETARIO: oriéntalo para proteger sus intereses.

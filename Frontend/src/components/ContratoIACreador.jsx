@@ -280,6 +280,13 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
           moneda: form.moneda,
           inicio: form.inicio,
           fin: form.fin,
+          deposito: form.deposito,
+          dia_pago: form.dia_pago,
+          clausulas: contratoEdicion?.clausulas || '',
+          condiciones_uso: contratoEdicion?.condiciones_uso || '',
+          penalidades: contratoEdicion?.penalidades || '',
+          restricciones: contratoEdicion?.restricciones || '',
+          incluye_servicios: contratoEdicion?.incluye_servicios || '',
         }
       });
       setMensajes(prev => [...prev, { role: 'assistant', content: data.respuesta }]);
