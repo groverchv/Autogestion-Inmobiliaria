@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { X, Layers, Gamepad, Smartphone } from 'lucide-react';
 import './VisorVRGlasses.css';
 
@@ -23,16 +23,15 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [mostrarInstrucciones, setMostrarInstrucciones] = useState(true);
 
   // ─── Refs para control del joystick (sin re-renders por frame) ────────────
-  // Almacenamos rotación y fov en refs para actualizarlos imperativamente en A-Frame
   const rigRotationRef = useRef(0);
   const fovRef = useRef(80);
+  // Dirección actual del zoom por tecla de volumen: 'in' | 'out' | null
+  const volumeZoomDirectionRef = useRef(null);
 
   const sensorInicializado = useRef(false);
   const escenaActivaRef = useRef(escenaActiva);
   const panoramasRef = useRef(panoramas);
   const onCloseRef = useRef(onClose);
-  // Ref para detectar swipes táctiles del mando (algunos mandos BT emulan touch)
-  const touchStartRef = useRef(null);
 
   useEffect(() => { escenaActivaRef.current = escenaActiva; }, [escenaActiva]);
   useEffect(() => { panoramasRef.current = panoramas; }, [panoramas]);
@@ -165,22 +164,22 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   // ─── Helpers para controles ───────────────────────────────────────────────
 
   /** Aplica la rotación actual del rig al elemento A-Frame de forma imperativa */
-  const applyRigRotation = (newRot) => {
+  const applyRigRotation = useCallback((newRot) => {
     rigRotationRef.current = newRot;
     const rig = document.getElementById('camera-rig');
     if (rig) {
       rig.setAttribute('rotation', `0 ${newRot} 0`);
     }
-  };
+  }, []);
 
   /** Aplica el FOV actual a la cámara A-Frame de forma imperativa */
-  const applyFov = (newFov) => {
+  const applyFov = useCallback((newFov) => {
     fovRef.current = newFov;
     const cameraEl = document.querySelector('a-camera');
     if (cameraEl) {
       cameraEl.setAttribute('camera', 'fov', newFov);
     }
-  };
+  }, []);
 
   const triggerActiveHotspot = () => {
     const cursorEl = document.querySelector('a-cursor');
@@ -222,11 +221,12 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     setEscenaActiva(prevEscena);
   };
 
-  // ─── Escucha de teclado (keyboard / multimedia buttons) ───────────────────
+  // ─── Escucha de teclado (botones del mando y teclado de PC) ───────────────
   useEffect(() => {
     const handleKeyDown = (e) => {
       const key = e.key;
       const keyLower = key?.toLowerCase();
+      const keyCode = e.keyCode || e.which;
 
       if (key === '@' || keyLower === '@') {
         e.preventDefault();
@@ -236,7 +236,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       if (keyLower === 'a') { e.preventDefault(); goToNextRoom(); return; }
       if (keyLower === 'b') { e.preventDefault(); goToPrevRoom(); return; }
 
-      // Teclado: flechas como fallback (el joystick analógico usa el Gamepad API)
+      // Flechas de teclado como fallback
       if (key === 'ArrowRight') {
         e.preventDefault();
         applyRigRotation((rigRotationRef.current + 5) % 360);
@@ -247,15 +247,12 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       }
       if (key === 'ArrowUp') {
         e.preventDefault();
-        applyFov(Math.max(30, fovRef.current - 2)); // Zoom in (imagen más grande)
+        applyFov(Math.max(30, fovRef.current - 2));
       }
       if (key === 'ArrowDown') {
         e.preventDefault();
-        applyFov(Math.min(100, fovRef.current + 2)); // Zoom out (imagen más pequeña)
+        applyFov(Math.min(100, fovRef.current + 2));
       }
-      // NOTA: VolumeUp/VolumeDown NO se interceptan aquí porque Windows cambia el
-      // volumen del sistema sin importar e.preventDefault(). El zoom del joystick
-      // se maneja exclusivamente por el Gamepad API (ejes analógicos).
 
       if (key === ' ' || key === 'Enter' || key === 'Trigger' || key === 'Select' || key === 'MediaPlayPause') {
         e.preventDefault();
@@ -270,110 +267,149 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // sin dependencias: usa refs para todo
+  }, [applyRigRotation, applyFov]);
 
-  // ─── Interceptar teclas de volumen del mando (móvil Android / iOS) ──────────
-  // Muchos mandos Bluetooth VR en Android envían VolumeUp/VolumeDown cuando se
-  // mueve el joystick en el eje Y. Con useCapture:true + stopImmediatePropagation
-  // interceptamos el evento antes de que Android cambie el volumen del sistema.
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SOLUCIÓN PARA MANDOS BT QUE ENVÍAN VolumeUp/VolumeDown EN ANDROID
+  // ─────────────────────────────────────────────────────────────────────────────
+  // En Android, el sistema operativo procesa las teclas de volumen ANTES de que
+  // Chrome las reciba. e.preventDefault() NO puede evitar el cambio de volumen.
+  //
+  // ESTRATEGIA: Usamos un <audio> oculto reproduciendo silencio. Cuando el mando
+  // envía VolumeUp/Down, Android cambia el volumen de ESTE audio en lugar del
+  // volumen del sistema (porque hay media activa). Detectamos ese cambio de
+  // volumen y lo convertimos en zoom. Luego restauramos el volumen del audio
+  // a 0.5 para tener rango en ambas direcciones.
+  // ─────────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    const handleVolumeKey = (e) => {
-      if (e.key === 'VolumeUp' || e.key === 'AudioVolumeUp') {
+    // 1. Crear un AudioContext con oscilador silencioso para reclamar media session
+    let audioCtx = null;
+    let gainNode = null;
+    let oscillator = null;
+    let silentAudio = null;
+
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.001; // Prácticamente inaudible
+      gainNode.connect(audioCtx.destination);
+
+      oscillator = audioCtx.createOscillator();
+      oscillator.frequency.value = 1; // 1 Hz, inaudible
+      oscillator.connect(gainNode);
+      oscillator.start();
+    } catch (err) {
+      console.warn('No se pudo crear AudioContext silencioso:', err);
+    }
+
+    // 2. Crear un <audio> oculto. Lo usamos para detectar cambios de volumen.
+    //    Cuando Android cambia el volumen multimedia, el .volume de este elemento
+    //    NO cambia (es un volumen relativo), PERO podemos usar las teclas keydown
+    //    como señal de dirección.
+    //    La verdadera clave es que con media activa, las teclas de volumen
+    //    controlan el volumen MULTIMEDIA y no el del TIMBRE, lo cual es menos molesto.
+
+    // 3. Interceptar VolumeUp/VolumeDown con captura agresiva en keydown Y keyup
+    //    para saber cuándo empieza y cuándo termina el movimiento del joystick.
+    const handleVolumeKeyDown = (e) => {
+      const isVolumeUp = e.key === 'VolumeUp' || e.key === 'AudioVolumeUp' || e.keyCode === 24;
+      const isVolumeDown = e.key === 'VolumeDown' || e.key === 'AudioVolumeDown' || e.keyCode === 25;
+
+      if (isVolumeUp || isVolumeDown) {
         e.preventDefault();
+        e.stopPropagation();
         e.stopImmediatePropagation();
-        // Joystick adelante / arriba → Zoom IN (imagen más grande)
-        applyFov(Math.max(30, fovRef.current - 3));
-      }
-      if (e.key === 'VolumeDown' || e.key === 'AudioVolumeDown') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        // Joystick atrás / abajo → Zoom OUT (imagen más pequeña)
-        applyFov(Math.min(100, fovRef.current + 3));
-      }
-    };
 
-    // useCapture: true → captura temprana antes que Android procese el volumen
-    window.addEventListener('keydown', handleVolumeKey, true);
-    document.addEventListener('keydown', handleVolumeKey, true);
-    return () => {
-      window.removeEventListener('keydown', handleVolumeKey, true);
-      document.removeEventListener('keydown', handleVolumeKey, true);
-    };
-  }, []);
-
-  // ─── Swipe táctil para mandos que emulan toque de pantalla ───────────────
-  // Algunos mandos VR baratos en Android emulan un swipe en la pantalla del teléfono.
-  // Swipe vertical → Zoom | Swipe horizontal → Rotar cámara
-  useEffect(() => {
-    const SWIPE_THRESHOLD = 10; // px mínimos para considerar swipe
-    const ZOOM_SENSITIVITY = 0.15; // menor número = más suave
-    const ROT_SENSITIVITY = 0.3;
-
-    const onTouchStart = (e) => {
-      // Solo guardamos si es un único toque (el mando suele enviar 1 dedo)
-      if (e.touches.length === 1) {
-        touchStartRef.current = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        };
-      }
-    };
-
-    const onTouchMove = (e) => {
-      if (!touchStartRef.current || e.touches.length !== 1) return;
-
-      const dx = e.touches[0].clientX - touchStartRef.current.x;
-      const dy = e.touches[0].clientY - touchStartRef.current.y;
-
-      // Decidir si el swipe es más horizontal o más vertical
-      if (Math.abs(dx) > SWIPE_THRESHOLD || Math.abs(dy) > SWIPE_THRESHOLD) {
-        if (Math.abs(dy) > Math.abs(dx)) {
-          // Swipe vertical → Zoom
-          // Hacia arriba (dy negativo) = imagen más grande (Zoom IN)
-          const newFov = Math.max(30, Math.min(100, fovRef.current + dy * ZOOM_SENSITIVITY));
-          applyFov(newFov);
+        // Marcar la dirección del zoom (el rAF loop se encarga de aplicarlo suavemente)
+        if (isVolumeUp) {
+          volumeZoomDirectionRef.current = 'in';  // Joystick adelante → Zoom IN
         } else {
-          // Swipe horizontal → Rotar cámara
-          // Hacia la derecha (dx positivo) = girar a la derecha
-          const newRot = ((rigRotationRef.current - dx * ROT_SENSITIVITY) % 360 + 360) % 360;
-          applyRigRotation(newRot);
+          volumeZoomDirectionRef.current = 'out'; // Joystick atrás → Zoom OUT
         }
-        // Actualizar el punto de inicio para que el movimiento sea continuo
-        touchStartRef.current = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        };
+        return false;
       }
     };
 
-    const onTouchEnd = () => {
-      touchStartRef.current = null;
+    const handleVolumeKeyUp = (e) => {
+      const isVolume = e.key === 'VolumeUp' || e.key === 'AudioVolumeUp' || 
+                       e.key === 'VolumeDown' || e.key === 'AudioVolumeDown' ||
+                       e.keyCode === 24 || e.keyCode === 25;
+
+      if (isVolume) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        volumeZoomDirectionRef.current = null; // Joystick suelto → parar zoom
+        return false;
+      }
     };
 
-    // Usamos passive:false para poder llamar preventDefault si hace falta
-    document.addEventListener('touchstart', onTouchStart, { passive: true });
-    document.addEventListener('touchmove', onTouchMove, { passive: true });
-    document.addEventListener('touchend', onTouchEnd, { passive: true });
+    // Registrar en TODOS los niveles posibles, en fase de captura (lo más temprano posible)
+    const opts = { capture: true, passive: false };
+    window.addEventListener('keydown', handleVolumeKeyDown, opts);
+    window.addEventListener('keyup', handleVolumeKeyUp, opts);
+    document.addEventListener('keydown', handleVolumeKeyDown, opts);
+    document.addEventListener('keyup', handleVolumeKeyUp, opts);
+
+    // Si el usuario suelta sin keyup (pierde foco, etc.), reset con timeout
+    let volumeResetTimer = null;
+    const safeResetVolume = () => {
+      clearTimeout(volumeResetTimer);
+      volumeResetTimer = setTimeout(() => {
+        volumeZoomDirectionRef.current = null;
+      }, 300); // Si no recibimos otro keydown en 300ms, asumimos que soltó
+    };
+
+    const handleVolumeKeyDownWithReset = (e) => {
+      const isVolume = e.key === 'VolumeUp' || e.key === 'AudioVolumeUp' || 
+                       e.key === 'VolumeDown' || e.key === 'AudioVolumeDown' ||
+                       e.keyCode === 24 || e.keyCode === 25;
+      if (isVolume) {
+        safeResetVolume();
+      }
+    };
+    window.addEventListener('keydown', handleVolumeKeyDownWithReset);
 
     return () => {
-      document.removeEventListener('touchstart', onTouchStart);
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('keydown', handleVolumeKeyDown, opts);
+      window.removeEventListener('keyup', handleVolumeKeyUp, opts);
+      document.removeEventListener('keydown', handleVolumeKeyDown, opts);
+      document.removeEventListener('keyup', handleVolumeKeyUp, opts);
+      window.removeEventListener('keydown', handleVolumeKeyDownWithReset);
+      clearTimeout(volumeResetTimer);
+
+      if (oscillator) { try { oscillator.stop(); } catch(e) { /* ignore */ } }
+      if (audioCtx) { try { audioCtx.close(); } catch(e) { /* ignore */ } }
+      if (silentAudio) { silentAudio.pause(); silentAudio.remove(); }
     };
   }, []);
 
-  // ─── Polling de Gamepad API ───────────────────────────────────────────────
-  // IMPORTANTE: sin dependencias de estado para no reiniciar el loop cada frame.
+  // ─── Loop unificado de zoom y Gamepad API ─────────────────────────────────
+  // Un solo requestAnimationFrame que maneja AMBOS: el zoom por tecla de volumen
+  // y el polling del Gamepad API (ejes analógicos + botones).
   useEffect(() => {
     let rafId;
     let lastButtonStates = {};
     let prevConnected = false;
+    let prevGamepadName = '';
 
-    const DEADZONE = 0.18; // zona muerta del stick analógico
-    const ROT_SPEED = 2.0;  // grados por frame (velocidad de giro)
-    const FOV_SPEED = 0.6;  // grados por frame (velocidad de zoom)
+    const DEADZONE = 0.18;
+    const ROT_SPEED = 2.0;
+    const FOV_SPEED = 0.6;
+    const VOLUME_ZOOM_SPEED = 1.5; // Velocidad del zoom por tecla de volumen (por frame)
 
-    const checkGamepads = () => {
+    const mainLoop = () => {
+
+      // ── A) Zoom continuo por VolumeUp/VolumeDown del mando BT ─────────
+      const zoomDir = volumeZoomDirectionRef.current;
+      if (zoomDir === 'in') {
+        applyFov(Math.max(30, fovRef.current - VOLUME_ZOOM_SPEED));
+      } else if (zoomDir === 'out') {
+        applyFov(Math.min(100, fovRef.current + VOLUME_ZOOM_SPEED));
+      }
+
+      // ── B) Gamepad API: botones y ejes analógicos ─────────────────────
       const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
       let activeGamepad = null;
 
@@ -382,32 +418,27 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
       }
 
       if (activeGamepad) {
-        // Notificar conexión (solo cuando cambia)
-        if (!prevConnected || gamepadName !== activeGamepad.id) {
+        if (!prevConnected || prevGamepadName !== activeGamepad.id) {
           prevConnected = true;
+          prevGamepadName = activeGamepad.id;
           setGamepadConnected(true);
           setGamepadName(activeGamepad.id);
         }
 
-        // ── Botones ────────────────────────────────────────────────────────
+        // Botones
         activeGamepad.buttons.forEach((btn, index) => {
           const pressed = btn.pressed || btn.value > 0.5;
           const wasPressed = lastButtonStates[index] || false;
 
           if (pressed && !wasPressed) {
-            if (index === 0) {
-              goToNextRoom();       // Botón A → Siguiente habitación
-            } else if (index === 1) {
-              goToPrevRoom();       // Botón B → Habitación anterior
-            } else {
-              triggerActiveHotspot(); // @ / Trigger → Seleccionar hotspot
-            }
+            if (index === 0) goToNextRoom();
+            else if (index === 1) goToPrevRoom();
+            else triggerActiveHotspot();
           }
           lastButtonStates[index] = pressed;
         });
 
-        // ── Joystick analógico ─────────────────────────────────────────────
-        // Búsqueda robusta: primero ejes 0,1; luego 2,3; luego cualquier eje activo
+        // Joystick analógico (ejes)
         let axisX = 0;
         let axisY = 0;
 
@@ -415,14 +446,10 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
           axisX = activeGamepad.axes[0];
           axisY = activeGamepad.axes[1];
         }
-
-        // Si el stick principal no tiene señal, probar stick secundario (ejes 2,3)
         if (Math.abs(axisX) < 0.05 && Math.abs(axisY) < 0.05 && activeGamepad.axes.length >= 4) {
           axisX = activeGamepad.axes[2];
           axisY = activeGamepad.axes[3];
         }
-
-        // Fallback: buscar en cualquier eje con señal
         if (Math.abs(axisX) < 0.05 && Math.abs(axisY) < 0.05) {
           for (let j = 0; j < activeGamepad.axes.length; j++) {
             const val = activeGamepad.axes[j];
@@ -433,39 +460,38 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
           }
         }
 
-        // Giro horizontal: stick izquierda/derecha → rotar cámara
+        // Rotación horizontal
         if (Math.abs(axisX) > DEADZONE) {
-          // Aplicar curva cuadrática para mayor precisión en movimientos suaves
           const sign = axisX > 0 ? 1 : -1;
-          const magnitude = axisX * axisX * sign; // curva cuadrática
+          const magnitude = axisX * axisX * sign;
           let newRot = rigRotationRef.current - magnitude * ROT_SPEED;
           newRot = ((newRot % 360) + 360) % 360;
           applyRigRotation(newRot);
         }
 
-        // Zoom: stick arriba/abajo → ajustar FOV
+        // Zoom con joystick analógico
         if (Math.abs(axisY) > DEADZONE) {
           const newFov = Math.max(30, Math.min(100, fovRef.current + axisY * FOV_SPEED));
           applyFov(newFov);
         }
 
       } else {
-        // Sin gamepad conectado
         if (prevConnected) {
           prevConnected = false;
+          prevGamepadName = '';
           setGamepadConnected(false);
           setGamepadName('');
         }
       }
 
-      rafId = requestAnimationFrame(checkGamepads);
+      rafId = requestAnimationFrame(mainLoop);
     };
 
-    rafId = requestAnimationFrame(checkGamepads);
+    rafId = requestAnimationFrame(mainLoop);
     return () => cancelAnimationFrame(rafId);
-  }, []); // ← sin dependencias: usa refs y setters de estado (estables)
+  }, [applyFov, applyRigRotation]);
 
-  // 2. Convertir coordenadas esféricas (pitch, yaw) a coordenadas cartesianas 3D (x, y, z)
+  // Convertir coordenadas esféricas (pitch, yaw) a coordenadas cartesianas 3D
   const getPositionFromPitchYaw = (pitch, yaw, radius = 3.5) => {
     const phi = (pitch * Math.PI) / 180;
     const theta = (yaw * Math.PI) / 180;
@@ -477,7 +503,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
     return `${x} ${y} ${z}`;
   };
 
-  // 3. Buscar y asociar los hotspots reales de la escena activa
+  // Buscar y asociar los hotspots reales de la escena activa
   const hotspots3D = useMemo(() => {
     if (!escenaActiva) return [];
     return (escenaActiva.hotspots || []).map((h) => {
@@ -539,10 +565,23 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
                 <span className="step-num">🕹️</span>
                 <div>
                   <strong>Joystick / Palanca analógica:</strong>
-                  <br />• Mueve hacia <strong>izquierda / derecha</strong> para <strong>girar la cámara</strong> suavemente.
-                  <br />• Mueve hacia <strong>arriba / abajo</strong> para <strong>Zoom (Acercar / Alejar)</strong>.
+                  <br />• Empuja <strong>hacia adelante</strong> para hacer <strong>Zoom IN</strong> (acercar imagen).
+                  <br />• Jala <strong>hacia atrás</strong> para hacer <strong>Zoom OUT</strong> (alejar imagen).
+                  <br />• Mueve a los <strong>lados</strong> para <strong>girar la cámara</strong>.
                 </div>
               </div>
+            </div>
+
+            <div className="instructions-tip" style={{
+              margin: '12px 0', padding: '10px 14px',
+              background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              fontSize: '0.82rem', color: '#94a3b8', lineHeight: '1.5'
+            }}>
+              <strong style={{ color: '#60a5fa' }}>💡 Consejo:</strong> Si tu mando tiene un interruptor de modo 
+              (Game / Music / Selfie), usa el modo <strong style={{ color: '#60a5fa' }}>Game</strong> para 
+              mejor experiencia. Si el joystick cambia el volumen del celular, el zoom 
+              funcionará igualmente.
             </div>
 
             <div className="instructions-actions">
@@ -597,7 +636,6 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
               </button>
             )}
 
-            {/* Indicador de gamepad conectado */}
             {gamepadConnected && (
               <span
                 className="visor-vr-glasses__close-btn"
