@@ -15,7 +15,7 @@ import './ModalRecorrido3D.css';
  * @param {string} props.tituloPropiedad - Título de la propiedad.
  * @param {Function} props.onClose - Callback al cerrar el modal.
  */
-const ModalRecorrido3D = ({ panoramas = [], onClose }) => {
+const ModalRecorrido3D = ({ panoramas = [], onClose, musica = null }) => {
   const viewerRef = useRef(null);
   const viewerInstanceRef = useRef(null);
   const [blobUrls, setBlobUrls] = useState({});
@@ -24,6 +24,32 @@ const ModalRecorrido3D = ({ panoramas = [], onClose }) => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('Iniciando recorrido virtual...');
   const [showVRGlasses, setShowVRGlasses] = useState(false);
+  const audioRef = useRef(null);
+
+  // Reproducir música al entrar al Modo VR (gafas), detener al salir
+  useEffect(() => {
+    if (musica && showVRGlasses) {
+      const audio = new Audio(musica);
+      audio.loop = true;
+      audioRef.current = audio;
+      
+      audio.play().catch((err) => {
+        console.warn("La reproducción automática del audio fue bloqueada o falló:", err);
+      });
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [musica, showVRGlasses]);
 
   // 1. Pre-descargar todos los panoramas para evadir CORS y acelerar transiciones
   useEffect(() => {

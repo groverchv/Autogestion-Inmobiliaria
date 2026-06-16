@@ -101,8 +101,10 @@ const PropiedadDetalle = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      setAcceso360({ tieneAcceso: false, propietario: false, fechaExpiracion: null, accesoId: null });
-      setAccesoLoading(false);
+      setTimeout(() => {
+        setAcceso360({ tieneAcceso: false, propietario: false, fechaExpiracion: null, accesoId: null });
+        setAccesoLoading(false);
+      }, 0);
       return;
     }
 
@@ -126,8 +128,10 @@ const PropiedadDetalle = () => {
         .finally(() => setAccesoLoading(false));
     };
 
-    setAccesoLoading(true);
-    checkAcceso();
+    setTimeout(() => {
+      setAccesoLoading(true);
+      checkAcceso();
+    }, 0);
 
     // Polling inteligente para reactividad inmediata (cada 4 segundos)
     intervalId = setInterval(() => {
@@ -192,7 +196,7 @@ const PropiedadDetalle = () => {
     }
   };
 
-  const shareWhatsApp = () => {
+  const _shareWhatsApp = () => {
     const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
     const precioTexto = activePub ? `Bs. ${parseFloat(activePub.precio).toLocaleString()} (${activePub.tipo_oferta})` : 'Sin oferta';
     const text = `Mira este inmueble: ${inmueble.titulo} - ${precioTexto}. ${window.location.href}`;
@@ -208,8 +212,9 @@ const PropiedadDetalle = () => {
   };
 
   // Separar multimedia normal de panoramas 360°
-  const mediaNormal = inmueble?.multimedia?.filter(m => m.tipo !== 'panorama360') || [];
+  const mediaNormal = inmueble?.multimedia?.filter(m => m.tipo !== 'panorama360' && m.tipo !== 'musica') || [];
   const panoramas360 = inmueble?.multimedia?.filter(m => m.tipo === 'panorama360') || [];
+  const musicaVR = inmueble?.multimedia?.find(m => m.tipo === 'musica');
 
   const principalMedia = mediaNormal.find(m => m.principal) || mediaNormal[0];
   const restoMedia = mediaNormal.filter(m => m.id !== principalMedia?.id) || [];
@@ -446,7 +451,7 @@ const PropiedadDetalle = () => {
                         {!acceso360.propietario && acceso360.fechaExpiracion && (
                           <RenderPaseBadge expiracion={acceso360.fechaExpiracion} />
                         )}
-                        <Visor360 panoramas={panoramas360} tituloPropiedad={inmueble.titulo} accesoId={acceso360.accesoId} />
+                        <Visor360 panoramas={panoramas360} tituloPropiedad={inmueble.titulo} accesoId={acceso360.accesoId} musica={musicaVR?.archivo || '/inspirar.mp3'} />
                       </div>
                     ) : (
                       <div style={{

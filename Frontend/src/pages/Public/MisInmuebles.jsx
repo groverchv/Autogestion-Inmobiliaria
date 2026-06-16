@@ -54,6 +54,8 @@ const MisInmuebles = () => {
   const [preview360, setPreview360] = useState([]);
   const [existing360, setExisting360] = useState([]);
   const [meta360, setMeta360] = useState([]); // [{piso: '', habitacion: ''}, ...]
+  const [existingMusica, setExistingMusica] = useState(null);
+  const [archivoMusica, setArchivoMusica] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({ uploading: false, message: '', current: 0, total: 0 });
   const [showGuiaModal, setShowGuiaModal] = useState(false);
   const [guiaPasoActivo, setGuiaPasoActivo] = useState(1);
@@ -435,8 +437,10 @@ const MisInmuebles = () => {
       setPreviewUrls([]);
       // Separar multimedia normal de panoramas 360°
       const allMultimedia = detailedInm.multimedia || [];
-      setExistingMedia(allMultimedia.filter(m => m.tipo !== 'panorama360'));
+      setExistingMedia(allMultimedia.filter(m => m.tipo !== 'panorama360' && m.tipo !== 'musica'));
       setExisting360(allMultimedia.filter(m => m.tipo === 'panorama360'));
+      setExistingMusica(allMultimedia.find(m => m.tipo === 'musica') || null);
+      setArchivoMusica(null);
       setArchivos360([]);
       setPreview360([]);
       setMeta360([]);
@@ -541,10 +545,34 @@ const MisInmuebles = () => {
         setUploadProgress({ uploading: false, message: '', current: 0, total: 0 });
       }
 
+      // Subir archivo de música si se ha seleccionado uno nuevo
+      if (archivoMusica) {
+        if (existingMusica) {
+          try {
+            await api.delete(`/inmuebles/multimedia/${existingMusica.id}/`);
+          } catch (err) {
+            console.warn("No se pudo borrar la música anterior:", err);
+          }
+        }
+        
+        const mediaForm = new FormData();
+        mediaForm.append('inmueble', nuevoInmuebleId);
+        mediaForm.append('archivo', archivoMusica);
+        mediaForm.append('principal', 'false');
+        mediaForm.append('tipo', 'musica');
+        mediaForm.append('descripcion', 'Música de fondo VR');
+
+        await api.post('/inmuebles/multimedia/', mediaForm, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
       setShowModal(false);
       setEditingId(null);
       setExistingMedia([]);
       setExisting360([]);
+      setExistingMusica(null);
+      setArchivoMusica(null);
       setMediaToDelete([]);
       setFormData({
         titulo: '', descripcion: '', tipo: tipos.length > 0 ? tipos[0].id : '',
@@ -685,6 +713,8 @@ const MisInmuebles = () => {
                 setPreviewUrls([]);
                 setExistingMedia([]);
                 setExisting360([]);
+                setExistingMusica(null);
+                setArchivoMusica(null);
                 setArchivos360([]);
                 setPreview360([]);
                 setMeta360([]);
@@ -711,6 +741,8 @@ const MisInmuebles = () => {
               <button
                 onClick={() => {
                   if (tipos.length > 0 && !formData.tipo) setFormData(p => ({ ...p, tipo: tipos[0].id }));
+                  setExistingMusica(null);
+                  setArchivoMusica(null);
                   setShowModal(true);
                 }}
                 style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
@@ -1409,6 +1441,95 @@ const MisInmuebles = () => {
                       })}
                     </div>
                   )}
+
+                  {/* ─── Música de Fondo para Recorrido VR ─── */}
+                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px dashed rgba(99, 102, 241, 0.2)' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 18V5l12-2v13" />
+                        <circle cx="6" cy="18" r="3" />
+                        <circle cx="18" cy="16" r="3" />
+                      </svg>
+                      Música de Fondo (Modo VR)
+                    </h4>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                      Sube una pista de audio (.mp3, .wav) para ambientar la experiencia virtual en 360°.
+                    </p>
+
+                    {/* Mostrar música existente */}
+                    {existingMusica && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: '#f8fafc',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-border)',
+                        marginBottom: '12px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                          <span style={{ color: '#10b981', display: 'flex' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M9 18V5l12-2v13" />
+                              <circle cx="6" cy="18" r="3" />
+                              <circle cx="18" cy="16" r="3" />
+                            </svg>
+                          </span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                            Música de fondo activa
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMediaToDelete(prev => [...prev, existingMusica.id]);
+                            setExistingMusica(null);
+                          }}
+                          style={{
+                            background: 'none', border: 'none', color: '#ef4444',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px'
+                          }}
+                          title="Eliminar música"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setArchivoMusica(file);
+                        }
+                      }}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    />
+                    {archivoMusica && (
+                      <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#6366f1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>✓ Seleccionado: {archivoMusica.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setArchivoMusica(null)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}
+                        >
+                          (Quitar)
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </form>
             </div>

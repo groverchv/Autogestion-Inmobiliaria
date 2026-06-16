@@ -116,6 +116,7 @@ class Multimedia(models.Model):
         IMAGEN = 'imagen', 'Imagen'
         VIDEO = 'video', 'Video'
         PANORAMA360 = 'panorama360', 'Panorama 360°'
+        MUSICA = 'musica', 'Música'
 
     inmueble = models.ForeignKey(
         Inmueble,

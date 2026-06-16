@@ -18,7 +18,7 @@ import './Visor360.css';
  *
  * @param {{ panoramas: Array<{id: number, archivo: string, descripcion: string}> }} props
  */
-const Visor360 = ({ panoramas = [], accesoId = null }) => {
+const Visor360 = ({ panoramas = [], accesoId = null, musica = null }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const viewerRef = useRef(null);
@@ -290,6 +290,7 @@ const Visor360 = ({ panoramas = [], accesoId = null }) => {
         <ModalRecorrido3D
           panoramas={panoramas}
           onClose={() => setIsModalOpen(false)}
+          musica={musica}
         />
       )}
 
