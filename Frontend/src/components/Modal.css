@@ -25,6 +25,8 @@
 .modal--sm { width: min(400px, 90vw); }
 .modal--md { width: min(560px, 90vw); }
 .modal--lg { width: min(760px, 90vw); }
+.modal--xl { width: min(1000px, 95vw); }
+
 
 .modal__header {
   display: flex;
