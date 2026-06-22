@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, CheckCircle, XCircle, Clock, AlertTriangle, Home, User, Sparkles, Send, Bot, RotateCcw } from 'lucide-react';
+import { 
+  FileText, CheckCircle, XCircle, Clock, AlertTriangle, Home, User, Sparkles, Send, Bot, RotateCcw,
+  ClipboardList, MessageSquare, Printer, Ban, ShieldCheck, Lightbulb, Calendar, RefreshCw, Zap, History
+} from 'lucide-react';
 import BlockchainAuditTrail from './BlockchainAuditTrail';
 import useAlertConfirm from '../hooks/useAlertConfirm';
 import contratoService from '../services/contratoService';
@@ -61,16 +64,16 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
 
   // Temas del contrato con sus chips — se van marcando conforme se hablan
   const TEMAS_CONTRATO = [
-    { id: 'clausulas',    emoji: '📋', label: 'Cláusulas',          pregunta: '¿Qué cláusulas recomiendas para este contrato?' },
-    { id: 'restricciones',emoji: '🚫', label: 'Restricciones',      pregunta: '¿Qué restricciones debería incluir el contrato?' },
-    { id: 'garantias',    emoji: '🛡️', label: 'Garantías',          pregunta: '¿Cómo debería estructurarse la garantía y el depósito?' },
-    { id: 'penalizaciones',emoji: '⚠️', label: 'Penalizaciones',   pregunta: '¿Qué penalizaciones recomiendas incluir si el inquilino incumple?' },
-    { id: 'servicios',    emoji: '💡', label: 'Servicios',          pregunta: '¿Qué servicios debería incluir o excluir el contrato?' },
-    { id: 'cancelacion',  emoji: '🗓️', label: 'Cancelación',       pregunta: '¿Cuál debería ser la política de cancelación del contrato?' },
-    { id: 'renovacion',   emoji: '🔄', label: 'Renovación',        pregunta: '¿Qué tipo de cláusula de renovación recomiendas?' },
-    { id: 'riesgos',      emoji: '⚡', label: 'Riesgos Legales',   pregunta: '¿Cuáles son los principales riesgos legales de este contrato?' },
-    { id: 'uso',          emoji: '🏠', label: 'Uso del Inmueble',  pregunta: '¿Qué condiciones de uso debo especificar en el contrato?' },
-    { id: 'antecedentes', emoji: '📄', label: 'Antecedentes',       pregunta: '¿Qué antecedentes del inmueble debo incluir en el contrato?' },
+    { id: 'clausulas',    icon: ClipboardList, label: 'Cláusulas',          pregunta: '¿Qué cláusulas recomiendas para este contrato?' },
+    { id: 'restricciones',icon: Ban, label: 'Restricciones',      pregunta: '¿Qué restricciones debería incluir el contrato?' },
+    { id: 'garantias',    icon: ShieldCheck, label: 'Garantías',          pregunta: '¿Cómo debería estructurarse la garantía y el depósito?' },
+    { id: 'penalizaciones',icon: AlertTriangle, label: 'Penalizaciones',   pregunta: '¿Qué penalizaciones recomiendas incluir si el inquilino incumple?' },
+    { id: 'servicios',    icon: Lightbulb, label: 'Servicios',          pregunta: '¿Qué servicios debería incluir o excluir el contrato?' },
+    { id: 'cancelacion',  icon: Calendar, label: 'Cancelación',       pregunta: '¿Cuál debería ser la política de cancelación del contrato?' },
+    { id: 'renovacion',   icon: RefreshCw, label: 'Renovación',        pregunta: '¿Qué tipo de cláusula de renovación recomiendas?' },
+    { id: 'riesgos',      icon: Zap, label: 'Riesgos Legales',   pregunta: '¿Cuáles son los principales riesgos legales de este contrato?' },
+    { id: 'uso',          icon: Home, label: 'Uso del Inmueble',  pregunta: '¿Qué condiciones de uso debo especificar en el contrato?' },
+    { id: 'antecedentes', icon: History, label: 'Antecedentes',       pregunta: '¿Qué antecedentes del inmueble debo incluir en el contrato?' },
   ];
 
   // Retorna los temas que AUN NO se han discutido (se filtra por click del usuario)
@@ -274,10 +277,13 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             fontWeight: 700,
             fontSize: '0.88rem',
             cursor: 'pointer',
-            transition: 'all 0.15s'
+            transition: 'all 0.15s',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          📋 Resumen y Firmas
+          <ClipboardList size={16} /> Resumen y Firmas
         </button>
         <button
           onClick={() => setActiveTab('chat')}
@@ -290,10 +296,13 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             fontWeight: 700,
             fontSize: '0.88rem',
             cursor: 'pointer',
-            transition: 'all 0.15s'
+            transition: 'all 0.15s',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          💬 Abogado Virtual
+          <MessageSquare size={16} /> Abogado Virtual
         </button>
         <button
           onClick={() => setActiveTab('pdf')}
@@ -306,10 +315,13 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             fontWeight: 700,
             fontSize: '0.88rem',
             cursor: 'pointer',
-            transition: 'all 0.15s'
+            transition: 'all 0.15s',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          🖨️ Vista de Impresión (PDF)
+          <Printer size={16} /> Vista de Impresión (PDF)
         </button>
       </div>
 
@@ -372,10 +384,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             {c.observaciones && <div style={sectionStyle}><div style={titleStyle}>Observaciones</div><div style={{ fontSize: '0.88rem', color: '#374151', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.observaciones}</div></div>}
             {c.motivo_rechazo && <div style={sectionStyle}><div style={titleStyle}>Motivo de Rechazo</div><div style={{ fontSize: '0.88rem', color: '#dc2626', whiteSpace: 'pre-wrap', background: '#fee2e2', padding: '12px', borderRadius: '8px' }}>{c.motivo_rechazo}</div></div>}
 
-            {/* Trazabilidad inmutable en Blockchain */}
-            <div style={{ marginTop: '24px', borderTop: '2px solid #e2e8f0', paddingTop: '20px', marginBottom: '20px' }}>
-              <BlockchainAuditTrail assetId={`CON-${c.id}`} />
-            </div>
+
 
             {/* Acciones del cliente */}
             {puedeAceptar && (
@@ -540,7 +549,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                           borderRadius: '20px', padding: '5px 12px',
                           fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
                           transition: 'all 0.15s',
-                          display: 'flex', alignItems: 'center', gap: '5px',
+                          display: 'flex', alignItems: 'center', gap: '6px',
                         }}
                         onMouseOver={e => {
                           e.currentTarget.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
@@ -553,7 +562,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                           e.currentTarget.style.borderColor = '#ddd6fe';
                         }}
                       >
-                        <span>{t.emoji}</span> {t.label}
+                        <t.icon size={13} style={{ flexShrink: 0 }} /> {t.label}
                       </button>
                     ))}
                   </div>

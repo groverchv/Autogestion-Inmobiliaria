@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Send, RotateCcw, FileSignature, Loader2, CheckCircle2, Sparkles, Mic, MicOff } from 'lucide-react';
+import { 
+  Bot, Send, RotateCcw, FileSignature, Loader2, CheckCircle2, Sparkles, Mic, MicOff,
+  FileText, ClipboardList, Ban, Lightbulb, ShieldCheck, AlertTriangle, CalendarX, RefreshCw, Home, History
+} from 'lucide-react';
 import api from '../services/api';
 import contratoService from '../services/contratoService';
 
@@ -104,16 +107,16 @@ const ContratoIACreador = ({ selectedChat, user, tiposContrato, onContratoEnviad
 
   // Chips rápidos de temas (10 temas)
   const CHIPS = [
-    { id: 'tipo', emoji: '📄', label: 'Tipo de contrato', pregunta: '¿Qué tipo de contrato necesito para este inmueble y cuál es la diferencia entre alquiler, venta y anticrético?' },
-    { id: 'clausulas', emoji: '📋', label: 'Cláusulas recomendadas', pregunta: '¿Qué cláusulas principales debería tener el contrato para protegerme como propietario?' },
-    { id: 'restricciones', emoji: '🚫', label: 'Restricciones', pregunta: '¿Qué restricciones son más importantes incluir para el inquilino?' },
-    { id: 'servicios', emoji: '💡', label: 'Servicios', pregunta: '¿Cómo debo manejar los servicios básicos (agua, luz, gas) en el contrato?' },
-    { id: 'garantia', emoji: '🛡️', label: 'Garantía/Depósito', pregunta: '¿Cuánto debería pedir de depósito de garantía y cómo protegerme legalmente?' },
-    { id: 'penalidades', emoji: '⚠️', label: 'Penalidades', pregunta: '¿Qué penalidades por incumplimiento recomiendas incluir?' },
-    { id: 'cancelacion', emoji: '🗓️', label: 'Cancelación', pregunta: '¿Cuál debería ser la política de cancelación y devolución del depósito?' },
-    { id: 'renovacion', emoji: '🔄', label: 'Renovación', pregunta: '¿Qué tipo de cláusula de renovación o prórroga me conviene redactar?' },
-    { id: 'uso', emoji: '🏠', label: 'Uso del Inmueble', pregunta: '¿Qué condiciones de uso exclusivo y conservación del inmueble debo especificar?' },
-    { id: 'antecedentes', emoji: '📜', label: 'Antecedentes', pregunta: '¿Qué antecedentes de propiedad o estado actual del inmueble debo registrar en el contrato?' },
+    { id: 'tipo', icon: FileText, label: 'Tipo de contrato', pregunta: '¿Qué tipo de contrato necesito para este inmueble y cuál es la diferencia entre alquiler, venta y anticrético?' },
+    { id: 'clausulas', icon: ClipboardList, label: 'Cláusulas recomendadas', pregunta: '¿Qué cláusulas principales debería tener el contrato para protegerme como propietario?' },
+    { id: 'restricciones', icon: Ban, label: 'Restricciones', pregunta: '¿Qué restricciones son más importantes incluir para el inquilino?' },
+    { id: 'servicios', icon: Lightbulb, label: 'Servicios', pregunta: '¿Cómo debo manejar los servicios básicos (agua, luz, gas) en el contrato?' },
+    { id: 'garantia', icon: ShieldCheck, label: 'Garantía/Depósito', pregunta: '¿Cuánto debería pedir de depósito de garantía y cómo protegerme legalmente?' },
+    { id: 'penalidades', icon: AlertTriangle, label: 'Penalidades', pregunta: '¿Qué penalidades por incumplimiento recomiendas incluir?' },
+    { id: 'cancelacion', icon: CalendarX, label: 'Cancelación', pregunta: '¿Cuál debería ser la política de cancelación y devolución del depósito?' },
+    { id: 'renovacion', icon: RefreshCw, label: 'Renovación', pregunta: '¿Qué tipo de cláusula de renovación o prórroga me conviene redactar?' },
+    { id: 'uso', icon: Home, label: 'Uso del Inmueble', pregunta: '¿Qué condiciones de uso exclusivo y conservación del inmueble debo especificar?' },
+    { id: 'antecedentes', icon: History, label: 'Antecedentes', pregunta: '¿Qué antecedentes de propiedad o estado actual del inmueble debo registrar en el contrato?' },
   ];
   const [chipsUsados, setChipsUsados] = useState([]);
 
@@ -513,12 +516,12 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
                       border: '1.5px solid #ddd6fe',
                       borderRadius: '20px', padding: '4px 10px',
                       fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600,
-                      display: 'flex', alignItems: 'center', gap: '4px',
+                      display: 'flex', alignItems: 'center', gap: '5px',
                     }}
                     onMouseOver={e => { e.currentTarget.style.background = '#8b5cf6'; e.currentTarget.style.color = '#fff'; }}
                     onMouseOut={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#6d28d9'; }}
                   >
-                    <span>{chip.emoji}</span> {chip.label}
+                    <chip.icon size={13} style={{ flexShrink: 0 }} /> {chip.label}
                   </button>
                 ))}
               </div>
