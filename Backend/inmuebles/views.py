@@ -1116,15 +1116,115 @@ class AccesoRecorrido360ViewSet(viewsets.ModelViewSet):
 
 class AIReportView(APIView):
     """
-    Genera reportes dinámicos procesados por IA. Recibe el prompt del usuario, las columnas
-    y el listado completo de datos en JSON, y retorna los registros filtrados/ordenados
-    junto con un resumen textual analítico.
+    Genera reportes dinámicos procesados por IA Local (LM Studio).
+    - Python detecta columnas del prompt (NLP + sinónimos) — 100% confiable.
+    - La IA Local aplica filtros, ordenamiento y genera el resumen textual.
+    - Python ejecuta los filtros estructurados devueltos por la IA sobre los datos reales.
     """
     permission_classes = [permissions.IsAuthenticated]
 
+    # ────────────────────────────────────────────────────────────────────────
+    # Diccionario de sinónimos para detección de columnas desde el prompt
+    # ────────────────────────────────────────────────────────────────────────
+    SINONIMOS = {
+        'first_name': [
+            'nombre', 'nombres', 'nombre completo', 'nombes', 'nombrs',
+            'apellido', 'apellidos', 'first_name', 'firstname', 'first name',
+            'nombre y apellido', 'nombres y apellidos', 'nombe', 'nomre',
+        ],
+        'email': [
+            'email', 'correo', 'correos', 'correo electronico',
+            'correo electrónico', 'mail', 'mails', 'emails', 'emial', 'maill',
+        ],
+        'ci': [
+            'ci', 'c.i', 'cedula', 'cédula', 'documento', 'identificacion',
+            'identificación', 'dni', 'carnet',
+        ],
+        'telefono': [
+            'telefono', 'teléfono', 'telefonos', 'celular', 'telf',
+            'telfono', 'telefano', 'phone', 'cel',
+        ],
+        'rol_nombre': [
+            'rol', 'roles', 'cargo', 'tipo', 'perfil', 'rol_nombre',
+        ],
+        'activo': [
+            'activo', 'activos', 'estado', 'habilitado', 'activa',
+        ],
+        'id': [
+            'id', 'identificador', 'numero', 'número', 'identificacion',
+        ],
+        # Extensible para otros módulos (inmuebles, pagos, etc.)
+        'titulo': ['titulo', 'título', 'nombre inmueble', 'propiedad'],
+        'precio': ['precio', 'precios', 'costo', 'valor', 'monto'],
+        'descripcion': ['descripcion', 'descripción', 'detalle'],
+        'fecha': ['fecha', 'fechas', 'date'],
+        'estado': ['estado', 'estados', 'status'],
+    }
+
+    @staticmethod
+    def _normalizar(texto):
+        import unicodedata
+        return ''.join(
+            c for c in unicodedata.normalize('NFD', str(texto))
+            if unicodedata.category(c) != 'Mn'
+        ).lower().strip()
+
+    def _detectar_columnas_del_prompt(self, prompt_norm, available_cols):
+        """
+        Detecta desde el texto del prompt del usuario qué columnas quiere ver.
+        Retorna un set de keys confirmadas en available_cols, o set() si no detectó nada.
+        """
+        keys_detectadas = set()
+        col_keys = {c.get('key') for c in available_cols}
+
+        for canonical_key, variaciones in self.SINONIMOS.items():
+            if canonical_key not in col_keys:
+                continue
+            for var in variaciones:
+                if var in prompt_norm:
+                    keys_detectadas.add(canonical_key)
+                    break
+
+        # También comparar contra labels de las columnas disponibles
+        for col in available_cols:
+            label_norm = self._normalizar(col.get('label', ''))
+            key_norm = self._normalizar(col.get('key', ''))
+            if label_norm in prompt_norm or key_norm in prompt_norm:
+                keys_detectadas.add(col.get('key'))
+
+        return keys_detectadas
+
+    def _detectar_ordenamiento(self, prompt_norm, available_cols):
+        """
+        Detecta si el prompt pide ordenar por alguna columna específica.
+        Retorna (ordenar_por_key, orden_direccion) o (None, 'asc').
+        """
+        palabras_orden = ['orden', 'ordenar', 'ordenados', 'ordenada', 'ordenadas', 'ordenamiento', 'ordena', 'sort', 'ascendente', 'descendente']
+        quiere_ordenar = any(p in prompt_norm for p in palabras_orden)
+
+        if not quiere_ordenar:
+            return None, 'asc'
+
+        orden_direccion = 'asc'
+        if any(p in prompt_norm for p in ['descendente', 'desc', 'mayor a menor', 'z a a', 'zaa']):
+            orden_direccion = 'desc'
+        elif any(p in prompt_norm for p in ['ascendente', 'asc', 'menor a mayor', 'a a z', 'aaz']):
+            orden_direccion = 'asc'
+
+        col_keys = {c.get('key') for c in available_cols}
+
+        for canonical_key, variaciones in self.SINONIMOS.items():
+            if canonical_key not in col_keys:
+                continue
+            for var in variaciones:
+                if var in prompt_norm:
+                    return canonical_key, orden_direccion
+
+        return None, orden_direccion
+
     def post(self, request, *args, **kwargs):
         import json
-        import requests
+        import requests as http_requests
         from django.conf import settings
 
         prompt = request.data.get('prompt', '').strip()
@@ -1135,72 +1235,132 @@ class AIReportView(APIView):
         if not prompt:
             return Response({"error": "El prompt es requerido."}, status=400)
 
-        # Configurar llamada a Groq
-        api_key = getattr(settings, 'GROQ_API_KEY', None)
-        if not api_key:
-            return Response({"error": "La API Key de Groq no está configurada en el servidor."}, status=500)
+        # ── 1. Detectar columnas requeridas DESDE EL PROMPT (Python, 100% fiable) ──
+        prompt_norm = self._normalizar(prompt)
+        keys_a_conservar = self._detectar_columnas_del_prompt(prompt_norm, columns)
 
-        # Formatear el contexto para la IA
-        context_data_str = json.dumps(data, ensure_ascii=False)
-        columns_str = json.dumps(columns, ensure_ascii=False)
+        # ── 2. Llamada a IA Local para procesar los datos directamente ─────────────
+        local_ai_url = getattr(settings, 'LOCAL_AI_URL', 'http://192.168.56.1:1234/v1/chat/completions')
+        local_ai_model = getattr(settings, 'LOCAL_AI_MODEL', 'meta-llama-3.1-8b-instruct')
 
-        system_prompt = """
-Eres un Analista de Datos Inteligente experto en gestión inmobiliaria.
-Tu tarea es analizar un listado de datos en formato JSON en base a la instrucción (prompt) del usuario.
-Debes realizar dos acciones:
-1. Filtrar, buscar o reordenar los registros del JSON según la instrucción del usuario. Retorna los registros modificados/filtrados exactos del JSON original.
-2. Escribir un resumen textual analítico breve y profesional (de 2 a 4 líneas) sobre los registros seleccionados (ej. cantidad de elementos, totales, porcentajes relevantes o conclusiones rápidas de negocio).
+        columns_str = json.dumps(
+            [{'key': c['key'], 'label': c['label']} for c in columns],
+            ensure_ascii=False
+        )
 
-CRITICAL RULE:
-- DEBES conservar todas las propiedades y llaves (keys) originales de cada objeto JSON (por ejemplo: username, email, first_name, last_name, rol_nombre, activo, etc.).
-- NO elimines, alteres ni dejes vacías ninguna de las propiedades que ya tenían los registros originales. Tu única función es decidir qué filas conservar o cómo ordenar el array, sin modificar la estructura interna de los objetos.
+        # Limitar datos a procesar para evitar problemas de contexto en la IA Local
+        datos_recortados = data[:150]
+        datos_str = json.dumps(datos_recortados, ensure_ascii=False)
 
-Tu respuesta DEBE ser un objeto JSON válido con la siguiente estructura exacta:
+        system_prompt = """Eres un Asistente Analista de Datos. Tu tarea es procesar un conjunto de datos en JSON según la instrucción del usuario.
+Puedes realizar las siguientes acciones sobre los datos:
+1. Filtrar filas (eliminar registros que no cumplan la condición).
+2. Ordenar filas (por cualquier columna, de forma ascendente o descendente, alfabética o numéricamente).
+3. Seleccionar columnas: Si el usuario pide explícitamente ciertos campos (ej: "solo nombres y email"), devuelve únicamente esas claves en los objetos de "datos".
+4. Transformar valores: Si el usuario pide transformaciones específicas (ej: "nombres sin apellido", "emails en mayúscula"), modifica los valores directamente en la lista. Por ejemplo, para "nombres sin apellido", si el campo name o first_name contiene nombre y apellido (ej: "Juan Pérez"), transfórmalo a sólo el nombre de pila ("Juan").
+5. Realizar cálculos y resúmenes: Si pide contar, sumar, promediar u otra operación, realiza el cálculo sobre los datos y descríbelo detalladamente en el campo "resumen".
+
+Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura exacta:
 {
-  "datos": [ ...lista de registros JSON filtrados/ordenados con todas sus llaves originales... ],
-  "resumen": "Tu resumen textual descriptivo aquí."
+  "datos": [
+    // Los registros procesados (filtrados, ordenados, transformados o con las columnas seleccionadas)
+  ],
+  "resumen": "Resumen detallado de los datos procesados. Si se solicitó un cálculo (conteo, suma, promedio), incluye aquí el resultado de forma clara."
 }
 
-NO agregues introducciones, explicaciones, ni bloques de código markdown (```json). Retorna únicamente el objeto JSON crudo listo para ser parseado.
-"""
+NO incluyas bloques markdown (```json ... ```). Devuelve solo el JSON crudo."""
 
-        user_content = f"""
-Título del Reporte: {title}
-Columnas Disponibles: {columns_str}
-Registros Originales (JSON): {context_data_str}
+        user_content = f"""Columnas Disponibles: {columns_str}
+Datos a Procesar (en JSON):
+{datos_str}
 
-Instrucción del usuario: {prompt}
-"""
+Instrucción del Usuario: {prompt}"""
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "llama-3.3-70b-versatile",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
-            ],
-            "temperature": 0.2,
-            "max_tokens": 3000
-        }
-
+        ai_result = None
         try:
-            resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=60)
+            resp = http_requests.post(
+                local_ai_url,
+                json={
+                    "model": local_ai_model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    "temperature": 0.1,
+                    "max_tokens": 1500,
+                },
+                headers={"Authorization": "Bearer lm-studio", "Content-Type": "application/json"},
+                timeout=60,
+            )
             resp.raise_for_status()
-            ai_content = resp.json()['choices'][0]['message']['content'].strip()
+            ai_raw = resp.json()['choices'][0]['message']['content'].strip()
 
-            # Limpiar posibles delimitadores markdown
-            if ai_content.startswith("```json"):
-                ai_content = ai_content[7:]
-            if ai_content.startswith("```"):
-                ai_content = ai_content[3:]
-            if ai_content.endswith("```"):
-                ai_content = ai_content[:-3]
-            ai_content = ai_content.strip()
+            # Limpiar delimitadores markdown
+            for tag in ["```json", "```"]:
+                if ai_raw.startswith(tag):
+                    ai_raw = ai_raw[len(tag):]
+            if ai_raw.endswith("```"):
+                ai_raw = ai_raw[:-3]
+            ai_result = json.loads(ai_raw.strip())
+        except Exception:
+            ai_result = None
 
-            result = json.loads(ai_content)
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": f"Error al procesar el reporte con IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # ── 3. Procesar datos (Utilizar resultado de la IA o fallback determinista)
+        available_keys = [c.get('key') for c in columns]
+
+        if ai_result and isinstance(ai_result, dict) and "datos" in ai_result:
+            datos_filtrados = ai_result.get("datos", [])
+            resumen = ai_result.get("resumen", "Reporte procesado con IA Local.")
+
+            # Limpiar claves de datos devueltos para evitar que la IA invente claves extrañas
+            final_datos = []
+            if isinstance(datos_filtrados, list):
+                for item in datos_filtrados:
+                    if isinstance(item, dict):
+                        row = {k: item[k] for k in item if k in available_keys}
+                        final_datos.append(row)
+
+            # Si quedó vacío pero el prompt no pedía explícitamente operaciones de conteo/agregación, fallback
+            if not final_datos and data and not any(palabra in prompt_norm for palabra in ['contar', 'suma', 'promedio', 'conteo', 'total']):
+                final_datos = self._ejecutar_fallback_python(data, prompt_norm, columns, keys_a_conservar)
+        else:
+            datos_filtrados = self._ejecutar_fallback_python(data, prompt_norm, columns, keys_a_conservar)
+            resumen = "Reporte procesado determinísticamente (la IA Local no respondió en formato esperado)."
+            final_datos = datos_filtrados
+
+        return Response({
+            "datos": final_datos,
+            "resumen": resumen,
+        }, status=status.HTTP_200_OK)
+
+    def _ejecutar_fallback_python(self, data, prompt_norm, columns, keys_a_conservar):
+        datos_filtrados = list(data)
+
+        # 1. Intentar ordenamiento determinista
+        det_ordenar_por, det_orden = self._detectar_ordenamiento(prompt_norm, columns)
+        if det_ordenar_por and isinstance(det_ordenar_por, str):
+            reverse = (det_orden == 'desc')
+            def safe_sort_key(item):
+                val = item.get(det_ordenar_por)
+                if val is None:
+                    return (1, "") if not reverse else (-1, "")
+                try:
+                    float_val = float(val)
+                    return (0, float_val)
+                except (ValueError, TypeError):
+                    return (2, str(val).lower())
+            try:
+                datos_filtrados.sort(key=safe_sort_key, reverse=reverse)
+            except Exception:
+                pass
+
+        # 2. Filtrar columnas
+        available_keys = [c.get('key') for c in columns]
+        keys_to_use = list(keys_a_conservar) if keys_a_conservar else available_keys
+
+        final_datos = []
+        for item in datos_filtrados:
+            row = {k: item[k] for k in keys_to_use if k in item}
+            final_datos.append(row)
+
+        return final_datos

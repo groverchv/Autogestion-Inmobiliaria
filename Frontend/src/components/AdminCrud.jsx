@@ -60,6 +60,14 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
         const filteredData = res.data.datos;
         const summary = res.data.resumen || 'Reporte procesado por IA.';
 
+        // Determinar qué columnas están activas en el resultado
+        const activeKeys = new Set();
+        filteredData.forEach(item => {
+          Object.keys(item).forEach(k => activeKeys.add(k));
+        });
+        const exportColumns = columns.filter(col => activeKeys.has(col.key));
+        const finalColumns = exportColumns.length > 0 ? exportColumns : columns;
+
         if (format === 'txt') {
           let content = `${title.toUpperCase()} - REPORTE DE IA\n`;
           content += `Fecha de generación: ${new Date().toLocaleString()}\n`;
@@ -67,11 +75,11 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
           content += `Resumen IA: ${summary}\n`;
           content += `Total registros: ${filteredData.length}\n\n`;
 
-          const headerLine = columns.map(col => col.label).join('\t');
+          const headerLine = finalColumns.map(col => col.label).join('\t');
           content += headerLine + '\n' + '='.repeat(headerLine.length * 2) + '\n';
 
           filteredData.forEach(item => {
-            const row = columns.map(col => {
+            const row = finalColumns.map(col => {
               const val = item[col.key];
               return val != null ? String(val).replace(/\n/g, ' ') : '';
             }).join('\t');
@@ -83,7 +91,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
         else if (format === 'xlsx') {
           const dataRows = filteredData.map(item => {
             const row = {};
-            columns.forEach(col => {
+            finalColumns.forEach(col => {
               let val = item[col.key];
               if (typeof val === 'boolean') {
                 val = val ? 'Sí' : 'No';
@@ -124,13 +132,13 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
             <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
               <thead>
                 <tr style="background-color: #f1f5f9;">
-                  ${columns.map(col => `<th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; color: #334155; font-weight: bold;">${col.label}</th>`).join('')}
+                  ${finalColumns.map(col => `<th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; color: #334155; font-weight: bold;">${col.label}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
                 ${filteredData.map(item => `
                   <tr>
-                    ${columns.map(col => {
+                    ${finalColumns.map(col => {
                       let val = item[col.key];
                       if (typeof val === 'boolean') val = val ? 'Sí' : 'No';
                       return `<td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">${val ?? '—'}</td>`;

@@ -188,6 +188,10 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 # ─── Groq (IA Generativa) ───────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 
+# ─── IA Local (LM Studio) ───────────────────────────────────
+LOCAL_AI_URL = os.getenv('LOCAL_AI_URL', 'http://192.168.56.1:1234/v1/chat/completions')
+LOCAL_AI_MODEL = os.getenv('LOCAL_AI_MODEL', 'meta-llama-3.1-8b-instruct')
+
 # ─── Blockchain Gateway ──────────────────────────────────────
 BLOCKCHAIN_GATEWAY_URL = os.getenv('BLOCKCHAIN_GATEWAY_URL', 'http://localhost:4000')
 if BLOCKCHAIN_GATEWAY_URL and not BLOCKCHAIN_GATEWAY_URL.endswith('/api/blockchain'):
