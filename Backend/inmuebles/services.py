@@ -496,6 +496,8 @@ def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_by
 
     is_pdf = archivo_url.lower().endswith('.pdf') or b'%PDF' in file_bytes[:10]
 
+    errores_extraccion = []  # Acumula errores de cada estrategia para logging
+
     # ── ESTRATEGIA 1: Extracción directa de texto (PDFs digitales) ────────────
     # Funciona con cualquier PDF que tenga texto embebido, sin necesitar Poppler
     if is_pdf:
@@ -506,12 +508,13 @@ def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_by
             with pdfplumber.open(_BytesIO(file_bytes)) as pdf:
                 pages_text = []
                 for page in pdf.pages:
-                    t = page.extract_text()
+                    t = page.extract_text(x_tolerance=3, y_tolerance=3)
                     if t:
                         pages_text.append(t)
                 texto_extraido = "\n--- PÁGINA ---\n".join(pages_text)
             print(f"[ExtraccionTexto] pdfplumber: {len(texto_extraido)} caracteres extraídos")
         except Exception as e_plumber:
+            errores_extraccion.append(f"pdfplumber: {e_plumber}")
             print(f"[ExtraccionTexto] pdfplumber falló: {e_plumber}")
 
         # Intento 1b: PyMuPDF/fitz si pdfplumber no extrajo suficiente texto
@@ -529,7 +532,23 @@ def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_by
                     texto_extraido = texto_fitz
                 print(f"[ExtraccionTexto] PyMuPDF: {len(texto_extraido)} caracteres extraídos")
             except Exception as e_fitz:
+                errores_extraccion.append(f"PyMuPDF: {e_fitz}")
                 print(f"[ExtraccionTexto] PyMuPDF falló: {e_fitz}")
+
+    # ── NORMALIZACIÓN DE ENCODING ─────────────────────────────────────────────
+    # Los PDFs bolivianos suelen usar latin-1 internamente. Corregimos caracteres
+    # corruptos (Ñ, tildes, etc.) que se muestran como '\ufffd' o '?'.
+    if texto_extraido:
+        try:
+            # Intentar decodificar como latin-1 si hay caracteres de reemplazo
+            if '\ufffd' in texto_extraido or '?' in texto_extraido:
+                # Re-encodear en latin-1 y decodificar en utf-8 para reparar mojibake
+                texto_reparado = texto_extraido.encode('latin-1', errors='replace').decode('utf-8', errors='replace')
+                # Solo usar si tiene más caracteres legibles que el original
+                if texto_reparado.count('\ufffd') < texto_extraido.count('\ufffd'):
+                    texto_extraido = texto_reparado
+        except Exception:
+            pass  # Mantener el texto original si la reparación falla
 
     # ── ESTRATEGIA 2: OCR con Tesseract (PDFs escaneados / imágenes) ──────────
     # Solo si las estrategias anteriores no extrajeron suficiente texto
@@ -573,6 +592,7 @@ def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_by
             print(f"[ExtraccionTexto] Tesseract OCR: {len(texto_extraido)} caracteres extraídos")
 
         except Exception as exc_ocr:
+            errores_extraccion.append(f"Tesseract OCR: {exc_ocr}")
             print(f"[ExtraccionTexto] OCR Tesseract también falló: {exc_ocr}")
 
     # ── FALLO TOTAL: No se pudo extraer texto por ningún método ───────────────
@@ -583,12 +603,14 @@ def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_by
             "Asegúrese de que el PDF no esté protegido con contraseña y que sea legible. "
             "Si es un documento escaneado, capture una imagen JPG o PNG con buena iluminación."
         )
-        verificacion.texto_ocr = f"[SIN TEXTO]: Solo se extrajeron {len(texto_extraido.strip())} caracteres."
+        detalle_errores = " | ".join(errores_extraccion) if errores_extraccion else "Sin detalles"
+        verificacion.texto_ocr = f"[SIN TEXTO]: Solo se extrajeron {len(texto_extraido.strip())} caracteres. Errores: {detalle_errores}"
         verificacion.save()
         return verificacion
 
     verificacion.texto_ocr = texto_extraido.strip()
     verificacion.save()
+
 
     # 3. Analizar con Groq
     api_key = settings.GROQ_API_KEY
