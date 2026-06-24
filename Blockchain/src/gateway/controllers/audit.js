@@ -1,11 +1,12 @@
 'use strict';
 
 const { readSimulatedLedger } = require('../config/ledger');
+const { evaluateTransaction } = require('../config/fabric');
 
 const SIMULATE = process.env.SIMULATE_BLOCKCHAIN !== 'false';
 
 const auditController = {
-    consultar: (req, res) => {
+    consultar: async (req, res) => {
         const { id } = req.params;
         try {
             if (SIMULATE) {
@@ -16,14 +17,15 @@ const auditController = {
                 }
                 return res.json(asset);
             } else {
-                res.status(501).json({ error: 'Modo gRPC no configurado.' });
+                const result = await evaluateTransaction('queryAsset', id);
+                return res.json(result);
             }
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     },
 
-    historial: (req, res) => {
+    historial: async (req, res) => {
         const { id } = req.params;
         try {
             if (SIMULATE) {
@@ -48,14 +50,15 @@ const auditController = {
 
                 return res.json(history);
             } else {
-                res.status(501).json({ error: 'Modo gRPC no configurado.' });
+                const result = await evaluateTransaction('obtenerHistorialActivo', id);
+                return res.json(result);
             }
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     },
 
-    stats: (req, res) => {
+    stats: async (req, res) => {
         try {
             if (SIMULATE) {
                 const ledger = readSimulatedLedger();
@@ -86,11 +89,11 @@ const auditController = {
             } else {
                 return res.json({
                     status: 'UP',
-                    mode: 'PRODUCCIÓN (Hyperledger Fabric gRPC)',
-                    totalBlocks: 0,
-                    totalInmuebles: 0,
-                    totalContratos: 0,
-                    totalPagos: 0,
+                    mode: 'PRODUCCIÓN (Hyperledger Fabric gRPC GKE)',
+                    totalBlocks: 'N/A (Consulta a través de CLI de K8s)',
+                    totalInmuebles: 'N/A',
+                    totalContratos: 'N/A',
+                    totalPagos: 'N/A',
                     blocks: []
                 });
             }

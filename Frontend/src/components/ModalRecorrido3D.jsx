@@ -65,13 +65,17 @@ const ModalRecorrido3D = ({ panoramas = [], onClose, musica = null }) => {
         setLoadingProgress(Math.round((i / panoramas.length) * 100));
 
         try {
-          const response = await fetch(pano.archivo, { cache: 'reload', mode: 'cors' });
-          const blob = await response.blob();
-          urls[pano.id] = URL.createObjectURL(blob);
-        } catch (fetchError) {
-          console.warn(`Fallo fetch CORS para panorama ${pano.id}, usando URL directa:`, fetchError);
-          // Fallback a la URL directa con timestamp para romper caché agresiva
-          urls[pano.id] = `${pano.archivo}?cb=${new Date().getTime()}`;
+          const response = await fetch(pano.archivo, { cache: 'force-cache', mode: 'cors' });
+          if (response.ok) {
+            const blob = await response.blob();
+            urls[pano.id] = URL.createObjectURL(blob);
+          } else {
+            // Fallback: URL directa — Pannellum la carga nativamente
+            urls[pano.id] = pano.archivo;
+          }
+        } catch {
+          // Fallback: URL directa sin fetch
+          urls[pano.id] = pano.archivo;
         }
       }
 

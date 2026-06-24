@@ -5,9 +5,9 @@
   "main": "src/chaincode/index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node src/index.js",
-    "chaincode:start": "fabric-chaincode-node start"
+    "start": "fabric-chaincode-node start",
+    "gateway:start": "node src/index.js",
+    "dev": "node src/index.js"
   },
   "dependencies": {
     "@hyperledger/fabric-gateway": "^1.4.0",

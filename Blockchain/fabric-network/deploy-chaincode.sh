@@ -4,10 +4,10 @@
 # ==============================================================================
 
 export CC_NAME="autogestion"
-export CC_VERSION="1.0"
+export CC_VERSION="5.0"
 export CC_SEQUENCE="1"
 export CHANNEL_NAME="autogestion-channel"
-export ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/autogestion.com/orderers/orderer.autogestion.com/msp/tlscacerts/tlsca.autogestion.com-cert.pem
+export ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/ordererOrganizations/autogestion.com/orderers/orderer.autogestion.com/msp/tlscacerts/tlsca.autogestion.com-cert.pem
 
 echo "========================================="
 echo "📦 Packaging smart contract (Node.js)..."
@@ -21,8 +21,8 @@ echo "========================================="
 echo "📥 Installing chaincode on Peer 0 - Org 1..."
 echo "========================================="
 export CORE_PEER_LOCALMSPID="Org1MSP"
-export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.autogestion.com/peers/peer0.org1.autogestion.com/tls/ca.crt
-export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.autogestion.com/users/Admin@org1.autogestion.com/msp
+export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/peerOrganizations/org1.autogestion.com/peers/peer0.org1.autogestion.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/peerOrganizations/org1.autogestion.com/users/Admin@org1.autogestion.com/msp
 export CORE_PEER_ADDRESS=peer0.org1.autogestion.com:7051
 peer lifecycle chaincode install ${CC_NAME}.tar.gz
 
@@ -47,8 +47,8 @@ echo "========================================="
 echo "📥 Installing chaincode on Peer 0 - Org 2..."
 echo "========================================="
 export CORE_PEER_LOCALMSPID="Org2MSP"
-export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.autogestion.com/peers/peer0.org2.autogestion.com/tls/ca.crt
-export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.autogestion.com/users/Admin@org2.autogestion.com/msp
+export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/peerOrganizations/org2.autogestion.com/peers/peer0.org2.autogestion.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/peerOrganizations/org2.autogestion.com/users/Admin@org2.autogestion.com/msp
 export CORE_PEER_ADDRESS=peer0.org2.autogestion.com:9051
 peer lifecycle chaincode install ${CC_NAME}.tar.gz
 
@@ -77,8 +77,8 @@ peer lifecycle chaincode commit -o orderer.autogestion.com:7050 \
   --tls \
   --cafile ${ORDERER_CA} \
   --peerAddresses peer0.org1.autogestion.com:7051 \
-  --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.autogestion.com/peers/peer0.org1.autogestion.com/tls/ca.crt \
+  --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/peerOrganizations/org1.autogestion.com/peers/peer0.org1.autogestion.com/tls/ca.crt \
   --peerAddresses peer0.org2.autogestion.com:9051 \
-  --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org2.autogestion.com/peers/peer0.org2.autogestion.com/tls/ca.crt
+  --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/peerOrganizations/org2.autogestion.com/peers/peer0.org2.autogestion.com/tls/ca.crt
 
 echo "✅ Smart Contract desplegado con éxito!"

@@ -20,7 +20,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose }) => {
   const [gamepadName, setGamepadName] = useState('');
   const [pantallaDoble, setPantallaDoble] = useState(false);
   const [gyroPermission, setGyroPermission] = useState('unknown');
-  const [mostrarInstrucciones, setMostrarInstrucciones] = useState(true);
+  const [mostrarInstrucciones, setMostrarInstrucciones] = useState(false);
 
   // ─── Refs para control del joystick (sin re-renders por frame) ────────────
   const rigRotationRef = useRef(0);

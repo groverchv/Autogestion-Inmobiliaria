@@ -132,30 +132,27 @@ const Visor360 = ({ panoramas = [], accesoId = null, musica = null }) => {
     }
 
     try {
-      // 1. Descargar la imagen como Blob para evadir la caché restrictiva (CORS) de Chrome
-      // Se fuerza 'reload' para ignorar respuestas de caché sin headers CORS
       const imageUrl = escenaActiva.archivo;
-      let panoramaUrl = '';
+      let panoramaUrl = imageUrl || '';
 
       if (imageUrl) {
+        // Intentar fetch con CORS — si falla, usar la URL directa (Pannellum la maneja nativamente)
         try {
-          const response = await fetch(imageUrl, {
-            cache: 'reload',
-            mode: 'cors'
-          });
-          const blob = await response.blob();
-          const objectUrl = URL.createObjectURL(blob);
-          objectUrlRef.current = objectUrl;
-          panoramaUrl = objectUrl;
-        } catch (fetchError) {
-          console.warn('Fallo el fetch con CORS estricto, intentando URL directa:', fetchError);
-          // Fallback a la URL directa con timestamp si el fetch estricto falla (ej. problemas de red locales)
-          panoramaUrl = `${imageUrl}?cb=${new Date().getTime()}`;
+          const response = await fetch(imageUrl, { cache: 'force-cache', mode: 'cors' });
+          if (response.ok) {
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            objectUrlRef.current = objectUrl;
+            panoramaUrl = objectUrl;
+          }
+          // Si no es ok, panoramaUrl ya tiene imageUrl (fallback)
+        } catch {
+          // Fallback: usar URL directa — Pannellum usa crossOrigin anonymous internamente
+          panoramaUrl = imageUrl;
         }
       }
 
-      // 4. Inicializar Visor
-      // Pannellum se inyecta globalmente en window.pannellum
+      // Inicializar Visor
       if (!window.pannellum) {
         throw new Error('Pannellum no se inicializó correctamente en el objeto window');
       }
@@ -186,8 +183,36 @@ const Visor360 = ({ panoramas = [], accesoId = null, musica = null }) => {
         setCargando(false);
       });
 
+      // Si falla con blob URL, reintentar con URL directa
+      viewerInstanceRef.current.on('error', () => {
+        if (panoramaUrl !== imageUrl && imageUrl && viewerRef.current) {
+          try {
+            if (viewerInstanceRef.current) viewerInstanceRef.current.destroy();
+          } catch { /* ignorar */ }
+          viewerInstanceRef.current = window.pannellum.viewer(viewerRef.current, {
+            type: 'equirectangular',
+            panorama: imageUrl,
+            autoLoad: true,
+            crossOrigin: 'anonymous',
+            autoRotate: -2,
+            autoRotateInactivityDelay: 3000,
+            compass: false,
+            showZoomCtrl: true,
+            showFullscreenCtrl: false,
+            mouseZoom: true,
+            draggable: true,
+            hfov: 110,
+            minHfov: 50,
+            maxHfov: 120,
+            friction: 0.15,
+          });
+          viewerInstanceRef.current.on('load', () => setCargando(false));
+        }
+        setTimeout(() => setCargando(false), 4000);
+      });
+
       // Fallback timeout en caso de que el evento 'load' no se dispare
-      setTimeout(() => setCargando(false), 4000);
+      setTimeout(() => setCargando(false), 6000);
     } catch (error) {
       console.error('Error inicializando Pannellum:', error);
       setCargando(false);

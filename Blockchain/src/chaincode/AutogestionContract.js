@@ -44,7 +44,7 @@ class AutogestionContract extends Contract {
         const buffer = Buffer.from(JSON.stringify(inmueble));
         await ctx.stub.putState(id, buffer);
         
-        ctx.logger.info(`Inmueble ${id} registrado exitosamente para el propietario ${propietarioId}`);
+        console.log(`Inmueble ${id} registrado exitosamente para el propietario ${propietarioId}`);
         return JSON.stringify(inmueble);
     }
 
@@ -65,7 +65,7 @@ class AutogestionContract extends Contract {
         const buffer = Buffer.from(JSON.stringify(inmueble));
         await ctx.stub.putState(id, buffer);
 
-        ctx.logger.info(`Propiedad del inmueble ${id} transferida de ${propietarioAnterior} a ${nuevoPropietarioId}`);
+        console.log(`Propiedad del inmueble ${id} transferida de ${propietarioAnterior} a ${nuevoPropietarioId}`);
         return JSON.stringify(inmueble);
     }
 
@@ -133,7 +133,7 @@ class AutogestionContract extends Contract {
                 await ctx.stub.putState(contrato.inmuebleId, Buffer.from(JSON.stringify(inmueble)));
             } catch (err) {
                 // Si falla, solo registramos advertencia pero no rompemos la transacción principal
-                ctx.logger.warn(`No se pudo actualizar el estado del inmueble ${contrato.inmuebleId}: ${err.message}`);
+                console.warn(`No se pudo actualizar el estado del inmueble ${contrato.inmuebleId}: ${err.message}`);
             }
         }
 
@@ -160,7 +160,7 @@ class AutogestionContract extends Contract {
             inmueble.estado = 'disponible';
             await ctx.stub.putState(contrato.inmuebleId, Buffer.from(JSON.stringify(inmueble)));
         } catch (err) {
-            ctx.logger.warn(`No se pudo liberar el estado del inmueble ${contrato.inmuebleId}: ${err.message}`);
+            console.warn(`No se pudo liberar el estado del inmueble ${contrato.inmuebleId}: ${err.message}`);
         }
 
         const buffer = Buffer.from(JSON.stringify(contrato));
@@ -235,9 +235,19 @@ class AutogestionContract extends Contract {
                 record.txId = value.txId;
                 record.isDelete = value.isDelete;
                 
-                // Formatear timestamp de la transacción
-                const date = new Date(value.timestamp.seconds.low * 1000);
-                record.timestamp = date.toISOString();
+                // Formatear timestamp de la transacción de forma robusta
+                let seconds = 0;
+                if (value.timestamp && value.timestamp.seconds) {
+                    if (typeof value.timestamp.seconds.low === 'number') {
+                        seconds = value.timestamp.seconds.low;
+                    } else if (typeof value.timestamp.seconds.toNumber === 'function') {
+                        seconds = value.timestamp.seconds.toNumber();
+                    } else {
+                        seconds = parseInt(value.timestamp.seconds, 10) || 0;
+                    }
+                }
+                const date = new Date(seconds * 1000);
+                record.timestamp = isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
                 
                 try {
                     record.data = JSON.parse(value.value.toString('utf8'));

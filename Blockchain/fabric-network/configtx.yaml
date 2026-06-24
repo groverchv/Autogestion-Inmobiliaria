@@ -8,13 +8,13 @@ Organizations:
     ID: OrdererMSP
     MSPDir: crypto-config/ordererOrganizations/autogestion.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('OrdererMSP.member')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('OrdererMSP.member')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('OrdererMSP.admin')"
 
@@ -23,15 +23,18 @@ Organizations:
     ID: Org1MSP
     MSPDir: crypto-config/peerOrganizations/org1.autogestion.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('Org1MSP.admin', 'Org1MSP.client')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('Org1MSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('Org1MSP.member')"
     AnchorPeers:
       - Host: peer0.org1.autogestion.com
         Port: 7051
@@ -41,15 +44,18 @@ Organizations:
     ID: Org2MSP
     MSPDir: crypto-config/peerOrganizations/org2.autogestion.com/msp
     Policies:
-      Reader:
+      Readers:
         Type: Signature
         Rule: "OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')"
-      Writer:
+      Writers:
         Type: Signature
         Rule: "OR('Org2MSP.admin', 'Org2MSP.client')"
-      Admin:
+      Admins:
         Type: Signature
         Rule: "OR('Org2MSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('Org2MSP.member')"
     AnchorPeers:
       - Host: peer0.org2.autogestion.com
         Port: 9051
@@ -67,17 +73,17 @@ Application: &ApplicationDefaults
   Policies:
     LifecycleEndorsement:
       Type: ImplicitMeta
-      Rule: "MAJORITY Endorsement"
+      Rule: "MAJORITY Readers"
     Endorsement:
       Type: ImplicitMeta
-      Rule: "MAJORITY Endorsement"
-    Read:
+      Rule: "MAJORITY Readers"
+    Readers:
       Type: ImplicitMeta
       Rule: "ANY Readers"
-    Write:
+    Writers:
       Type: ImplicitMeta
       Rule: "ANY Writers"
-    Admin:
+    Admins:
       Type: ImplicitMeta
       Rule: "MAJORITY Admins"
   Capabilities:
@@ -128,6 +134,18 @@ Channel: &ChannelDefaults
     <<: *ChannelCapabilities
 
 Profiles:
+  TwoOrgsOrdererGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Consortiums:
+      SampleConsortium:
+        Organizations:
+          - *Org1
+          - *Org2
   TwoOrgsChannelProfile:
     <<: *ChannelDefaults
     Orderer:

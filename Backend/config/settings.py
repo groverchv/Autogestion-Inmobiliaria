@@ -74,11 +74,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+redis_url = os.getenv('REDIS_URL')
+if redis_url:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [redis_url],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 # ─── Base de Datos ───────────────────────────────────────────────
 db_url = os.getenv('DATABASE_URL')
@@ -176,6 +187,11 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
 # ─── Groq (IA Generativa) ───────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+
+# ─── Blockchain Gateway ──────────────────────────────────────
+BLOCKCHAIN_GATEWAY_URL = os.getenv('BLOCKCHAIN_GATEWAY_URL', 'http://localhost:4000')
+if BLOCKCHAIN_GATEWAY_URL and not BLOCKCHAIN_GATEWAY_URL.endswith('/api/blockchain'):
+    BLOCKCHAIN_GATEWAY_URL = BLOCKCHAIN_GATEWAY_URL.rstrip('/') + '/api/blockchain'
 
 
 

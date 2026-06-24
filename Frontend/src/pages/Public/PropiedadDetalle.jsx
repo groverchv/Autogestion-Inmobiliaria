@@ -14,8 +14,6 @@ import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import ResenaSection from '../../components/ResenaSection';
 import ModalAgendarCita from '../../components/ModalAgendarCita';
 import Visor360 from '../../components/Visor360';
-import VisorAR from '../../components/VisorAR';
-
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
@@ -320,25 +318,7 @@ const PropiedadDetalle = () => {
                       Recorrido 3D (360°)
                     </button>
                   )}
-                  {inmueble.modelo_3d && (
-                    <button 
-                      onClick={() => setTabActiva('ar')}
-                      style={{
-                        padding: '16px 20px',
-                        background: 'none',
-                        border: 'none',
-                        borderBottom: tabActiva === 'ar' ? '3px solid var(--color-primary)' : '3px solid transparent',
-                        color: tabActiva === 'ar' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        fontSize: '0.92rem'
-                      }}
-                      type="button"
-                    >
-                      Plano 3D (AR)
-                    </button>
-                  )}
+
                 </div>
 
                 {/* ─── Pestaña: Fotos y Videos ─── */}
@@ -533,12 +513,7 @@ const PropiedadDetalle = () => {
                   </div>
                 )}
 
-                {/* ─── Pestaña: Plano 3D (AR) ─── */}
-                {tabActiva === 'ar' && inmueble.modelo_3d && (
-                  <div style={{ padding: '16px', background: 'var(--color-bg)' }}>
-                    <VisorAR modeloUrl={inmueble.modelo_3d} tituloPropiedad={inmueble.titulo} />
-                  </div>
-                )}
+
 
 
                 <div style={{ padding: '32px' }}>

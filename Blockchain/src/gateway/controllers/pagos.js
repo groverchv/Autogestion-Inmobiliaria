@@ -1,11 +1,12 @@
 'use strict';
 
 const { simulateTransaction } = require('../config/ledger');
+const { submitTransaction } = require('../config/fabric');
 
 const SIMULATE = process.env.SIMULATE_BLOCKCHAIN !== 'false';
 
 const pagosController = {
-    registrar: (req, res) => {
+    registrar: async (req, res) => {
         const { id, contratoId, monto, fecha, tipoPago, stripeTransactionId } = req.body;
         if (!id || !contratoId || !monto) {
             return res.status(400).json({ error: 'Faltan campos requeridos.' });
@@ -16,7 +17,16 @@ const pagosController = {
                 const result = simulateTransaction('registrarPago', { id, contratoId, monto, fecha, tipoPago, stripeTransactionId });
                 return res.status(201).json(result);
             } else {
-                res.status(501).json({ error: 'Modo gRPC no configurado.' });
+                const result = await submitTransaction(
+                    'registrarPago', 
+                    id, 
+                    contratoId, 
+                    monto.toString(), 
+                    fecha || '', 
+                    tipoPago || '', 
+                    stripeTransactionId || ''
+                );
+                return res.status(201).json(result);
             }
         } catch (err) {
             res.status(500).json({ error: err.message });

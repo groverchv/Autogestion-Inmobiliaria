@@ -1,11 +1,12 @@
 'use strict';
 
 const { simulateTransaction } = require('../config/ledger');
+const { submitTransaction } = require('../config/fabric');
 
 const SIMULATE = process.env.SIMULATE_BLOCKCHAIN !== 'false';
 
 const inmueblesController = {
-    registrar: (req, res) => {
+    registrar: async (req, res) => {
         const { id, titulo, propietarioId, direccion, hashTituloPropiedad } = req.body;
         if (!id || !titulo || !propietarioId || !hashTituloPropiedad) {
             return res.status(400).json({ error: 'Faltan campos requeridos en el body.' });
@@ -16,14 +17,15 @@ const inmueblesController = {
                 const result = simulateTransaction('registrarInmueble', { id, titulo, propietarioId, direccion, hashTituloPropiedad });
                 return res.status(201).json(result);
             } else {
-                res.status(501).json({ error: 'Conexión gRPC real con Hyperledger no inicializada.' });
+                const result = await submitTransaction('registrarInmueble', id, titulo, propietarioId, direccion || '', hashTituloPropiedad);
+                return res.status(201).json(result);
             }
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     },
 
-    transferir: (req, res) => {
+    transferir: async (req, res) => {
         const { id, nuevoPropietarioId, nuevoHashTitulo } = req.body;
         if (!id || !nuevoPropietarioId || !nuevoHashTitulo) {
             return res.status(400).json({ error: 'Faltan campos requeridos.' });
@@ -34,7 +36,8 @@ const inmueblesController = {
                 const result = simulateTransaction('transferirPropiedad', { id, nuevoPropietarioId, nuevoHashTitulo });
                 return res.json(result);
             } else {
-                res.status(501).json({ error: 'Modo gRPC no configurado.' });
+                const result = await submitTransaction('transferirPropiedad', id, nuevoPropietarioId, nuevoHashTitulo);
+                return res.json(result);
             }
         } catch (err) {
             res.status(500).json({ error: err.message });
