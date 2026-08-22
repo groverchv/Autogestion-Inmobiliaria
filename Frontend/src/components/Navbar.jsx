@@ -30,9 +30,11 @@ import {
   ShieldCheck,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Camera
 } from 'lucide-react';
 import useStore from '../store/store';
+import CrearFotoModal from './CrearFotoModal';
 import './Navbar.css';
 
 /**
@@ -49,6 +51,7 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
     : setInternalSidebarOpen;
   const [badges, setBadges] = useState({ notificaciones: 0, mensajes: 0 });
   const [expandedGroup, setExpandedGroup] = useState(null); // 'propiedades' | 'finanzas' | 'alertas' | null
+  const [isCrearFotoOpen, setIsCrearFotoOpen] = useState(false);
   const location = useLocation();
 
   const theme = useStore((state) => state.theme);
@@ -133,8 +136,13 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
               </button>
             )}
 
-            <Link to="/" className="navbar__brand">
-              <Home size={24} style={{ color: 'var(--color-primary)' }} />
+            <Link to="/" className="navbar__brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img 
+                src="/logo_dark.png" 
+                alt="Nobleve Logo" 
+                style={{ height: '34px', width: 'auto', objectFit: 'contain' }}
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
               <span className="navbar__brand-text">{APP_NAME}</span>
             </Link>
           </div>
@@ -406,6 +414,28 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
                     <span>Mi Perfil</span>
                     <ChevronRight size={16} className="sidebar-drawer__chevron" />
                   </Link>
+
+                  {/* 6. Crear Foto */}
+                  <button 
+                    type="button"
+                    className="sidebar-drawer__item"
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      setIsCrearFotoOpen(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--color-primary)'
+                    }}
+                  >
+                    <Camera size={20} />
+                    <span>Crear foto</span>
+                    <ChevronRight size={16} className="sidebar-drawer__chevron" />
+                  </button>
                 </>
               )}
             </div>
@@ -450,6 +480,11 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
           </div>
         </div>
       )}
+
+      <CrearFotoModal 
+        isOpen={isCrearFotoOpen} 
+        onClose={() => setIsCrearFotoOpen(false)} 
+      />
     </>
   );
 };

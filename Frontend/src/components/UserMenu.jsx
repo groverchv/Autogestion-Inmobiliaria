@@ -4,8 +4,9 @@ import useAuth from '../hooks/useAuth';
 import api from '../services/api';
 import { 
   ChevronDown, Search, Building2, Calendar, Heart, 
-  FileText, CreditCard, TrendingUp, MessageSquare, Bell, User 
+  FileText, CreditCard, TrendingUp, MessageSquare, Bell, User, Camera 
 } from 'lucide-react';
+import CrearFotoModal from './CrearFotoModal';
 import './UserMenu.css';
 
 const Badge = ({ count }) => {
@@ -28,6 +29,7 @@ const UserMenu = () => {
   const location = useLocation();
   const [badges, setBadges] = useState({ notificaciones: 0, mensajes: 0 });
   const [activeDropdown, setActiveDropdown] = useState(null); // 'propiedades' | 'finanzas' | 'alertas' | null
+  const [isCrearFotoOpen, setIsCrearFotoOpen] = useState(false);
 
   // Referencias para detectar clicks externos y cerrar los dropdowns
   const propRef = useRef(null);
@@ -196,7 +198,29 @@ const UserMenu = () => {
           <span>Mi Perfil</span>
         </Link>
 
+        {/* 6. Botón Crear Foto */}
+        <button 
+          type="button" 
+          className="hero-nav__link hero-nav__btn-crear-foto" 
+          onClick={() => setIsCrearFotoOpen(true)}
+          style={{
+            border: 'none',
+            background: 'rgba(14,165,233,0.1)',
+            color: 'var(--color-primary)',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <Camera size={16} />
+          <span>Crear foto</span>
+        </button>
+
       </nav>
+
+      <CrearFotoModal 
+        isOpen={isCrearFotoOpen} 
+        onClose={() => setIsCrearFotoOpen(false)} 
+      />
     </div>
   );
 };

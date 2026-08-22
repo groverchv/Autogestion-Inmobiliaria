@@ -164,9 +164,18 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-# ─── CORS ────────────────────────────────────────────────────────
+# ─── CORS & Acceso de Clientes (Móvil / Web) ───────────────────
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = ['*']
+CORS_ALLOW_METHODS = ['*']
+CSRF_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:*',
+    'http://127.0.0.1:*',
+    'http://10.0.2.2:*',
+    'http://192.168.*',
+]
 
 # ─── Cloudinary (almacenamiento de imágenes) ───────────────────
 CLOUDINARY_STORAGE = {

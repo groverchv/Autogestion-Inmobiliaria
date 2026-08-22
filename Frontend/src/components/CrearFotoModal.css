@@ -1,0 +1,217 @@
+.crear-foto-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.crear-foto-tabs {
+  display: flex;
+  background: var(--color-bg-secondary, #f1f5f9);
+  padding: 4px;
+  border-radius: 10px;
+  gap: 4px;
+}
+
+.crear-foto-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #64748b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crear-foto-tab:hover {
+  color: var(--color-primary, #0ea5e9);
+}
+
+.crear-foto-tab.active {
+  background: var(--color-bg-card, #ffffff);
+  color: var(--color-primary, #0ea5e9);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.crear-foto-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.crear-foto-alert.error {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.crear-foto-alert.success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.crear-foto-body {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Cámara */
+.camera-preview-box {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Efecto espejo */
+}
+
+.capture-btn {
+  position: absolute;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-primary, #0ea5e9);
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.capture-btn:hover {
+  transform: scale(1.05);
+  background: #0284c7;
+}
+
+/* Dropzone */
+.dropzone-box {
+  border: 2px dashed var(--color-border, #cbd5e1);
+  border-radius: 12px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--color-bg-secondary, #f8fafc);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropzone-box:hover {
+  border-color: var(--color-primary, #0ea5e9);
+  background: rgba(14, 165, 233, 0.04);
+}
+
+.dropzone-icon {
+  color: var(--color-primary, #0ea5e9);
+  margin-bottom: 12px;
+}
+
+.dropzone-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text, #1e293b);
+  margin: 0 0 6px 0;
+}
+
+.dropzone-sub {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #64748b);
+}
+
+/* IA View */
+.ai-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+}
+
+.ai-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-text-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #cbd5e1);
+  background: var(--color-bg, #ffffff);
+  color: var(--color-text, #1e293b);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.ai-text-input:focus {
+  border-color: var(--color-primary, #0ea5e9);
+}
+
+/* Imagen Capturada */
+.captured-preview-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.captured-img {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--color-primary, #0ea5e9);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.captured-img.ai-img {
+  background: #f1f5f9;
+}
+
+.captured-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Footer */
+.crear-foto-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+}

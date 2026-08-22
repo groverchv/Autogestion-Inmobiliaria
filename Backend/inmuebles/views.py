@@ -133,13 +133,24 @@ class InmuebleViewSet(viewsets.ModelViewSet):
                 return qs.filter(propietario=user)
             return qs.none()
             
-        # Para catálogo público, no mostrar ocultos
+        # Si es staff o propietario editando un inmueble específico
+        if user.is_authenticated and self.action in ['update', 'partial_update', 'destroy']:
+            return qs.filter(propietario=user) if not (user.is_staff or user.rol == 'admin') else qs.all()
+
+        # Para catálogo público y detalle público general, no mostrar ocultos
         return qs.exclude(estado='oculto')
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action in ['list', 'mis_inmuebles']:
             return InmuebleListSerializer
         return InmuebleSerializer
+
+    @action(detail=False, methods=['get'], url_path='mis_inmuebles', permission_classes=[permissions.IsAuthenticated])
+    def mis_inmuebles(self, request):
+        """Retorna los inmuebles pertenecientes al usuario autenticado."""
+        qs = Inmueble.objects.filter(propietario=request.user).select_related('tipo', 'propietario').prefetch_related('multimedia')
+        serializer = InmuebleListSerializer(qs, many=True)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         serializer.save(propietario=self.request.user)
@@ -790,11 +801,15 @@ class CitaViewSet(viewsets.ModelViewSet):
         from rest_framework.exceptions import ValidationError as DRFValidationError
         from usuarios.services import crear_notificacion_sistema
         from usuarios.models import Notificacion
+        from datetime import time as dt_time, datetime as dt_datetime, timedelta as dt_timedelta
 
         inmueble    = serializer.validated_data['inmueble']
-        hora_inicio = serializer.validated_data['hora_inicio']
-        hora_fin    = (
-            datetime.combine(datetime.today(), hora_inicio) + timedelta(hours=1)
+        hora_inicio = serializer.validated_data.get('hora_inicio') or serializer.validated_data.get('hora')
+        if not hora_inicio:
+            hora_inicio = dt_time(10, 0)
+        
+        hora_fin = (
+            dt_datetime.combine(dt_datetime.today(), hora_inicio) + dt_timedelta(hours=1)
         ).time()
 
         # Un cliente solo puede tener UNA cita activa por inmueble
@@ -807,23 +822,28 @@ class CitaViewSet(viewsets.ModelViewSet):
                 {'detail': 'Ya tienes una cita activa para este inmueble.'}
             )
 
+        prop = inmueble.propietario or self.request.user
         serializer.save(
             cliente=self.request.user,
-            propietario=inmueble.propietario,
+            propietario=prop,
             hora_fin=hora_fin,
         )
 
-        # Notificar al propietario
-        crear_notificacion_sistema(
-            usuario=inmueble.propietario,
-            titulo='Nueva cita agendada',
-            mensaje=(
-                f'{self.request.user.get_full_name() or self.request.user.email} '
-                f'agendó una visita para el {serializer.validated_data["fecha"]} '
-                f'a las {hora_inicio.strftime("%H:%M")} en "{inmueble.titulo}".'
-            ),
-            tipo=Notificacion.TipoNotificacion.INFO,
-        )
+        # Notificar al propietario si existe
+        if inmueble.propietario:
+            try:
+                crear_notificacion_sistema(
+                    usuario=inmueble.propietario,
+                    titulo='Nueva cita agendada',
+                    mensaje=(
+                        f'{self.request.user.get_full_name() or self.request.user.email} '
+                        f'agendó una visita para el {serializer.validated_data["fecha"]} '
+                        f'a las {hora_inicio.strftime("%H:%M")} en "{inmueble.titulo}".'
+                    ),
+                    tipo=Notificacion.TipoNotificacion.INFO,
+                )
+            except Exception:
+                pass
 
     @action(detail=True, methods=['patch'], url_path='cambiar-estado')
     def cambiar_estado(self, request, pk=None):

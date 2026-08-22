@@ -254,16 +254,26 @@ class CitaSerializer(serializers.ModelSerializer):
     cliente_nombre    = serializers.CharField(source='cliente.get_full_name',    read_only=True)
     propietario_nombre = serializers.CharField(source='propietario.get_full_name', read_only=True)
     inmueble_titulo   = serializers.CharField(source='inmueble.titulo',          read_only=True)
+    hora              = serializers.TimeField(write_only=True, required=False)
 
     class Meta:
         model  = Cita
         fields = '__all__'
         read_only_fields = ['id', 'cliente', 'propietario', 'hora_fin', 'creado', 'actualizado']
+        extra_kwargs = {'hora_inicio': {'required': False}}
 
     def validate(self, data):
+        if not data.get('hora_inicio') and data.get('hora'):
+            data['hora_inicio'] = data['hora']
+        if not data.get('notas') and data.get('motivo'):
+            data['notas'] = data.get('motivo')
+
         inmueble    = data.get('inmueble')
         fecha       = data.get('fecha')
         hora_inicio = data.get('hora_inicio')
+
+        if not hora_inicio:
+            raise serializers.ValidationError({'hora_inicio': 'La hora de inicio es requerida.'})
 
         if inmueble and fecha and hora_inicio:
             qs = Cita.objects.filter(

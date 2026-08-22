@@ -22,6 +22,8 @@ router.register(r'panel/agenda', AgendaViewSet, basename='panel-agenda')
 router.register(r'panel/notificaciones', NotificacionViewSet, basename='panel-notificaciones')
 
 urlpatterns = [
+    # Ruta directa para perfil /api/usuarios/me/
+    path('me/', UsuarioViewSet.as_view({'get': 'me', 'put': 'me', 'patch': 'me'}), name='usuario_me_directo'),
     path('', include(router.urls)),
     #  RUTAS DE AUTENTICACIÓN (LOGIN) 
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),

@@ -78,6 +78,8 @@ router.register(r'panel/horarios',  HorarioDisponibleViewSet, basename='panel-ho
 router.register(r'panel/hotspots',  HotspotViewSet,         basename='panel-hotspots')
 
 urlpatterns = [
+    # Ruta directa para mis inmuebles /api/inmuebles/mis_inmuebles/
+    path('mis_inmuebles/', InmuebleViewSet.as_view({'get': 'mis_inmuebles'}), name='inmuebles_mis_inmuebles_directo'),
     path('blockchain/stats/', BlockchainStatsView.as_view(), name='blockchain-stats'),
     path('blockchain/historial/<str:asset_id>/', BlockchainHistorialView.as_view(), name='blockchain-historial'),
     path('reporte-ia/', AIReportView.as_view(), name='reporte-ia'),
