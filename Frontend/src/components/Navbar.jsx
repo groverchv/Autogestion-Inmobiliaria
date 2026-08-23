@@ -326,6 +326,10 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
                           <Building2 size={16} />
                           <span>Mis Inmuebles</span>
                         </Link>
+                        <Link to="/auditoria-checkout" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/auditoria-checkout') ? 'active' : ''}`}>
+                          <ShieldCheck size={16} />
+                          <span>Auditoría IA Check-out</span>
+                        </Link>
                         <Link to="/mi-agenda" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mi-agenda') ? 'active' : ''}`}>
                           <Calendar size={16} />
                           <span>Mi Agenda</span>

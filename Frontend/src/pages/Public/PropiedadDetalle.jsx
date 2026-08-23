@@ -318,7 +318,23 @@ const PropiedadDetalle = () => {
                       Recorrido 3D (360°)
                     </button>
                   )}
-
+                  <Link
+                    to={`/auditoria-checkout?inmuebleId=${inmueble.id}`}
+                    style={{
+                      padding: '16px 20px',
+                      textDecoration: 'none',
+                      color: '#0ea5e9',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '0.92rem',
+                      marginLeft: 'auto'
+                    }}
+                  >
+                    <ShieldCheck size={18} />
+                    <span>Auditoría de Inmueble</span>
+                  </Link>
                 </div>
 
                 {/* ─── Pestaña: Fotos y Videos ─── */}

@@ -139,6 +139,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Permitir subida y análisis de fotos HD / Data-URIs en Base64 hasta 100MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100 MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
 # ─── Modelo de usuario personalizado ────────────────────────────
 AUTH_USER_MODEL = 'usuarios.Usuario'
 

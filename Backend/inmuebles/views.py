@@ -3,7 +3,10 @@ from rest_framework import viewsets, permissions, status, filters
 # pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
 from rest_framework.response import Response
+import os
+from decimal import Decimal
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
 from .models import (
@@ -1384,3 +1387,238 @@ Instrucción del Usuario: {prompt}"""
             final_datos.append(row)
 
         return final_datos
+
+
+from .models import AuditoriaCheck, AuditoriaAmbienteFoto
+from .serializers import AuditoriaCheckSerializer, AuditoriaAmbienteFotoSerializer
+from .services_auditoria import AuditoriaVisionEngine
+
+class AuditoriaCheckViewSet(viewsets.ModelViewSet):
+    """
+    CRUD y Motor Pericial IA de Auditoría para Check-in y Check-out con Liquidación de Garantías.
+    """
+    serializer_class = AuditoriaCheckSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and (user.is_staff or user.rol == 'admin'):
+            return AuditoriaCheck.objects.all()
+        if user.is_authenticated:
+            return AuditoriaCheck.objects.filter(
+                dj_models.Q(inmueble__propietario=user) | 
+                dj_models.Q(contrato__inquilino=user) |
+                dj_models.Q(auditor=user)
+            ).distinct()
+        return AuditoriaCheck.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(auditor=self.request.user if self.request.user.is_authenticated else None)
+
+    @action(detail=False, methods=['post'], url_path='iniciar-checkin')
+    def iniciar_checkin(self, request):
+        """Registra el Check-in base, detectando inventario inicial con YOLO y lecturas OCR."""
+        try:
+            inmueble_id = request.data.get('inmueble')
+            contrato_id = request.data.get('contrato')
+            fotos_data = request.data.get('fotos', [])
+            garantia_base = request.data.get('monto_garantia_base', '3500.0')
+
+            if not inmueble_id:
+                return Response({'error': 'Debes seleccionar un inmueble.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            inmueble = get_object_or_404(Inmueble, pk=inmueble_id)
+
+            auditoria = AuditoriaCheck.objects.create(
+                inmueble=inmueble,
+                contrato_id=contrato_id,
+                auditor=request.user if request.user.is_authenticated else None,
+                tipo=AuditoriaCheck.TipoCheck.CHECKIN,
+                monto_garantia_base=Decimal(str(garantia_base)),
+                dictamen_ia="Check-in inicial registrado satisfactoriamente con inventario base."
+            )
+
+            for item in fotos_data:
+                ambiente = item.get('ambiente', 'sala')
+                foto_url = item.get('foto_url')
+                if not foto_url:
+                    continue
+
+                # Inferencia YOLOv8
+                inventario = AuditoriaVisionEngine.detectar_inventario_yolo(foto_url)
+                
+                AuditoriaAmbienteFoto.objects.create(
+                    auditoria=auditoria,
+                    ambiente=ambiente,
+                    foto_url=foto_url,
+                    inventario_detectado=inventario,
+                )
+
+                # Si es medidor, extraer lectura OCR
+                if ambiente == 'medidor_luz':
+                    lectura = AuditoriaVisionEngine.leer_medidor_ocr(foto_url)
+                    auditoria.lectura_luz_kwh = Decimal(str(lectura))
+                elif ambiente == 'medidor_agua':
+                    lectura = AuditoriaVisionEngine.leer_medidor_ocr(foto_url)
+                    auditoria.lectura_agua_m3 = Decimal(str(lectura))
+
+            auditoria.save()
+            return Response(AuditoriaCheckSerializer(auditoria).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': f'Error en procesamiento de Check-in: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], url_path='ejecutar-checkout')
+    def ejecutar_checkout(self, request):
+        """
+        Ejecuta el Check-out pericial:
+        1. Compara inventario YOLO vs Check-in previo.
+        2. Detecta daños/grietas con OpenCV SSIM.
+        3. Compara lecturas de medidores de servicio con OCR.
+        4. Calcula la liquidación final de la garantía con deducciones desglosadas.
+        """
+        try:
+            inmueble_id = request.data.get('inmueble')
+            contrato_id = request.data.get('contrato')
+            checkin_id = request.data.get('checkin_id')
+            fotos_data = request.data.get('fotos', [])
+
+            if not inmueble_id:
+                return Response({'error': 'Debes seleccionar un inmueble.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            inmueble = get_object_or_404(Inmueble, pk=inmueble_id)
+
+            # Buscar checkin previo
+            checkin_previo = None
+            if checkin_id:
+                checkin_previo = AuditoriaCheck.objects.filter(pk=checkin_id).first()
+            if not checkin_previo:
+                checkin_previo = AuditoriaCheck.objects.filter(
+                    inmueble=inmueble, 
+                    tipo=AuditoriaCheck.TipoCheck.CHECKIN
+                ).order_by('-creado').first()
+
+            garantia_base = checkin_previo.monto_garantia_base if checkin_previo else Decimal('3500.0')
+
+            # Crear registro de checkout
+            checkout = AuditoriaCheck.objects.create(
+                inmueble=inmueble,
+                contrato_id=contrato_id,
+                auditor=request.user if request.user.is_authenticated else None,
+                tipo=AuditoriaCheck.TipoCheck.CHECKOUT,
+                monto_garantia_base=garantia_base,
+            )
+
+            # Map de fotos del checkin para contraste
+            fotos_checkin_map = {}
+            if checkin_previo:
+                for f in checkin_previo.fotos_ambientes.all():
+                    fotos_checkin_map[f.ambiente] = f
+
+            faltantes_totales = []
+            danos_totales = []
+            lectura_luz_checkout = Decimal('0.0')
+            lectura_agua_checkout = Decimal('0.0')
+
+            for item in fotos_data:
+                ambiente = item.get('ambiente', 'sala')
+                foto_url = item.get('foto_url')
+                if not foto_url:
+                    continue
+
+                foto_in = fotos_checkin_map.get(ambiente)
+                
+                # 1. Inferencia YOLOv8 en Check-out
+                inv_checkout = AuditoriaVisionEngine.detectar_inventario_yolo(foto_url)
+                inv_checkin = foto_in.inventario_detectado if foto_in else []
+
+                # 2. Análisis OpenCV de Daños / Fisuras
+                foto_in_url = foto_in.foto_url if foto_in else foto_url
+                analisis_danos = AuditoriaVisionEngine.comparar_danos_opencv(foto_in_url, foto_url)
+
+                AuditoriaAmbienteFoto.objects.create(
+                    auditoria=checkout,
+                    ambiente=ambiente,
+                    foto_url=foto_url,
+                    inventario_detectado=inv_checkout,
+                    ssim_score=analisis_danos.get('ssim_score', 1.0),
+                    danos_detectados=analisis_danos.get('danos_detectados', []),
+                    foto_referencia_checkin=foto_in
+                )
+
+                # Comparar faltantes de inventario
+                labels_in = [x.get('label') for x in inv_checkin if isinstance(x, dict) and 'label' in x]
+                labels_out = [x.get('label') for x in inv_checkout if isinstance(x, dict) and 'label' in x]
+                for item_in in labels_in:
+                    if item_in not in labels_out:
+                        faltantes_totales.append(f"{item_in} en {ambiente}")
+
+                # Registrar daños graves
+                if analisis_danos.get('ssim_score', 1.0) < 0.85:
+                    danos_totales.append(f"Alteración o fisuras en {ambiente} (Similitud: {analisis_danos.get('ssim_score')})")
+
+                # OCR de medidores
+                if ambiente == 'medidor_luz':
+                    lectura_luz_checkout = Decimal(str(AuditoriaVisionEngine.leer_medidor_ocr(foto_url)))
+                    checkout.lectura_luz_kwh = lectura_luz_checkout
+                elif ambiente == 'medidor_agua':
+                    lectura_agua_checkout = Decimal(str(AuditoriaVisionEngine.leer_medidor_ocr(foto_url)))
+                    checkout.lectura_agua_m3 = lectura_agua_checkout
+
+            # 3. Liquidación Pericial Final
+            desglose = AuditoriaVisionEngine.dictamen_liquidacion(
+                checkin_obj=checkin_previo,
+                checkout_fotos=checkout.fotos_ambientes.all()
+            ) if checkin_previo else {
+                'deduccion_faltantes': Decimal('0.0'),
+                'deduccion_danos': Decimal('0.0'),
+                'deduccion_servicios': Decimal('0.0'),
+                'total_deducciones': Decimal('0.0'),
+                'monto_a_reembolsar': garantia_base,
+                'dictamen_texto': "Check-out procesado exitosamente sin observaciones."
+            }
+
+            checkout.deduccion_faltantes = desglose['deduccion_faltantes']
+            checkout.deduccion_danos = desglose['deduccion_danos']
+            checkout.deduccion_servicios = desglose['deduccion_servicios']
+            checkout.total_deducciones = desglose['total_deducciones']
+            checkout.monto_a_reembolsar = desglose['monto_a_reembolsar']
+            checkout.dictamen_ia = desglose['dictamen_texto']
+            checkout.estado = AuditoriaCheck.EstadoAuditoria.LIQUIDADO
+            checkout.save()
+
+            return Response(AuditoriaCheckSerializer(checkout).data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': f'Error en peritaje de Check-out: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+from .services_asistente_espacial import AsistenteEspacialEngine
+
+class AsistenteEspacialViewSet(viewsets.ViewSet):
+    """
+    Endpoint pericial para consultas de lenguaje natural y medición 360°.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['post'], url_path='consultar')
+    def consultar(self, request):
+        texto = request.data.get('consulta', '').strip()
+        inmueble_id = request.data.get('inmueble')
+
+        if not texto:
+            return Response({'error': 'Debes enviar una consulta.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        inmueble = None
+        if inmueble_id:
+            try:
+                inmueble = Inmueble.objects.get(id=inmueble_id)
+            except Inmueble.DoesNotExist:
+                pass
+
+        if not inmueble:
+            inmueble = Inmueble.objects.first()
+
+        foto_360_url = request.data.get('foto_360_url')
+        resultado = AsistenteEspacialEngine.procesar_consulta(texto, inmueble, foto_360_url=foto_360_url)
+        return Response(resultado, status=status.HTTP_200_OK)
+
+

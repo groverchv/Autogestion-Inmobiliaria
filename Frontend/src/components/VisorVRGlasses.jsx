@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { X, Layers, Gamepad, Smartphone } from 'lucide-react';
+import api from '../services/api';
 import './VisorVRGlasses.css';
 
 const VRIcon = ({ size = 20, style = {} }) => (
@@ -14,19 +15,131 @@ const VRIcon = ({ size = 20, style = {} }) => (
   </svg>
 );
 
-const VisorVRGlasses = ({ panoramas = [], onClose }) => {
+const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId = null }) => {
   const [escenaActiva, setEscenaActiva] = useState(panoramas[0] || null);
   const [gamepadConnected, setGamepadConnected] = useState(false);
   const [gamepadName, setGamepadName] = useState('');
   const [pantallaDoble, setPantallaDoble] = useState(false);
   const [gyroPermission, setGyroPermission] = useState('unknown');
   const [mostrarInstrucciones, setMostrarInstrucciones] = useState(false);
+  const [vrEscuchando, setVrEscuchando] = useState(true);
+  const [vrTextoEstado, setVrTextoEstado] = useState('Voz activa: Pregunta lo que quieras');
 
-  // ─── Refs para control del joystick (sin re-renders por frame) ────────────
+  // ─── Refs para control del joystick y voz ────────────
   const rigRotationRef = useRef(0);
   const fovRef = useRef(80);
-  // Dirección actual del zoom por tecla de volumen: 'in' | 'out' | null
   const volumeZoomDirectionRef = useRef(null);
+  const recognitionVRRef = useRef(null);
+
+  // Atenuación de volumen de música (Audio Ducking)
+  const bajarVolumenMusica = () => {
+    if (audioRef?.current) {
+      audioRef.current.volume = 0.15; // Bajar a 15% cuando la persona o la IA hablan
+    }
+  };
+
+  const restaurarVolumenMusica = () => {
+    if (audioRef?.current) {
+      audioRef.current.volume = 1.0; // Restaurar al 100%
+    }
+  };
+
+  const hablarEnVozAltaVR = (texto) => {
+    if (!window.speechSynthesis) return;
+
+    bajarVolumenMusica();
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'es-ES';
+    utterance.rate = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const spanishVoice = voices.find(v => v.lang.startsWith('es'));
+    if (spanishVoice) utterance.voice = spanishVoice;
+
+    utterance.onend = () => {
+      restaurarVolumenMusica();
+    };
+    utterance.onerror = () => {
+      restaurarVolumenMusica();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Reconocimiento de voz continuo en Modo VR
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.lang = 'es-ES';
+      rec.continuous = true;
+      rec.interimResults = false;
+
+      rec.onstart = () => {
+        setVrEscuchando(true);
+        setVrTextoEstado('Escuchando continuamente...');
+      };
+
+      rec.onresult = async (event) => {
+        const lastIdx = event.results.length - 1;
+        const txt = event.results[lastIdx][0].transcript.trim().toLowerCase();
+        setVrTextoEstado(`Escuchado: "${txt}"`);
+        bajarVolumenMusica();
+
+        // 1. ¿Comando de Zoom?
+        if (txt.includes('acerca') || txt.includes('zoom') || txt.includes('adelante') || txt.includes('cerca')) {
+          applyFov(Math.max(30, fovRef.current - 25));
+          hablarEnVozAltaVR('Acercando vista');
+          return;
+        }
+        if (txt.includes('aleja') || txt.includes('atras') || txt.includes('lejos') || txt.includes('abrir') || txt.includes('panoramica')) {
+          applyFov(Math.min(110, fovRef.current + 25));
+          hablarEnVozAltaVR('Alejando vista');
+          return;
+        }
+
+        // 2. ¿Pregunta de información/medidas/precio/habitaciones?
+        try {
+          const res = await api.post('/inmuebles/asistente-espacial/consultar/', {
+            consulta: txt,
+            inmueble: inmuebleId,
+            foto_360_url: escenaActivaRef.current?.archivo || null
+          });
+          const data = res.data;
+          setVrTextoEstado(data.respuesta);
+          hablarEnVozAltaVR(data.respuesta);
+        } catch {
+          const errTxt = 'No pude procesar la consulta';
+          setVrTextoEstado(errTxt);
+          hablarEnVozAltaVR(errTxt);
+        }
+      };
+
+      rec.onerror = () => {
+        restaurarVolumenMusica();
+      };
+
+      rec.onend = () => {
+        // Reiniciar automáticamente para mantener el micrófono siempre activo en VR
+        if (vrEscuchando) {
+          try { rec.start(); } catch {}
+        }
+      };
+
+      try { rec.start(); } catch {}
+      recognitionVRRef.current = rec;
+    }
+
+    return () => {
+      if (recognitionVRRef.current) {
+        recognitionVRRef.current.stop();
+        recognitionVRRef.current = null;
+      }
+      window.speechSynthesis?.cancel();
+      restaurarVolumenMusica();
+    };
+  }, [inmuebleId]);
 
   const sensorInicializado = useRef(false);
   const escenaActivaRef = useRef(escenaActiva);

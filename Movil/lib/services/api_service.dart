@@ -439,4 +439,82 @@ class ApiService {
     );
     return response.statusCode == 204 || response.statusCode == 200;
   }
+
+  // ─── Auditoría IA (YOLO + OpenCV + OCR) ──────────────────────────────────
+  Future<Map<String, dynamic>?> iniciarCheckin({
+    required int inmuebleId,
+    int? contratoId,
+    required List<Map<String, String>> fotos,
+    double montoGarantia = 3500.0,
+  }) async {
+    final token = await getToken();
+    final Map<String, dynamic> bodyData = {
+      'inmueble': inmuebleId,
+      'fotos': fotos,
+      'monto_garantia_base': montoGarantia,
+    };
+    if (contratoId != null) bodyData['contrato'] = contratoId;
+
+    final response = await http.post(
+      Uri.parse('$_baseUrl/inmuebles/auditorias/iniciar-checkin/'),
+      headers: _headers(token),
+      body: jsonEncode(bodyData),
+    );
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> ejecutarCheckout({
+    required int inmuebleId,
+    int? contratoId,
+    int? checkinId,
+    required List<Map<String, String>> fotos,
+  }) async {
+    final token = await getToken();
+    final Map<String, dynamic> bodyData = {
+      'inmueble': inmuebleId,
+      'fotos': fotos,
+    };
+    if (contratoId != null) bodyData['contrato'] = contratoId;
+    if (checkinId != null) bodyData['checkin_id'] = checkinId;
+
+    final response = await http.post(
+      Uri.parse('$_baseUrl/inmuebles/auditorias/ejecutar-checkout/'),
+      headers: _headers(token),
+      body: jsonEncode(bodyData),
+    );
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    return null;
+  }
+
+  // ─── Asistente Espacial 360° y Medidor NLP ──────────────────────────────
+  Future<Map<String, dynamic>?> consultarAsistenteEspacial({
+    required String consulta,
+    int? inmuebleId,
+  }) async {
+    final token = await getToken();
+    final Map<String, dynamic> bodyData = {
+      'consulta': consulta,
+    };
+    if (inmuebleId != null) bodyData['inmueble'] = inmuebleId;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/inmuebles/asistente-espacial/consultar/'),
+        headers: _headers(token),
+        body: jsonEncode(bodyData),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      // Ignorar errores de red
+    }
+    return null;
+  }
 }
+

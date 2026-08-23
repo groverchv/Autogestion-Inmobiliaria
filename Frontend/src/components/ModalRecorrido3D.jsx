@@ -297,6 +297,8 @@ const ModalRecorrido3D = ({ panoramas = [], onClose, musica = null }) => {
             ...pano,
             archivo: blobUrls[pano.id] || pano.archivo
           }))} 
+          audioRef={audioRef}
+          inmuebleId={panoramas[0]?.inmueble || null}
           onClose={() => setShowVRGlasses(false)} 
         />
       )}

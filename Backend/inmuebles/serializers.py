@@ -291,7 +291,7 @@ class CitaSerializer(serializers.ModelSerializer):
         return data
 
 
-from .models import AccesoRecorrido360
+from .models import AccesoRecorrido360, AuditoriaCheck, AuditoriaAmbienteFoto
 
 class AccesoRecorrido360Serializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source='cliente.get_full_name', read_only=True)
@@ -303,4 +303,25 @@ class AccesoRecorrido360Serializer(serializers.ModelSerializer):
         model = AccesoRecorrido360
         fields = '__all__'
         read_only_fields = ['id', 'creado', 'propietario', 'visitas', 'ultimo_acceso_visor']
+
+
+class AuditoriaAmbienteFotoSerializer(serializers.ModelSerializer):
+    ambiente_nombre = serializers.CharField(source='get_ambiente_display', read_only=True)
+
+    class Meta:
+        model = AuditoriaAmbienteFoto
+        fields = '__all__'
+        read_only_fields = ['id', 'creado']
+
+
+class AuditoriaCheckSerializer(serializers.ModelSerializer):
+    auditor_nombre = serializers.CharField(source='auditor.get_full_name', read_only=True)
+    inmueble_titulo = serializers.CharField(source='inmueble.titulo', read_only=True)
+    fotos_ambientes = AuditoriaAmbienteFotoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = AuditoriaCheck
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'actualizado', 'auditor']
+
 

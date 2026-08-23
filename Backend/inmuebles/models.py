@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -674,7 +675,128 @@ class AccesoRecorrido360(models.Model):
         from django.utils import timezone
         return self.activo and self.fecha_expiracion > timezone.now()
 
+
+class AuditoriaCheck(models.Model):
+    """Auditoría de inventario, daños y lectura de medidores para Check-in y Check-out."""
+
+    class TipoCheck(models.TextChoices):
+        CHECKIN = 'checkin', 'Check-in (Entrada)'
+        CHECKOUT = 'checkout', 'Check-out (Salida)'
+
+    class EstadoAuditoria(models.TextChoices):
+        BORRADOR = 'borrador', 'Borrador'
+        PROCESADO = 'procesado', 'Procesado con IA'
+        LIQUIDADO = 'liquidado', 'Garantía Liquidada'
+        DISPUTA = 'disputa', 'En Disputa'
+
+    inmueble = models.ForeignKey(
+        Inmueble,
+        on_delete=models.CASCADE,
+        related_name='auditorias'
+    )
+    contrato = models.ForeignKey(
+        Contrato,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='auditorias'
+    )
+    auditor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='auditorias_realizadas'
+    )
+    tipo = models.CharField(max_length=20, choices=TipoCheck.choices, default=TipoCheck.CHECKIN)
+    estado = models.CharField(max_length=20, choices=EstadoAuditoria.choices, default=EstadoAuditoria.PROCESADO)
+    
+    # Lecturas OCR de Servicios
+    lectura_luz_kwh = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    lectura_agua_m3 = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    
+    # Liquidación Financiera
+    monto_garantia_base = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    deduccion_danos = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    deduccion_faltantes = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    deduccion_servicios = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    total_deducciones = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+    monto_a_reembolsar = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
+
+    dictamen_ia = models.TextField(blank=True, help_text="Resumen ejecutivo del peritaje IA")
+    acta_pdf_url = models.CharField(max_length=500, blank=True)
+    firma_inquilino = models.TextField(blank=True, help_text="Firma digital base64")
+    firma_propietario = models.TextField(blank=True, help_text="Firma digital base64")
+    
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'inmuebles_auditoria_check'
+        verbose_name = 'Auditoría Check-in/out'
+        verbose_name_plural = 'Auditorías Check-in/out'
+        ordering = ['-creado']
+
+    def calcular_balance(self):
+        self.total_deducciones = self.deduccion_danos + self.deduccion_faltantes + self.deduccion_servicios
+        self.monto_a_reembolsar = max(Decimal('0.0'), self.monto_garantia_base - self.total_deducciones)
+        self.save(update_fields=['total_deducciones', 'monto_a_reembolsar'])
+
     def __str__(self):
-        return f'Acceso: {self.cliente.email} -> {self.inmueble.titulo} (Exp: {self.fecha_expiracion})'
+        return f'Auditoría {self.tipo.upper()} — {self.inmueble.titulo} ({self.estado})'
+
+
+class AuditoriaAmbienteFoto(models.Model):
+    """Fotos capturadas por estancia para inferencia YOLO y comparación OpenCV."""
+
+    class TipoAmbiente(models.TextChoices):
+        SALA = 'sala', 'Sala de Estar'
+        COCINA = 'cocina', 'Cocina'
+        COMEDOR = 'comedor', 'Comedor'
+        DORMITORIO_1 = 'dormitorio_1', 'Dormitorio Principal'
+        DORMITORIO_2 = 'dormitorio_2', 'Dormitorio Secundario'
+        BANO = 'bano', 'Baño'
+        MEDIDOR_LUZ = 'medidor_luz', 'Medidor de Luz'
+        MEDIDOR_AGUA = 'medidor_agua', 'Medidor de Agua'
+        EXTERIORES = 'exteriores', 'Exteriores / Fachada'
+        OTRO = 'otro', 'Otro Ambiente'
+
+    auditoria = models.ForeignKey(
+        AuditoriaCheck,
+        on_delete=models.CASCADE,
+        related_name='fotos_ambientes'
+    )
+    ambiente = models.CharField(max_length=30, choices=TipoAmbiente.choices, default=TipoAmbiente.SALA)
+    foto_url = models.TextField(help_text="URL o Data-URI base64 de la foto")
+    
+    # Inferencia YOLO
+    inventario_detectado = models.JSONField(default=list, help_text="Lista de objetos detectados por YOLO con labels y bbox")
+    
+    # Análisis OpenCV y Color
+    histograma_color = models.JSONField(default=dict, blank=True)
+    ssim_score = models.FloatField(default=1.0, help_text="Similitud estructural (1.0 = idéntico)")
+    danos_detectados = models.JSONField(default=list, help_text="Zonas con daño o fisuras detectadas por OpenCV")
+    heatmap_url = models.TextField(blank=True, help_text="Mapa de calor de alteraciones")
+    
+    # Referencia a la foto inicial (si es checkout)
+    foto_referencia_checkin = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='comparaciones_checkout'
+    )
+
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'inmuebles_auditoria_ambiente_foto'
+        verbose_name = 'Foto de Ambiente Auditoría'
+        verbose_name_plural = 'Fotos de Ambientes Auditoría'
+        ordering = ['ambiente']
+
+    def __str__(self):
+        return f'{self.ambiente} ({self.auditoria.tipo}) — {self.auditoria.inmueble.titulo}'
+
 
 

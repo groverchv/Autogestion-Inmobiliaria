@@ -39,6 +39,7 @@ import ManageFavoritos from './pages/Admin/ManageFavoritos';
 import FinanzasAdmin from './pages/Admin/FinanzasAdmin';
 import ManageBlockchain from './pages/Admin/ManageBlockchain';
 import FinanzasPropietario from './pages/Public/FinanzasPropietario';
+import AuditoriaCheckInOut from './pages/Panel/AuditoriaCheckInOut';
 
 /**
  * Enrutador principal de la aplicación.
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
           {
             path: '/mis-inmuebles',
             element: <MisInmuebles />,
+          },
+          {
+            path: '/auditoria-checkout',
+            element: <AuditoriaCheckInOut />,
           },
           {
             path: '/mi-agenda',
@@ -133,6 +138,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: 'dashboard', element: <DashboardAdmin /> },
+      { path: 'auditorias', element: <AuditoriaCheckInOut /> },
       { path: 'blockchain', element: <ManageBlockchain /> },
       { path: 'finanzas', element: <FinanzasAdmin /> },
       { path: 'usuarios', element: <ManageUsers /> },

@@ -44,6 +44,8 @@ from .views import (
     HotspotViewSet,
     VerificacionTituloViewSet,
     AccesoRecorrido360ViewSet,
+    AuditoriaCheckViewSet,
+    AsistenteEspacialViewSet,
     BlockchainHistorialView,
     BlockchainStatsView,
     AIReportView,
@@ -65,6 +67,8 @@ router.register(r'horarios',        HorarioDisponibleViewSet, basename='horarios
 router.register(r'hotspots',        HotspotViewSet,         basename='hotspots')
 router.register(r'verificacion',    VerificacionTituloViewSet, basename='verificacion')
 router.register(r'accesos-360',     AccesoRecorrido360ViewSet, basename='accesos-360')
+router.register(r'auditorias',      AuditoriaCheckViewSet,  basename='auditorias')
+router.register(r'asistente-espacial', AsistenteEspacialViewSet, basename='asistente-espacial')
 
 
 # ─── Rutas del panel admin ────────────────────────────────────────────────────

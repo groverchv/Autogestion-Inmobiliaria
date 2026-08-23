@@ -2,6 +2,8 @@ import os
 import sys
 import json
 import requests
+import uuid
+import time
 
 BASE_URL = "http://127.0.0.1:8000/api"
 RESULTS = []
@@ -28,7 +30,8 @@ except Exception as e:
     sys.exit(1)
 
 # 2. Test Registro de Nuevo Usuario con Validación
-email_test = f"test_qa_{os.getpid()}@nobleve.com"
+unique_id = uuid.uuid4().hex[:8]
+email_test = f"test_qa_{unique_id}@nobleve.com"
 password_test = "NoblePass2026*"
 
 reg_payload = {
@@ -37,7 +40,7 @@ reg_payload = {
     "last_name": "Calidad",
     "password": password_test,
     "telefono": "78912345",
-    "ci": "99887766 SC",
+    "ci": f"{unique_id} SC",
     "nacimiento": "1998-05-15",
     "rol": "usuario"
 }
@@ -94,11 +97,13 @@ if inmueble_id:
 
 # 8. Test Agenda de Citas
 if inmueble_id:
+    # Usar hora dinámica para evitar colisión de horario único
+    hora_random = f"{(int(time.time()) % 10) + 8:02d}:00:00"
     cita_payload = {
         "inmueble": inmueble_id,
-        "fecha": "2026-09-10",
-        "hora_inicio": "10:00:00",
-        "motivo": "Visita programada desde QA Suite"
+        "fecha": "2026-11-20",
+        "hora_inicio": hora_random,
+        "notas": "Visita programada desde QA Suite"
     }
     r = requests.post(f"{BASE_URL}/inmuebles/citas/", json=cita_payload, headers=headers)
     record("8. Agendamiento de Citas Inmobiliarias", r.status_code in [200, 201], f"Status: {r.status_code}")

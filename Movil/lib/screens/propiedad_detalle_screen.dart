@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
+import 'auditoria_camara_screen.dart';
 import 'captura_360_screen.dart';
 import 'mis_mensajes_screen.dart';
 import 'visor_3d_screen.dart';
@@ -336,6 +337,7 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                                       builder: (_) => VisorInmersivo360Screen(
                                         panoramaUrl: panoramas360.first.archivoUrl,
                                         titulo: item.titulo,
+                                        inmuebleId: item.id,
                                       ),
                                     ),
                                   );
@@ -368,6 +370,28 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                             label: const Text('Plano 3D & RA', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: AppColors.primary),
+                              backgroundColor: AppColors.surface,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Botón Auditoría de Inmueble (Check-in / Check-out)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => AuditoriaCamaraScreen(inmueble: item),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.shield_outlined, size: 20, color: AppColors.accent),
+                            label: const Text('Auditoría', style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.accent),
                               backgroundColor: AppColors.surface,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -421,6 +445,27 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        // Botón Auditoría IA Check-in/out
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                          ),
+                          child: IconButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => AuditoriaCamaraScreen(inmueble: item),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.document_scanner_outlined, color: AppColors.primary, size: 20),
+                            tooltip: 'Auditoría IA Check-in/out',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           decoration: BoxDecoration(
                             gradient: AppColors.primaryGradient,

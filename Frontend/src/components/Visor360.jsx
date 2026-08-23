@@ -3,6 +3,7 @@ import { Maximize2, Minimize2, Layers, Compass } from 'lucide-react';
 import 'pannellum/build/pannellum.css';
 import 'pannellum';
 import ModalRecorrido3D from './ModalRecorrido3D';
+import ControladorVoz360 from './ControladorVoz360';
 import api from '../services/api';
 import './Visor360.css';
 /**
@@ -390,6 +391,15 @@ const Visor360 = ({ panoramas = [], accesoId = null, musica = null }) => {
         </button>
         </div>
       </div>
+
+      {/* Controlador por Voz y Asistente Espacial de Medición */}
+      <ControladorVoz360
+        viewerRef={viewerInstanceRef}
+        inmuebleId={panoramas[0]?.inmueble || null}
+        fotoActualUrl={escenaActiva?.archivo || panoramas[0]?.archivo || null}
+        onCambiarEscena={cambiarEscena}
+        panoramas={panoramas}
+      />
     </div>
   );
 };
