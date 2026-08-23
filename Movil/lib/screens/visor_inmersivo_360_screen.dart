@@ -21,7 +21,7 @@ class VisorInmersivo360Screen extends StatefulWidget {
   State<VisorInmersivo360Screen> createState() => _VisorInmersivo360ScreenState();
 }
 
-class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> {
+class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with SingleTickerProviderStateMixin {
   // Rotación en los 3 ejes (Yaw / Pitch / Roll)
   double _yaw = 0.0;   // Horizontal (360°)
   double _pitch = 0.0; // Vertical (Arriba / Abajo)
@@ -30,18 +30,47 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> {
   bool _gyroEnabled = true;
   StreamSubscription<GyroscopeEvent>? _gyroSub;
 
+  // Capas de Realidad Aumentada (HUD)
+  bool _mostrarCotasAR = true;
+  bool _mostrarPinesBarrioAR = true;
+  Map<String, dynamic>? _metaversoDatos;
+
+  // Estados del Guía Turístico Virtual con Voz
+  bool _tourActivo = false;
+  int _pasoTourIndex = 0;
+  List<dynamic> _pasosTour = [];
+  Timer? _tourTimer;
+  String _locucionActual = '';
+
+  // Controlador de Animación para giros cinemáticos suaves
+  late AnimationController _animController;
+  Animation<double>? _yawAnimation;
+  Animation<double>? _pitchAnimation;
+  Animation<double>? _fovAnimation;
+
   @override
   void initState() {
     super.initState();
-    _gyroSub = gyroscopeEventStream().listen((event) {
-      if (_gyroEnabled && mounted) {
+    _cargarDatosMetaverso();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..addListener(() {
         setState(() {
-          // Giro horizontal por eje Y o Z
+          if (_yawAnimation != null) _yaw = _yawAnimation!.value;
+          if (_pitchAnimation != null) _pitch = _pitchAnimation!.value;
+          if (_fovAnimation != null) _fov = _fovAnimation!.value;
+        });
+      });
+
+    _gyroSub = gyroscopeEventStream().listen((event) {
+      if (_gyroEnabled && !_tourActivo && mounted) {
+        setState(() {
           _yaw += event.y * 0.03;
           if (_yaw > math.pi) _yaw -= 2 * math.pi;
           if (_yaw < -math.pi) _yaw += 2 * math.pi;
 
-          // Giro vertical (Pitch) por eje X (mirar al techo / suelo)
           _pitch = (_pitch + event.x * 0.03).clamp(-1.0, 1.0);
         });
       }
@@ -51,8 +80,101 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> {
   @override
   void dispose() {
     _gyroSub?.cancel();
+    _tourTimer?.cancel();
+    _animController.dispose();
     super.dispose();
   }
+
+  Future<void> _cargarDatosMetaverso() async {
+    if (widget.inmuebleId == null) return;
+    final api = context.read<AuthProvider>().apiService;
+    final data = await api.obtenerDatosMetaverso(widget.inmuebleId!);
+    if (data != null && mounted) {
+      setState(() {
+        _metaversoDatos = data;
+      });
+    }
+  }
+
+  // ─── Animación Cinemática de Cámara Suave (Cubic Easing) ────────────────
+
+  void _animarCamaraHacia({required double targetYaw, required double targetPitch, double targetFov = 1.0}) {
+    _yawAnimation = Tween<double>(
+      begin: _yaw,
+      end: targetYaw,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOutCubic));
+
+    _pitchAnimation = Tween<double>(
+      begin: _pitch,
+      end: targetPitch,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOutCubic));
+
+    _fovAnimation = Tween<double>(
+      begin: _fov,
+      end: targetFov,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOutCubic));
+
+    _animController.forward(from: 0.0);
+  }
+
+  // ─── Iniciar Tour Guiado con Voz ─────────────────────────────────────────
+  Future<void> _iniciarTourVirtual() async {
+    if (widget.inmuebleId == null) return;
+
+    final api = context.read<AuthProvider>().apiService;
+    final tourData = await api.iniciarTourVirtual(
+      inmuebleId: widget.inmuebleId!,
+      fotoUrl: widget.panoramaUrl,
+    );
+
+    if (tourData != null && tourData['pasos'] != null && mounted) {
+      setState(() {
+        _tourActivo = true;
+        _pasosTour = tourData['pasos'];
+        _pasoTourIndex = 0;
+      });
+      _ejecutarPasoTour();
+    }
+  }
+
+  void _detenerTourVirtual() {
+    _tourTimer?.cancel();
+    setState(() {
+      _tourActivo = false;
+      _locucionActual = '';
+    });
+  }
+
+  void _ejecutarPasoTour() {
+    if (!_tourActivo || _pasoTourIndex >= _pasosTour.length) {
+      _detenerTourVirtual();
+      return;
+    }
+
+    final paso = _pasosTour[_pasoTourIndex];
+    final double yawGrados = (paso['camara_360']?['yaw'] as num? ?? 0.0).toDouble();
+    final double pitchGrados = (paso['camara_360']?['pitch'] as num? ?? 0.0).toDouble();
+    final double duracionSeg = (paso['duracion_seg'] as num? ?? 5.5).toDouble();
+
+    setState(() {
+      _locucionActual = paso['locucion'] ?? '';
+    });
+
+    // Animar cámara hacia el punto
+    final targetYaw = (yawGrados * math.pi / 180.0).clamp(-math.pi, math.pi);
+    final targetPitch = (pitchGrados / 45.0).clamp(-1.0, 1.0);
+    _animarCamaraHacia(targetYaw: targetYaw, targetPitch: targetPitch, targetFov: 1.1);
+
+    _tourTimer = Timer(Duration(milliseconds: (duracionSeg * 1000).round()), () {
+      if (mounted && _tourActivo) {
+        setState(() {
+          _pasoTourIndex++;
+        });
+        _ejecutarPasoTour();
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +189,30 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> {
         ),
         actions: [
           IconButton(
+            icon: Icon(
+              _tourActivo ? Icons.pause_circle_filled : Icons.record_voice_over,
+              color: _tourActivo ? const Color(0xFF38BDF8) : Colors.white,
+            ),
+            tooltip: _tourActivo ? 'Pausar Tour Narrado' : 'Iniciar Tour Narrado con Guía',
+            onPressed: () {
+              if (_tourActivo) {
+                _detenerTourVirtual();
+              } else {
+                _iniciarTourVirtual();
+              }
+            },
+          ),
+          IconButton(
+            icon: Icon(_mostrarCotasAR ? Icons.straighten : Icons.straighten_outlined, color: _mostrarCotasAR ? const Color(0xFF38BDF8) : Colors.grey),
+            tooltip: 'Capa Cotas en RA',
+            onPressed: () => setState(() => _mostrarCotasAR = !_mostrarCotasAR),
+          ),
+          IconButton(
+            icon: Icon(_mostrarPinesBarrioAR ? Icons.place : Icons.place_outlined, color: _mostrarPinesBarrioAR ? const Color(0xFF10B981) : Colors.grey),
+            tooltip: 'Capa Entorno Urbano AR',
+            onPressed: () => setState(() => _mostrarPinesBarrioAR = !_mostrarPinesBarrioAR),
+          ),
+          IconButton(
             icon: Icon(_gyroEnabled ? Icons.screen_rotation : Icons.screen_lock_rotation, color: Colors.white),
             tooltip: 'Giroscopio / Sensores',
             onPressed: () => setState(() => _gyroEnabled = !_gyroEnabled),
@@ -78,9 +224,11 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> {
           ),
         ],
       ),
+
       body: GestureDetector(
         // Scale maneja tanto paneo (focalPointDelta) como zoom (scale) simultáneamente
         onScaleUpdate: (details) {
+          if (_tourActivo) _detenerTourVirtual();
           setState(() {
             if (details.scale == 1.0) {
               _yaw -= details.focalPointDelta.dx * 0.005;
@@ -93,10 +241,102 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> {
             }
           });
         },
-        child: _vrMode ? _buildVRDualView() : _buildSinglePanoramaView(),
+        child: Stack(
+          children: [
+            _vrMode ? _buildVRDualView() : _buildSinglePanoramaView(),
+
+            // ─── Capa Flotante de Cotas en Realidad Aumentada (HUD) ───
+            if (_mostrarCotasAR && _metaversoDatos?['cotas_ar'] != null)
+              Positioned(
+                top: 70,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.6)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.straighten, color: Color(0xFF38BDF8), size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Cota AR: ${(_metaversoDatos!['cotas_ar'] as List).first['cota']}',
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // ─── Capa Flotante de Pines del Barrio en Realidad Aumentada ───
+            if (_mostrarPinesBarrioAR && _metaversoDatos?['pines_ar_barrio'] != null)
+              Positioned(
+                top: 105,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.6)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.place, color: Color(0xFF10B981), size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Entorno AR: ${(_metaversoDatos!['pines_ar_barrio'] as List).first['nombre']} (${(_metaversoDatos!['pines_ar_barrio'] as List).first['distancia_m']}m)',
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            if (_tourActivo && _locucionActual.isNotEmpty)
+              Positioned(
+                top: 16,
+                left: 16,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF38BDF8), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                      )
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.record_voice_over, color: Color(0xFF38BDF8), size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _locucionActual,
+                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.35, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+          ],
+        ),
       ),
     );
   }
+
 
   // ─── Control de Cámara por Comandos Locales (0ms) ──────────────────
   void _ejecutarComandoCamara(String cmd) {

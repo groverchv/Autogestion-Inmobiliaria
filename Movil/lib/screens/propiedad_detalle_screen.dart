@@ -8,6 +8,7 @@ import 'captura_360_screen.dart';
 import 'mis_mensajes_screen.dart';
 import 'visor_3d_screen.dart';
 import 'visor_inmersivo_360_screen.dart';
+import '../widgets/calidad_vida_card.dart';
 
 class PropiedadDetalleScreen extends StatefulWidget {
   final int inmuebleId;
@@ -20,6 +21,7 @@ class PropiedadDetalleScreen extends StatefulWidget {
 
 class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
   Inmueble? _inmueble;
+  Map<String, dynamic>? _calidadVidaData;
   bool _isLoading = true;
   String? _errorMessage;
   int _selectedPhotoIndex = 0;
@@ -39,9 +41,11 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
     final api = context.read<AuthProvider>().apiService;
     try {
       final data = await api.getInmuebleDetalle(widget.inmuebleId);
+      final calidadVida = await api.obtenerIndiceCalidadVida(inmuebleId: widget.inmuebleId);
       if (mounted) {
         setState(() {
           _inmueble = data;
+          _calidadVidaData = calidadVida;
           _isLoading = false;
         });
       }
@@ -54,6 +58,7 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
       }
     }
   }
+
 
   Future<void> _contactarPropietario() async {
     if (_inmueble == null) return;
@@ -376,7 +381,7 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
 
                         // Botón Auditoría de Inmueble (Check-in / Check-out)
                         Expanded(
@@ -402,7 +407,12 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                     ),
                   ),
 
+                  // 2.5. Tarjeta de Calidad de Vida & Walk Score del Barrio
+                  if (_calidadVidaData != null)
+                    CalidadVidaCard(data: _calidadVidaData!),
+
                   // 3. Tarjeta de Contacto Directo con el Propietario (Dark)
+
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     padding: const EdgeInsets.all(14),

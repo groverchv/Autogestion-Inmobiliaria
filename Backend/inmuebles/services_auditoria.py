@@ -72,9 +72,22 @@ class AuditoriaVisionEngine:
             if cv_img is None:
                 return [{'label': 'ambiente_general', 'confidence': 0.95, 'bbox': [0, 0, 100, 100]}]
 
-            # Carga el modelo pre-entrenado ultraligero
-            model = YOLO('yolov8n.pt')
+            # Carga el modelo personalizado si existe, o el modelo base
+            posibles_rutas = [
+                'runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
+                'runs/detect/runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
+                '../runs/detect/runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
+            ]
+            modelo_path = 'yolov8n.pt'
+            for r in posibles_rutas:
+                if os.path.exists(r):
+                    modelo_path = r
+                    break
+
+            model = YOLO(modelo_path)
             results = model(cv_img, verbose=False)
+
+
             
             inventario = []
             for r in results:

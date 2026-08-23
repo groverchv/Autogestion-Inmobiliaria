@@ -5,14 +5,17 @@ ENV PYTHONDONTWRITEBYTECODE 1
 # Evitar que Python haga buffer de stdout y stderr
 ENV PYTHONUNBUFFERED 1
 
-# Instalar dependencias del sistema requeridas por psycopg2 y Tesseract
+# Instalar dependencias del sistema requeridas por psycopg2, Tesseract y OpenCV
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        gcc \
        libpq-dev \
        tesseract-ocr \
        poppler-utils \
+       libgl1 \
+       libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Establecer el directorio de trabajo
 WORKDIR /app

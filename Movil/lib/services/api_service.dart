@@ -495,12 +495,14 @@ class ApiService {
   Future<Map<String, dynamic>?> consultarAsistenteEspacial({
     required String consulta,
     int? inmuebleId,
+    String? fotoUrl,
   }) async {
     final token = await getToken();
     final Map<String, dynamic> bodyData = {
       'consulta': consulta,
     };
     if (inmuebleId != null) bodyData['inmueble'] = inmuebleId;
+    if (fotoUrl != null) bodyData['foto_360_url'] = fotoUrl;
 
     try {
       final response = await http.post(
@@ -516,5 +518,87 @@ class ApiService {
     }
     return null;
   }
+
+  Future<Map<String, dynamic>?> iniciarTourVirtual({
+    required int inmuebleId,
+    String? fotoUrl,
+  }) async {
+    final token = await getToken();
+    final Map<String, dynamic> bodyData = {
+      'inmueble': inmuebleId,
+    };
+    if (fotoUrl != null) bodyData['foto_360_url'] = fotoUrl;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/inmuebles/asistente-espacial/iniciar-tour/'),
+        headers: _headers(token),
+        body: jsonEncode(bodyData),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      // Ignorar
+    }
+    return null;
+  }
+
+  // ─── Índice de Calidad de Vida y Walk Score ──────────────────────────────
+  Future<Map<String, dynamic>?> obtenerIndiceCalidadVida({
+    required int inmuebleId,
+    double? lat,
+    double? lng,
+  }) async {
+    final token = await getToken();
+    try {
+      final queryParams = {'inmueble': inmuebleId.toString()};
+      if (lat != null && lng != null) {
+        queryParams['lat'] = lat.toString();
+        queryParams['lng'] = lng.toString();
+      }
+
+      final uri = Uri.parse('$_baseUrl/inmuebles/calidad-vida/evaluar/').replace(
+        queryParameters: queryParams,
+      );
+
+      final response = await http.get(
+        uri,
+        headers: _headers(token),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      // Ignorar
+    }
+    return null;
+  }
+
+  // ─── Súper Endpoint: Metaverso Espacial 360° + RA ─────────────────────────
+  Future<Map<String, dynamic>?> obtenerDatosMetaverso(int inmuebleId) async {
+    final token = await getToken();
+    try {
+      final uri = Uri.parse('$_baseUrl/inmuebles/calidad-vida/metaverso-datos/').replace(
+        queryParameters: {'inmueble': inmuebleId.toString()},
+      );
+
+      final response = await http.get(
+        uri,
+        headers: _headers(token),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      // Ignorar
+    }
+    return null;
+  }
 }
+
+
+
 

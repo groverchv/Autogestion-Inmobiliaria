@@ -1,0 +1,381 @@
+.calidad-vida-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.calidad-vida-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--color-text-secondary, #64748b);
+  gap: 12px;
+}
+
+.calidad-vida-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(2, 132, 199, 0.15);
+  border-top-color: #0284c7;
+  border-radius: 50%;
+  animation: cv-spin 0.8s linear infinite;
+}
+
+@keyframes cv-spin {
+  to { transform: rotate(360deg); }
+}
+
+.calidad-vida-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.calidad-vida-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.calidad-vida-icon-badge {
+  background: rgba(2, 132, 199, 0.1);
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calidad-vida-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0 0 4px 0;
+}
+
+.calidad-vida-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #64748b);
+  margin: 0;
+}
+
+.walk-score-badge {
+  background: #f8fafc;
+  border: 2px solid #0284c7;
+  border-radius: 14px;
+  padding: 10px 18px;
+  text-align: center;
+  min-width: 140px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.walk-score-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.walk-score-max {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.walk-score-status {
+  color: white;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+}
+
+.calidad-vida-desc-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  color: #166534;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.calidad-vida-desc-icon {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.calidad-vida-desc-box p {
+  margin: 0;
+}
+
+.calidad-vida-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cat-card {
+  background: #f8fafc;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cat-card:hover, .cat-card--active {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.cat-card-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.cat-card-name {
+  color: var(--color-text, #0f172a);
+}
+
+.cat-card-dist {
+  color: #64748b;
+}
+
+.cat-progress-bg {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cat-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.calidad-vida-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.poi-filter-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.poi-tab {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.poi-tab:hover {
+  background: #f1f5f9;
+}
+
+.poi-tab--active {
+  background: #0284c7;
+  color: white;
+  border-color: #0284c7;
+}
+
+.radios-toggle-btn {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radios-toggle-btn--active {
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+  border-color: #38bdf8;
+}
+
+.calidad-vida-map-container {
+  height: 380px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border, #e2e8f0);
+  margin-bottom: 24px;
+}
+
+.calidad-vida-leaflet-map {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+.custom-property-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.property-pin-inner {
+  background: #0284c7;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.4);
+}
+
+.custom-poi-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poi-pin-inner {
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+.map-popup-content {
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+
+.popup-category {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0284c7;
+  display: block;
+}
+
+.popup-title {
+  font-size: 0.88rem;
+  color: #0f172a;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.popup-meta {
+  display: flex;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.poi-list-section {
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  padding-top: 20px;
+}
+
+.poi-list-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0 0 14px 0;
+}
+
+.poi-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.poi-item-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.poi-item-icon {
+  background: white;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+}
+
+.poi-item-info {
+  flex: 1;
+}
+
+.poi-item-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+  display: block;
+}
+
+.poi-item-type {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.poi-item-distance {
+  text-align: right;
+}
+
+.poi-dist-m {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0284c7;
+  display: block;
+}
+
+.poi-dist-time {
+  font-size: 0.7rem;
+  color: #64748b;
+}

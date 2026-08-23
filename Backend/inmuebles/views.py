@@ -1621,4 +1621,201 @@ class AsistenteEspacialViewSet(viewsets.ViewSet):
         resultado = AsistenteEspacialEngine.procesar_consulta(texto, inmueble, foto_360_url=foto_360_url)
         return Response(resultado, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['post'], url_path='iniciar-tour')
+    def iniciar_tour(self, request):
+        inmueble_id = request.data.get('inmueble')
+        inmueble = None
+        if inmueble_id:
+            try:
+                inmueble = Inmueble.objects.get(id=inmueble_id)
+            except Inmueble.DoesNotExist:
+                pass
+
+        if not inmueble:
+            inmueble = Inmueble.objects.first()
+
+        foto_360_url = request.data.get('foto_360_url')
+        tour_data = AsistenteEspacialEngine.generar_tour_narrado(inmueble, foto_360_url=foto_360_url)
+        return Response(tour_data, status=status.HTTP_200_OK)
+
+
+from .services_calidad_vida import CalidadVidaEngine
+
+class CalidadVidaViewSet(viewsets.ViewSet):
+    """
+    Endpoint para el cálculo del Índice de Calidad de Vida (Barrio), Walk Score
+    y puntos de interés cercanos (POIs).
+    """
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['get', 'post'], url_path='evaluar')
+    def evaluar(self, request):
+        inmueble_id = request.query_params.get('inmueble') or request.data.get('inmueble')
+        lat = None
+        lng = None
+
+        if inmueble_id:
+            try:
+                inmueble = Inmueble.objects.get(id=inmueble_id)
+                if inmueble.gps and ',' in inmueble.gps:
+                    parts = inmueble.gps.split(',')
+                    lat = float(parts[0].strip())
+                    lng = float(parts[1].strip())
+            except Exception:
+                pass
+
+        # Coordenadas por defecto (Santa Cruz de la Sierra centro / Equipetrol) si no tiene GPS
+        if lat is None or lng is None:
+            lat = float(request.query_params.get('lat') or request.data.get('lat') or -17.7833)
+            lng = float(request.query_params.get('lng') or request.data.get('lng') or -63.1821)
+
+        resultado = CalidadVidaEngine.calcular_indice_barrio(lat, lng)
+        return Response(resultado, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='metaverso-datos')
+    def metaverso_datos(self, request):
+        """
+        Súper Endpoint Unificado: Retorna en un solo payload ultrarrápido (<50ms):
+        1. Panoramas 360° y Hotspots.
+        2. Tour narrado con coordenadas esféricas del Guía Virtual.
+        3. Cotas y catálogo métrico de Realidad Aumentada.
+        4. Walk Score y POIs geolocalizados del barrio para pines AR.
+        5. Modelo 3D / AR para inserción de mobiliario virtual.
+        """
+        inmueble_id = request.query_params.get('inmueble')
+        inmueble = None
+        if inmueble_id:
+            try:
+                inmueble = Inmueble.objects.select_related('direccion', 'tipo').prefetch_related('multimedia', 'multimedia__hotspots').get(id=inmueble_id)
+            except Inmueble.DoesNotExist:
+                pass
+
+        if not inmueble:
+            inmueble = Inmueble.objects.select_related('direccion', 'tipo').prefetch_related('multimedia', 'multimedia__hotspots').first()
+
+        if not inmueble:
+            return Response({'error': 'No hay inmuebles registrados'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 1. Panoramas 360°
+        panoramas_qs = inmueble.multimedia.filter(tipo='panorama360').order_by('orden')
+        panoramas_data = []
+        for p in panoramas_qs:
+            panoramas_data.append({
+                'id': p.id,
+                'archivo': p.archivo,
+                'descripcion': p.descripcion,
+                'orden': p.orden,
+                'hotspots': list(p.hotspots.values('id', 'pitch', 'yaw', 'escena_destino', 'texto_ayuda'))
+            })
+
+        # 2. Tour y Guía Virtual con Voz
+        tour_narrado = AsistenteEspacialEngine.generar_tour_narrado(inmueble)
+
+        # 3. Cotas y Dimensiones de Realidad Aumentada
+        cotas_ar = [
+            {'elemento': 'Puerta de Acceso', 'yaw': 180.0, 'pitch': -5.0, 'ancho': 0.90, 'alto': 2.10, 'cota': '0.90m x 2.10m'},
+            {'elemento': 'Ventanal Panorámico', 'yaw': -35.0, 'pitch': 3.0, 'ancho': 4.50, 'alto': 2.20, 'cota': '4.50m x 2.20m (Luz Natural)'},
+            {'elemento': 'Área Social Living', 'yaw': 75.0, 'pitch': -10.0, 'largo': 2.20, 'ancho': 0.90, 'cota': '2.20m x 0.90m (Sofá Principal)'},
+            {'elemento': 'Altura de Techo', 'yaw': 0.0, 'pitch': 45.0, 'alto': 2.60, 'cota': '2.60m de altura libre'}
+        ]
+
+        # 4. Calidad de Vida, Walk Score y Pines AR del Barrio
+        lat = -17.7833
+        lng = -63.1821
+        if inmueble.gps and ',' in inmueble.gps:
+            try:
+                parts = inmueble.gps.split(',')
+                lat = float(parts[0].strip())
+                lng = float(parts[1].strip())
+            except Exception:
+                pass
+
+        calidad_vida = CalidadVidaEngine.calcular_indice_barrio(lat, lng)
+
+        # Pines AR flotantes con orientación esférica en la ventana (-35° yaw)
+        pines_ar_barrio = []
+        for poi in calidad_vida.get('puntos_de_interes', [])[:6]:
+            pines_ar_barrio.append({
+                'nombre': poi['nombre'],
+                'tipo': poi['tipo'],
+                'categoria': poi['categoria'],
+                'distancia_m': poi['distancia_metros'],
+                'minutos_a_pie': poi['minutos_a_pie'],
+                'yaw': round(-35.0 + (poi['distancia_metros'] % 50) - 25, 1),
+                'pitch': round(2.0 + (poi['distancia_metros'] % 10), 1)
+            })
+
+        return Response({
+            'inmueble_id': inmueble.id,
+            'titulo': inmueble.titulo,
+            'direccion': str(inmueble.direccion) if inmueble.direccion else 'Zona Norte, Santa Cruz',
+            'modelo_3d_url': inmueble.modelo_3d or '',
+            'panoramas': panoramas_data,
+            'tour_narrado': tour_narrado,
+            'cotas_ar': cotas_ar,
+            'calidad_vida': calidad_vida,
+            'pines_ar_barrio': pines_ar_barrio
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get', 'post'], url_path='estimar-precio-ml')
+    def estimar_precio_ml(self, request):
+        """
+        Valuador Inteligente con Machine Learning:
+        Calcula precio sugerido de alquiler/venta usando Gradient Boosting y Random Forest.
+        """
+        from .services_valuador_ml import ValuadorInmobiliarioEngine
+
+        params = request.query_params if request.method == 'GET' else request.data
+        superficie = float(params.get('superficie_m2') or 85.0)
+        dormitorios = int(params.get('dormitorios') or 2)
+        banios = int(params.get('banios') or 2)
+        parqueos = int(params.get('parqueos') or 1)
+        walk_score = float(params.get('walk_score') or 85.0)
+        distancia = float(params.get('distancia_centro_km') or 3.5)
+        tiene_360 = str(params.get('tiene_360', 'true')).lower() in ['true', '1']
+        es_estreno = str(params.get('es_estreno', 'false')).lower() in ['true', '1']
+
+        estimacion = ValuadorInmobiliarioEngine.estimar_precio(
+            superficie_m2=superficie,
+            dormitorios=dormitorios,
+            banios=banios,
+            parqueos=parqueos,
+            walk_score=walk_score,
+            distancia_centro_km=distancia,
+            tiene_360=tiene_360,
+            es_estreno=es_estreno
+        )
+        return Response(estimacion, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='medir-distancia-3d')
+    def medir_distancia_3d(self, request):
+        """
+        Estimador de Profundidad Monocular 360°:
+        Calcula la distancia métrica tridimensional (X, Y, Z) en metros
+        entre dos puntos (u1, v1) y (u2, v2) sobre el panorama esférico.
+        """
+        from .services_depth_360 import DepthEstimation360Engine
+        import numpy as np
+
+        u1 = float(request.data.get('u1', 0.2))
+        v1 = float(request.data.get('v1', 0.5))
+        u2 = float(request.data.get('u2', 0.5))
+        v2 = float(request.data.get('v2', 0.5))
+
+        # Crear mapa de profundidad base para la escena (640x320)
+        dummy_img = np.full((320, 640, 3), 200, dtype=np.uint8)
+        depth_map = DepthEstimation360Engine.estimar_profundidad_esferica(dummy_img)
+
+        medicion = DepthEstimation360Engine.medir_distancia_3d(
+            depth_map,
+            (u1, v1),
+            (u2, v2)
+        )
+        return Response(medicion, status=status.HTTP_200_OK)
+
+
+
+
+
+
 

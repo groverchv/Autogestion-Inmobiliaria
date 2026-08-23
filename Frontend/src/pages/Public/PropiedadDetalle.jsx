@@ -14,6 +14,9 @@ import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import ResenaSection from '../../components/ResenaSection';
 import ModalAgendarCita from '../../components/ModalAgendarCita';
 import Visor360 from '../../components/Visor360';
+import VisorMetaversoTotal360 from '../../components/VisorMetaversoTotal360';
+import IndiceCalidadVida from '../../components/IndiceCalidadVida';
+
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
@@ -21,6 +24,7 @@ let DefaultIcon = L.icon({
   iconAnchor: [12, 41]
 });
 L.Marker.prototype.options.icon = DefaultIcon;
+
 
 
 import useAuth from '../../hooks/useAuth';
@@ -80,8 +84,10 @@ const PropiedadDetalle = () => {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
+  const [showMetaversoModal, setShowMetaversoModal] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+
 
   const [acceso360, setAcceso360] = useState({ tieneAcceso: false, propietario: false, fechaExpiracion: null, accesoId: null });
   const [accesoLoading, setAccesoLoading] = useState(true);
@@ -447,9 +453,32 @@ const PropiedadDetalle = () => {
                         {!acceso360.propietario && acceso360.fechaExpiracion && (
                           <RenderPaseBadge expiracion={acceso360.fechaExpiracion} />
                         )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                          <button
+                            onClick={() => setShowMetaversoModal(true)}
+                            style={{
+                              background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                              color: 'white',
+                              border: 'none',
+                              padding: '10px 18px',
+                              borderRadius: '12px',
+                              fontWeight: '700',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                            }}
+                          >
+                            <Orbit size={18} />
+                            <span>Abrir Metaverso Espacial 360° + RA</span>
+                          </button>
+                        </div>
                         <Visor360 panoramas={panoramas360} tituloPropiedad={inmueble.titulo} accesoId={acceso360.accesoId} musica={musicaVR?.archivo || '/inspirar.mp3'} />
                       </div>
                     ) : (
+
                       <div style={{
                         position: 'relative',
                         borderRadius: '24px',
@@ -694,10 +723,18 @@ const PropiedadDetalle = () => {
               </div>
             )}
 
+            {/* Módulo de Calidad de Vida del Barrio (Walk Score & POIs) */}
+            <IndiceCalidadVida 
+              inmuebleId={inmueble.id} 
+              gps={inmueble.gps} 
+              direccion={inmueble.direccion_completa || inmueble.direccion || ''} 
+            />
+
             {inmueble.gps && (
               <div style={{ marginBottom: '32px' }}>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Ubicación</h2>
                 <div style={{ height: '350px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+
                   {(() => {
                     const parts = inmueble.gps.split(',');
                     const lat = parseFloat(parts[0]);
@@ -828,8 +865,17 @@ const PropiedadDetalle = () => {
           onCitaAgendada={() => { }}
         />
       )}
+
+      {/* Súper Función: Metaverso Espacial 360° + Realidad Aumentada + Guía con Voz */}
+      {showMetaversoModal && (
+        <VisorMetaversoTotal360
+          inmuebleId={inmueble?.id}
+          onClose={() => setShowMetaversoModal(false)}
+        />
+      )}
     </div>
   );
 };
+
 
 export default PropiedadDetalle;

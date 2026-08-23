@@ -1,0 +1,10 @@
+path: D:\Gestion 2-2026\Software 2\Proyecto\Backend\datasets\inmobiliario_seg
+train: images/train
+val: images/val
+names:
+  0: piso
+  1: pared
+  2: techo
+  3: puerta
+  4: ventana
+  5: mueble

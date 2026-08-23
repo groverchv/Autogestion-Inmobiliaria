@@ -449,3 +449,62 @@ class AsistenteEspacialEngine:
             'camara_360': cls.POSICIONES_OBJETOS_360['sala'],
             'lineas_cota': []
         }
+
+    @classmethod
+    def generar_tour_narrado(cls, inmueble_obj: Any, foto_360_url: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Genera un itinerario cinemático secuenciado para el Guía Turístico Virtual con Voz 360°.
+        Provee bienvenida personalizada, datos arquitectónicos y rotaciones esféricas suaves (yaw, pitch, hfov).
+        """
+        titulo = getattr(inmueble_obj, 'titulo', 'esta hermosa propiedad') if inmueble_obj else 'esta propiedad'
+        tipo = inmueble_obj.tipo.nombre if hasattr(inmueble_obj, 'tipo') and inmueble_obj.tipo else 'inmueble'
+        precio = getattr(inmueble_obj, 'precio', '0.00') if inmueble_obj else '0.00'
+        oferta = inmueble_obj.get_tipo_oferta_display() if hasattr(inmueble_obj, 'get_tipo_oferta_display') else 'Alquiler'
+        sup = float(inmueble_obj.superficie or 180.0) if hasattr(inmueble_obj, 'superficie') and inmueble_obj.superficie else 180.0
+        habs = getattr(inmueble_obj, 'habitaciones', 3) if inmueble_obj else 3
+        banos = getattr(inmueble_obj, 'banos', 2) if inmueble_obj else 2
+
+        pasos = [
+            {
+                'id': 1,
+                'titulo': 'Bienvenida y Vista Panorámica',
+                'locucion': f"¡Hola! Te doy una cordial bienvenida a {titulo}. Soy tu guía virtual interactivo. Estamos ante un {tipo} de {sup:.0f} metros cuadrados con acabados de primera calidad.",
+                'camara_360': {'yaw': 0.0, 'pitch': 0.0, 'hfov': 105.0},
+                'duracion_seg': 6.0
+            },
+            {
+                'id': 2,
+                'titulo': 'Iluminación Natural y Ventanales',
+                'locucion': "Observa los amplios ventanales corredizos a la izquierda. Están diseñados para maximizar la luz solar y conectar visualmente con el exterior.",
+                'camara_360': {'yaw': -35.0, 'pitch': 3.0, 'hfov': 85.0},
+                'duracion_seg': 6.0
+            },
+            {
+                'id': 3,
+                'titulo': 'Área Social y Sala de Estar',
+                'locucion': "Girando hacia el área social, dispones de una distribución espaciosa para tu juego de living y entretenimiento con excelente altura de cielo raso.",
+                'camara_360': {'yaw': 75.0, 'pitch': -5.0, 'hfov': 80.0},
+                'duracion_seg': 5.5
+            },
+            {
+                'id': 4,
+                'titulo': 'Distribución, Puertas y Accesos',
+                'locucion': f"Esta propiedad cuenta con {habs} dormitorios, {banos} baños y acceso fluido hacia las áreas privadas. Además, se ofrece en {oferta} por Bs. {precio}.",
+                'camara_360': {'yaw': 175.0, 'pitch': -2.0, 'hfov': 80.0},
+                'duracion_seg': 6.5
+            },
+            {
+                'id': 5,
+                'titulo': 'Interacción en Tiempo Real',
+                'locucion': "El recorrido narrado ha finalizado. Puedes tocar el micrófono cuando gustes para preguntarme medidas exactas o pedirme que enfoque cualquier lugar.",
+                'camara_360': {'yaw': 0.0, 'pitch': 0.0, 'hfov': 100.0},
+                'duracion_seg': 5.0
+            }
+        ]
+
+        return {
+            'propiedad_titulo': titulo,
+            'total_pasos': len(pasos),
+            'pasos': pasos
+        }
+

@@ -1,0 +1,17 @@
+path: D:\Gestion 2-2026\Software 2\Proyecto\Backend\datasets\inmobiliario
+train: images/train
+val: images/val
+names:
+  0: puerta
+  1: ventana
+  2: sofa
+  3: cama
+  4: mesa
+  5: silla
+  6: refrigerador
+  7: cocina
+  8: televisor
+  9: grieta_pared
+  10: mancha_humedad
+  11: descascaramiento_pintura
+  12: vidrio_roto
