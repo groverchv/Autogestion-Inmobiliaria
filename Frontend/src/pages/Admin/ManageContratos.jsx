@@ -27,7 +27,7 @@ const ManageContratos = () => {
     { key: 'inmueble_titulo', label: 'Inmueble' },
     { key: 'inquilino_nombre', label: 'Inquilino' },
     { key: 'tipo_contrato_nombre', label: 'Tipo', render: (item) => (
-      <span style={{ background: '#ede9fe', color: '#7c3aed', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+      <span style={{ background: 'rgba(14,165,233,0.14)', color: '#0284c7', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
         {item.tipo_contrato_nombre || 'N/A'}
       </span>
     )},

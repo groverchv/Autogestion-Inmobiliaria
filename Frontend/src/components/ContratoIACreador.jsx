@@ -385,7 +385,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{
               width: '34px', height: '34px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <Bot size={17} color="#fff" />
@@ -394,7 +394,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text)' }}>
                 Abogado IA · {contratoEdicion ? 'Editor' : 'Creador'} de Contratos
               </div>
-              <div style={{ fontSize: '0.7rem', color: '#8b5cf6' }}>
+              <div style={{ fontSize: '0.7rem', color: '#38bdf8' }}>
                 {contratoEdicion ? `Editando Contrato #${contratoEdicion.id}` : 'Powered by Llama 3.3 · Derecho Inmobiliario Boliviano'}
               </div>
             </div>
@@ -431,8 +431,8 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               <div style={{
                 width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
                 background: msg.role === 'user'
-                  ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
-                  : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  ? 'linear-gradient(135deg, #0284c7, #38bdf8)'
+                  : 'linear-gradient(135deg, #38bdf8, #0284c7)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '0.58rem', fontWeight: 800, color: '#fff',
               }}>
@@ -441,7 +441,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               <div style={{
                 maxWidth: '80%',
                 background: msg.role === 'user'
-                  ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                  ? 'linear-gradient(135deg, #38bdf8, #0284c7)'
                   : 'var(--color-bg-secondary)',
                 color: msg.role === 'user' ? '#fff' : 'var(--color-text)',
                 borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
@@ -449,10 +449,10 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
                 fontSize: '0.82rem',
                 lineHeight: '1.55',
                 boxShadow: msg.role === 'user'
-                  ? '0 2px 10px rgba(99,102,241,0.3)'
+                  ? '0 2px 10px rgba(14,165,233,0.3)'
                   : '0 1px 6px rgba(0,0,0,0.07)',
                 border: msg.role === 'assistant' ? '1px solid var(--color-border)' : 'none',
-                borderLeft: msg.role === 'assistant' ? '3px solid #8b5cf6' : 'none',
+                borderLeft: msg.role === 'assistant' ? '3px solid #38bdf8' : 'none',
                 whiteSpace: 'pre-wrap',
               }}>
                 {msg.content.replace(/\*\*(.*?)\*\*/g, '$1')}
@@ -463,20 +463,20 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '7px' }}>
               <div style={{
                 width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <Bot size={12} color="#fff" />
               </div>
               <div style={{
-                background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #8b5cf6',
+                background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #38bdf8',
                 borderRadius: '4px 16px 16px 16px',
                 padding: '10px 16px', display: 'flex', gap: '4px', alignItems: 'center',
               }}>
                 {[0, 1, 2].map(i => (
                   <div key={i} style={{
                     width: '6px', height: '6px', borderRadius: '50%',
-                    background: '#8b5cf6',
+                    background: '#38bdf8',
                     animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
                   }} />
                 ))}
@@ -497,7 +497,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
                   Consúltame sobre:
                 </span>
                 <span style={{
-                  fontSize: '0.65rem', background: '#ede9fe', color: '#7c3aed',
+                  fontSize: '0.65rem', background: 'rgba(14,165,233,0.14)', color: '#0284c7',
                   borderRadius: '10px', padding: '2px 8px', fontWeight: 700,
                 }}>
                   {pendientes.length} de {CHIPS.length} temas pendientes
@@ -512,14 +512,14 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
                       enviarMensaje(chip.pregunta);
                     }}
                     style={{
-                      background: '#f5f3ff', color: '#6d28d9',
-                      border: '1.5px solid #ddd6fe',
+                      background: 'rgba(14,165,233,0.10)', color: '#0284c7',
+                      border: '1.5px solid rgba(14,165,233,0.25)',
                       borderRadius: '20px', padding: '4px 10px',
                       fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600,
                       display: 'flex', alignItems: 'center', gap: '5px',
                     }}
-                    onMouseOver={e => { e.currentTarget.style.background = '#8b5cf6'; e.currentTarget.style.color = '#fff'; }}
-                    onMouseOut={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#6d28d9'; }}
+                    onMouseOver={e => { e.currentTarget.style.background = '#38bdf8'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(14,165,233,0.10)'; e.currentTarget.style.color = '#0284c7'; }}
                   >
                     <chip.icon size={13} style={{ flexShrink: 0 }} /> {chip.label}
                   </button>
@@ -545,7 +545,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               borderColor: grabando ? '#ef4444' : 'var(--color-border)',
               opacity: cargando ? 0.6 : 1,
             }}
-            onFocus={e => { if (!grabando) e.target.style.borderColor = '#8b5cf6'; }}
+            onFocus={e => { if (!grabando) e.target.style.borderColor = '#38bdf8'; }}
             onBlur={e => { if (!grabando) e.target.style.borderColor = 'var(--color-border)'; }}
           />
           <button
@@ -569,7 +569,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             disabled={!input.trim() || cargando}
             style={{
               width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-              background: !input.trim() || cargando ? 'var(--color-border)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              background: !input.trim() || cargando ? 'var(--color-border)' : 'linear-gradient(135deg, #38bdf8, #0284c7)',
               border: 'none', cursor: !input.trim() || cargando ? 'default' : 'pointer',
               color: !input.trim() || cargando ? '#94a3b8' : '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -592,13 +592,13 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         overflowY: 'auto',
       }}>
         <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <FileSignature size={16} color="#6366f1" />
+          <FileSignature size={16} color="#38bdf8" />
           Datos del Contrato
         </div>
 
         {/* Tipo de contrato */}
         <div>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '4px' }}>
+          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'block', marginBottom: '4px' }}>
             Tipo de Contrato *
           </label>
           <select
@@ -614,7 +614,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         {/* Monto + Moneda */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '4px' }}>Monto *</label>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'block', marginBottom: '4px' }}>Monto *</label>
             <input
               type="number"
               value={form.monto}
@@ -624,7 +624,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '4px' }}>Moneda</label>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'block', marginBottom: '4px' }}>Moneda</label>
             <select
               value={form.moneda}
               onChange={e => setForm({ ...form, moneda: e.target.value })}
@@ -638,7 +638,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
 
         {/* Fecha inicio */}
         <div>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '4px' }}>Fecha de Inicio *</label>
+          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'block', marginBottom: '4px' }}>Fecha de Inicio *</label>
           <input
             type="date"
             value={form.inicio}
@@ -649,7 +649,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
 
         {/* Fecha fin */}
         <div>
-          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '4px' }}>Fecha de Fin <span style={{ color: '#94a3b8', fontWeight: 400 }}>(opcional)</span></label>
+          <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'block', marginBottom: '4px' }}>Fecha de Fin <span style={{ color: '#94a3b8', fontWeight: 400 }}>(opcional)</span></label>
           <input
             type="date"
             value={form.fin}
@@ -661,7 +661,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         {/* Depósito + Día de pago */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '4px' }}>Depósito</label>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'block', marginBottom: '4px' }}>Depósito</label>
             <input
               type="number"
               value={form.deposito}
@@ -670,7 +670,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             />
           </div>
           <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', display: 'block', marginBottom: '4px' }}>Día de pago</label>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'block', marginBottom: '4px' }}>Día de pago</label>
             <input
               type="number"
               min="1"
@@ -684,7 +684,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
 
         {/* Info de cláusulas */}
         <div style={{
-          background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+          background: 'rgba(14,165,233,0.10)',
           borderRadius: '10px',
           padding: '10px 12px',
           fontSize: '0.75rem',
@@ -705,7 +705,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             width: '100%',
             background: enviando || !form.tipo_contrato_id || !form.monto || !form.inicio
               ? '#cbd5e1'
-              : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+              : 'linear-gradient(135deg, #38bdf8, #0284c7)',
             color: enviando || !form.tipo_contrato_id || !form.monto || !form.inicio ? '#94a3b8' : '#fff',
             border: 'none',
             borderRadius: '10px',
@@ -721,7 +721,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             marginTop: 'auto',
             boxShadow: enviando || !form.tipo_contrato_id || !form.monto || !form.inicio
               ? 'none'
-              : '0 4px 14px rgba(99,102,241,0.4)',
+              : '0 4px 14px rgba(14,165,233,0.4)',
           }}
         >
           {enviando ? (

@@ -281,7 +281,7 @@ const PropiedadDetalle = () => {
           {(() => {
             const offerColors = {
               alquiler: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Alquiler', border: '1px solid rgba(16, 185, 129, 0.2)' },
-              venta: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Venta', border: '1px solid rgba(99, 102, 241, 0.2)' },
+              venta: { bg: 'rgba(99, 102, 241, 0.1)', color: '#38bdf8', label: 'Venta', border: '1px solid rgba(99, 102, 241, 0.2)' },
               anticretico: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Anticrético', border: '1px solid rgba(245, 158, 11, 0.2)' },
             };
             const activePub = inmueble.publicaciones?.find(p => p.estado === 'activa');
@@ -544,7 +544,7 @@ const PropiedadDetalle = () => {
                           <button
                             onClick={handleSolicitarAcceso360}
                             style={{
-                              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                              background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
                               color: '#fff',
                               border: 'none',
                               padding: '14px 32px',
@@ -721,7 +721,7 @@ const PropiedadDetalle = () => {
               </div>
             )}
 
-            {/* Módulo de Calidad de Vida del Barrio (Walk Score & POIs) */}
+            {/* Módulo de Calidad de Vida del Barrio (Walk Score & POIs interactivo con lugares cercanos) */}
             <IndiceCalidadVida 
               inmuebleId={inmueble.id} 
               gps={inmueble.gps} 
@@ -732,29 +732,6 @@ const PropiedadDetalle = () => {
                   : String(inmueble.direccion || ''))
               } 
             />
-
-
-            {inmueble.gps && (
-              <div style={{ marginBottom: '32px' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Ubicación</h2>
-                <div style={{ height: '350px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
-
-                  {(() => {
-                    const parts = inmueble.gps.split(',');
-                    const lat = parseFloat(parts[0]);
-                    const lng = parseFloat(parts[1]);
-                    if (isNaN(lat) || isNaN(lng)) return <div style={{ padding: '16px', color: 'var(--color-text-secondary)' }}>Ubicación inválida</div>;
-
-                    return (
-                      <MapContainer center={[lat, lng]} zoom={15} style={{ height: '100%', width: '100%', zIndex: 1 }}>
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker position={[lat, lng]} />
-                      </MapContainer>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
 
             <div style={{
               display: 'flex', gap: '16px', justifyContent: 'flex-end',

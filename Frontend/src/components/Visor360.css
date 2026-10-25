@@ -23,7 +23,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
   color: #fff;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
@@ -72,11 +72,11 @@
 
 .visor360__piso-btn:hover {
   background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  color: #38bdf8;
 }
 
 .visor360__piso-btn--active {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
   color: #fff;
   border-color: transparent;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
@@ -84,7 +84,7 @@
 }
 
 .visor360__piso-btn--active:hover {
-  background: linear-gradient(135deg, #5558e6, #7c4fe0);
+  background: linear-gradient(135deg, #0369a1, #0284c7);
   color: #fff;
 }
 
@@ -121,7 +121,7 @@
 
 .visor360__tab--active {
   background: var(--color-surface);
-  color: #6366f1;
+  color: #38bdf8;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -133,7 +133,7 @@
   transform: translateX(-50%);
   width: 20px;
   height: 3px;
-  background: #6366f1;
+  background: #38bdf8;
   border-radius: 3px;
 }
 
@@ -177,7 +177,7 @@
   width: 48px;
   height: 48px;
   border: 3px solid rgba(255, 255, 255, 0.15);
-  border-top-color: #8b5cf6;
+  border-top-color: #38bdf8;
   border-radius: 50%;
   animation: visor360-spin 0.8s linear infinite;
 }
@@ -268,7 +268,7 @@
   height: 64px;
   border-radius: 50%;
   background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  color: #38bdf8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -359,7 +359,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 22px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
   border: none;
   border-radius: 12px;
   color: #ffffff;
@@ -375,7 +375,7 @@
 .visor360__start-tour-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
-  background: linear-gradient(135deg, #5558e6, #7c4fe0);
+  background: linear-gradient(135deg, #0369a1, #0284c7);
 }
 
 .visor360__start-tour-btn:active {

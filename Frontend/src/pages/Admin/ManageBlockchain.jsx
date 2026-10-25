@@ -76,7 +76,7 @@ const ManageBlockchain = () => {
       case 'crearContrato':
         return <span style={{ ...s, background: 'rgba(16,185,129,0.12)', color: '#4ade80' }}>Contrato Creado</span>;
       case 'firmarContrato':
-        return <span style={{ ...s, background: '#f5f3ff', color: '#6d28d9' }}>Firma Sellada</span>;
+        return <span style={{ ...s, background: 'rgba(14,165,233,0.10)', color: '#6d28d9' }}>Firma Sellada</span>;
       case 'finalizarContrato':
         return <span style={{ ...s, background: 'rgba(239,68,68,0.12)', color: '#f87171' }}>Rescisión</span>;
       case 'registrarPago':

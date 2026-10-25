@@ -82,7 +82,7 @@ const MisContratos = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: '200px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                        <FileText size={18} color="#6366f1" />
+                        <FileText size={18} color="#38bdf8" />
                         <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--color-text)' }}>Contrato #{c.id}</span>
                         <span style={{ background: cfg.bg, color: cfg.color, padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <IconComp size={12} /> {cfg.label}

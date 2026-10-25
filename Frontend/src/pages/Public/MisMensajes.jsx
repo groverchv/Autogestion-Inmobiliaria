@@ -1046,7 +1046,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
       
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '220px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isMine ? '#fff' : '#6366f1' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isMine ? '#fff' : '#38bdf8' }}>
             <FileSignature size={20} />
             <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Propuesta de Contrato</span>
           </div>
@@ -1125,10 +1125,10 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               rel="noreferrer"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'linear-gradient(135deg, #38bdf8, #38bdf8)',
                 color: '#fff', padding: '12px 20px', borderRadius: '12px',
                 textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem',
-                boxShadow: '0 4px 12px rgba(99,102,241,0.3)', transition: 'transform 0.15s',
+                boxShadow: '0 4px 12px rgba(14,165,233,0.3)', transition: 'transform 0.15s',
                 justifyContent: 'center', marginTop: '4px',
               }}
               onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
@@ -1696,7 +1696,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                           <button
                             onClick={abrirModalPago}
                             style={{
-                              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                              background: 'linear-gradient(135deg, #38bdf8, #38bdf8)',
                               border: 'none',
                               cursor: 'pointer',
                               padding: '6px 12px',
@@ -1924,14 +1924,14 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexShrink: 0 }}>
                 <div style={{
                   width: '34px', height: '34px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <Bot size={17} color="#fff" />
                 </div>
                 <div>
                   <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text)' }}>Abogado IA · Asesor Legal</div>
-                  <div style={{ fontSize: '0.7rem', color: '#8b5cf6' }}>Consultas sobre el Contrato #{contratoForm.id}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#38bdf8' }}>Consultas sobre el Contrato #{contratoForm.id}</div>
                 </div>
               </div>
 
@@ -1958,8 +1958,8 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                     <div style={{
                       width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
                       background: msg.role === 'user'
-                        ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
-                        : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                        ? 'linear-gradient(135deg, #0284c7, #38bdf8)'
+                        : 'linear-gradient(135deg, #38bdf8, #0284c7)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.58rem', fontWeight: 800, color: '#fff',
                     }}>
@@ -1968,7 +1968,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                     <div style={{
                       maxWidth: '80%',
                       background: msg.role === 'user'
-                        ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                        ? 'linear-gradient(135deg, #38bdf8, #0284c7)'
                         : '#ffffff',
                       color: msg.role === 'user' ? '#fff' : 'var(--color-text)',
                       borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
@@ -1976,10 +1976,10 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                       fontSize: '0.82rem',
                       lineHeight: '1.55',
                       boxShadow: msg.role === 'user'
-                        ? '0 2px 10px rgba(99,102,241,0.3)'
+                        ? '0 2px 10px rgba(14,165,233,0.3)'
                         : '0 1px 6px rgba(0,0,0,0.07)',
                       border: msg.role === 'assistant' ? '1px solid var(--color-border)' : 'none',
-                      borderLeft: msg.role === 'assistant' ? '3px solid #8b5cf6' : 'none',
+                      borderLeft: msg.role === 'assistant' ? '3px solid #38bdf8' : 'none',
                       whiteSpace: 'pre-wrap',
                     }}>
                       {msg.content.replace(/\*\*(.*?)\*\*/g, '$1')}
@@ -1990,20 +1990,20 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '7px' }}>
                     <div style={{
                       width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                      background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                      background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <Bot size={12} color="#fff" />
                     </div>
                     <div style={{
-                      background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #8b5cf6',
+                      background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #38bdf8',
                       borderRadius: '4px 16px 16px 16px',
                       padding: '10px 16px', display: 'flex', gap: '4px', alignItems: 'center',
                     }}>
                       {[0, 1, 2].map(i => (
                         <div key={i} style={{
                           width: '6px', height: '6px', borderRadius: '50%',
-                          background: '#8b5cf6',
+                          background: '#38bdf8',
                           animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
                         }} />
                       ))}
@@ -2024,7 +2024,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                         Pregúntale al asesor sobre:
                       </span>
                       <span style={{
-                        fontSize: '0.65rem', background: 'rgba(139,92,246,0.14)', color: '#c4b5fd',
+                        fontSize: '0.65rem', background: 'rgba(14,165,233,0.14)', color: '#7dd3fc',
                         borderRadius: '10px', padding: '2px 8px', fontWeight: 700,
                       }}>
                         {pendientes.length} de {CHIPS_EDITAR.length} temas pendientes
@@ -2039,14 +2039,14 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                             enviarMensajeEditChat(chip.pregunta);
                           }}
                           style={{
-                            background: 'rgba(139,92,246,0.12)', color: '#c4b5fd',
-                            border: '1.5px solid rgba(139,92,246,0.35)',
+                            background: 'rgba(14,165,233,0.12)', color: '#7dd3fc',
+                            border: '1.5px solid rgba(14,165,233,0.35)',
                             borderRadius: '20px', padding: '4px 10px',
                             fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600,
                             display: 'flex', alignItems: 'center', gap: '4px',
                           }}
-                          onMouseOver={e => { e.currentTarget.style.background = '#8b5cf6'; e.currentTarget.style.color = '#fff'; }}
-                          onMouseOut={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; e.currentTarget.style.color = '#c4b5fd'; }}
+                          onMouseOver={e => { e.currentTarget.style.background = '#38bdf8'; e.currentTarget.style.color = '#fff'; }}
+                          onMouseOut={e => { e.currentTarget.style.background = 'rgba(14,165,233,0.12)'; e.currentTarget.style.color = '#7dd3fc'; }}
                         >
                           <chip.icon size={13} /> {chip.label}
                         </button>
@@ -2076,7 +2076,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   disabled={!editChatInput.trim() || editChatCargando}
                   style={{
                     width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-                    background: !editChatInput.trim() || editChatCargando ? 'var(--color-border)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    background: !editChatInput.trim() || editChatCargando ? 'var(--color-border)' : 'linear-gradient(135deg, #38bdf8, #0284c7)',
                     border: 'none', cursor: !editChatInput.trim() || editChatCargando ? 'default' : 'pointer',
                     color: !editChatInput.trim() || editChatCargando ? '#94a3b8' : '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2098,7 +2098,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
             paddingRight: '6px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '10px', marginBottom: '8px', flexShrink: 0 }}>
-              <FileText size={24} color="#6366f1" />
+              <FileText size={24} color="#38bdf8" />
               <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--color-text-secondary)' }}>Complete los terminos legales para formalizar el acuerdo con el cliente.</p>
             </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -2240,7 +2240,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               <button 
                 onClick={() => { setShowPagoModal(false); abrirModalContrato(); }}
                 style={{
-                  background: '#6366f1', color: 'var(--color-surface)', border: 'none', padding: '10px 20px', 
+                  background: '#38bdf8', color: 'var(--color-surface)', border: 'none', padding: '10px 20px', 
                   borderRadius: '8px', fontWeight: 700, cursor: 'pointer'
                 }}
               >
@@ -2297,7 +2297,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   onClick={handleEnviarSolicitudPago}
                   disabled={pagoLoading}
                   style={{
-                    border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    border: 'none', background: 'linear-gradient(135deg, #38bdf8, #38bdf8)',
                     color: '#fff', borderRadius: '8px', padding: '10px 20px', fontWeight: 700,
                     display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: pagoLoading ? 0.7 : 1
                   }}

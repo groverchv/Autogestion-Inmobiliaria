@@ -106,9 +106,9 @@ const MiActividad = () => {
 
   return (
     <div className="propiedades-page">
-      <div className="propiedades-content" style={{ maxWidth: '800px' }}>
-        <h1 style={{ fontSize: '1.6rem', color: 'var(--color-text)', margin: '0 0 6px' }}>Mi actividad</h1>
-        <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 24px', fontSize: '0.9rem' }}>
+      <div className="propiedades-content" style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '24px 20px' }}>
+        <h1 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 6px' }}>Mi actividad</h1>
+        <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 24px', fontSize: '0.95rem' }}>
           Tus visitas, contratos y pagos en un solo lugar.
         </p>
 

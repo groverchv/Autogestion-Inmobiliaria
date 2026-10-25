@@ -57,7 +57,7 @@ const createCategoryIcon = (color, svgPath) => {
 const CATEGORIA_ICONS = {
   supermercados: createCategoryIcon('#10b981', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>'),
   salud: createCategoryIcon('#ef4444', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'),
-  educacion: createCategoryIcon('#8b5cf6', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>'),
+  educacion: createCategoryIcon('#38bdf8', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>'),
   recreacion: createCategoryIcon('#14b8a6', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"/></svg>'),
   transporte: createCategoryIcon('#f59e0b', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5c-.3-1-1.1-1.8-2.1-1.8H4.7c-1 0-1.8.8-2.1 1.8l-1.4 5c-.1.4-.2.8-.2 1.2 0 .4.1.8.2 1.2.3 1.1.8 2.8.8 2.8h3"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>')
 };
@@ -341,7 +341,7 @@ const IndiceCalidadVida = ({ inmuebleId, gps = null, direccion = '' }) => {
               <div className="poi-item-icon">
                 {poi.categoria === 'supermercados' && <ShoppingBag size={18} color="#10b981" />}
                 {poi.categoria === 'salud' && <Activity size={18} color="#ef4444" />}
-                {poi.categoria === 'educacion' && <GraduationCap size={18} color="#8b5cf6" />}
+                {poi.categoria === 'educacion' && <GraduationCap size={18} color="#38bdf8" />}
                 {poi.categoria === 'recreacion' && <Trees size={18} color="#14b8a6" />}
                 {poi.categoria === 'transporte' && <Bus size={18} color="#f59e0b" />}
               </div>

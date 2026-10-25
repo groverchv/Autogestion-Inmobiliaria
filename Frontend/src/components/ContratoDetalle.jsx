@@ -13,7 +13,7 @@ const estadoConfig = {
   enviado: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', label: 'Esperando firma', icon: AlertTriangle },
   aceptado: { color: '#34d399', bg: 'rgba(16,185,129,0.14)', label: 'Firmado', icon: CheckCircle },
   rechazado: { color: '#f87171', bg: 'rgba(239,68,68,0.12)', label: 'Rechazado', icon: XCircle },
-  activo: { color: '#818cf8', bg: 'rgba(99,102,241,0.14)', label: 'Vigente', icon: CheckCircle },
+  activo: { color: '#818cf8', bg: 'rgba(14,165,233,0.14)', label: 'Vigente', icon: CheckCircle },
   finalizado: { color: 'var(--color-text-secondary)', bg: 'var(--color-bg-secondary)', label: 'Finalizado', icon: Clock },
   cancelado: { color: '#f87171', bg: 'rgba(239,68,68,0.12)', label: 'Cancelado', icon: XCircle },
   pendiente: { color: '#f59e0b', bg: 'rgba(251,191,36,0.12)', label: 'Pendiente', icon: Clock },
@@ -251,7 +251,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
 
   const cfg = estadoConfig[c.estado] || estadoConfig.pendiente;
   const sectionStyle = { marginBottom: '20px' };
-  const titleStyle = { fontSize: '0.8rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' };
+  const titleStyle = { fontSize: '0.8rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' };
   const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--color-border)', fontSize: '0.9rem' };
   const labelStyle = { color: 'var(--color-text-secondary)', fontWeight: 500 };
   const valueStyle = { fontWeight: 600, color: 'var(--color-text)', textAlign: 'right', maxWidth: '60%' };
@@ -259,7 +259,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
   return (
     <div style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column', gap: '15px', padding: '4px' }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', padding: '16px', background: 'linear-gradient(135deg, var(--color-bg-secondary), rgba(99,102,241,0.15))', borderRadius: '12px', flexShrink: 0 }}>
+      <div style={{ textAlign: 'center', padding: '16px', background: 'linear-gradient(135deg, var(--color-bg-secondary), rgba(14,165,233,0.15))', borderRadius: '12px', flexShrink: 0 }}>
         <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text)' }}>CONTRATO DE {(c.tipo_contrato_nombre || 'INMUEBLE').toUpperCase()}</div>
         <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Contrato N. {c.id} · Creado: {new Date(c.creado).toLocaleDateString('es-BO')}</div>
         <span style={{ display: 'inline-block', marginTop: '8px', background: cfg.bg, color: cfg.color, padding: '4px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>{cfg.label}</span>
@@ -273,8 +273,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             padding: '8px 16px',
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'resumen' ? '3px solid #6366f1' : '3px solid transparent',
-            color: activeTab === 'resumen' ? '#6366f1' : 'var(--color-text-secondary)',
+            borderBottom: activeTab === 'resumen' ? '3px solid #38bdf8' : '3px solid transparent',
+            color: activeTab === 'resumen' ? '#38bdf8' : 'var(--color-text-secondary)',
             fontWeight: 700,
             fontSize: '0.88rem',
             cursor: 'pointer',
@@ -292,8 +292,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             padding: '8px 16px',
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'chat' ? '3px solid #8b5cf6' : '3px solid transparent',
-            color: activeTab === 'chat' ? '#8b5cf6' : 'var(--color-text-secondary)',
+            borderBottom: activeTab === 'chat' ? '3px solid #38bdf8' : '3px solid transparent',
+            color: activeTab === 'chat' ? '#38bdf8' : 'var(--color-text-secondary)',
             fontWeight: 700,
             fontSize: '0.88rem',
             cursor: 'pointer',
@@ -335,7 +335,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               <div style={titleStyle}>Partes del Contrato</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '14px', padding: '16px', border: '1px solid var(--color-border)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#6366f1', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#38bdf8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
                     <Home size={14} /> Propietario
                   </div>
                   <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{c.propietario_nombre}</div>
@@ -344,7 +344,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   <div style={{ fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 500 }}>{c.propietario_email}</div>
                 </div>
                 <div style={{ background: 'var(--color-bg-secondary)', borderRadius: '14px', padding: '16px', border: '1px solid var(--color-border)' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#6366f1', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#38bdf8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase' }}>
                     <User size={14} /> Inquilino / Comprador
                   </div>
                   <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{c.inquilino_nombre}</div>
@@ -396,7 +396,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               <div style={{ borderTop: '2px solid var(--color-border)', paddingTop: '16px', marginTop: '16px' }}>
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
                   <button onClick={handleAceptar} disabled={actionLoading} style={{
-                    flex: 1, background: 'linear-gradient(135deg, #10b981, #34d399)', color: 'var(--color-surface)',
+                    flex: 1, background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#fff',
                     border: 'none', borderRadius: '10px', padding: '12px', fontWeight: 700, fontSize: '0.95rem',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   }}>
@@ -436,14 +436,14 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{
                   width: '32px', height: '32px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <Bot size={16} color="#fff" />
                 </div>
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Asistente legal</div>
-                  <div style={{ fontSize: '0.72rem', color: '#8b5cf6' }}>Responde tus dudas sobre el contrato</div>
+                  <div style={{ fontSize: '0.72rem', color: '#38bdf8' }}>Responde tus dudas sobre el contrato</div>
                 </div>
               </div>
               <button
@@ -470,8 +470,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   <div style={{
                     width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
                     background: msg.role === 'user'
-                      ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
-                      : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                      ? 'linear-gradient(135deg, #0284c7, #38bdf8)'
+                      : 'linear-gradient(135deg, #38bdf8, #0284c7)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '0.6rem', fontWeight: 800, color: '#fff',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
@@ -481,7 +481,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   <div style={{
                     maxWidth: '78%',
                     background: msg.role === 'user'
-                      ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                      ? 'linear-gradient(135deg, #38bdf8, #0284c7)'
                       : 'var(--color-bg-secondary)',
                     color: msg.role === 'user' ? '#fff' : 'var(--color-text)',
                     borderRadius: msg.role === 'user' ? '18px 4px 18px 18px' : '4px 18px 18px 18px',
@@ -489,10 +489,10 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                     fontSize: '0.84rem',
                     lineHeight: '1.6',
                     boxShadow: msg.role === 'user'
-                      ? '0 3px 12px rgba(99,102,241,0.35)'
+                      ? '0 3px 12px rgba(14,165,233,0.35)'
                       : '0 2px 8px rgba(0,0,0,0.08)',
                     border: msg.role === 'assistant' ? '1px solid var(--color-border)' : 'none',
-                    borderLeft: msg.role === 'assistant' ? '3px solid #8b5cf6' : 'none',
+                    borderLeft: msg.role === 'assistant' ? '3px solid #38bdf8' : 'none',
                     whiteSpace: 'pre-wrap',
                   }}>
                     {msg.content.replace(/\*\*(.*?)\*\*/g, '$1')}
@@ -503,14 +503,14 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                   <div style={{
                     width: '30px', height: '30px', borderRadius: '50%', flexShrink: 0,
-                    background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                   }}>
                     <Bot size={13} color="#fff" />
                   </div>
                   <div style={{
-                    background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #8b5cf6',
+                    background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #38bdf8',
                     borderRadius: '4px 18px 18px 18px',
                     padding: '12px 18px', display: 'flex', gap: '5px', alignItems: 'center',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
@@ -518,7 +518,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                     {[0, 1, 2].map(i => (
                       <div key={i} style={{
                         width: '7px', height: '7px', borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                        background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
                         animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
                       }} />
                     ))}
@@ -549,22 +549,22 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                           enviarMensaje(t.pregunta);
                         }}
                         style={{
-                          background: 'rgba(139,92,246,0.12)', color: '#c4b5fd',
-                          border: '1.5px solid rgba(139,92,246,0.35)',
+                          background: 'rgba(14,165,233,0.12)', color: '#7dd3fc',
+                          border: '1.5px solid rgba(14,165,233,0.35)',
                           borderRadius: '20px', padding: '5px 12px',
                           fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
                           transition: 'all 0.15s',
                           display: 'flex', alignItems: 'center', gap: '6px',
                         }}
                         onMouseOver={e => {
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #38bdf8, #0284c7)';
                           e.currentTarget.style.color = '#fff';
-                          e.currentTarget.style.borderColor = '#8b5cf6';
+                          e.currentTarget.style.borderColor = '#38bdf8';
                         }}
                         onMouseOut={e => {
-                          e.currentTarget.style.background = 'rgba(139,92,246,0.12)';
-                          e.currentTarget.style.color = '#c4b5fd';
-                          e.currentTarget.style.borderColor = 'rgba(139,92,246,0.35)';
+                          e.currentTarget.style.background = 'rgba(14,165,233,0.12)';
+                          e.currentTarget.style.color = '#7dd3fc';
+                          e.currentTarget.style.borderColor = 'rgba(14,165,233,0.35)';
                         }}
                       >
                         <t.icon size={13} style={{ flexShrink: 0 }} /> {t.label}
@@ -594,7 +594,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                 disabled={!chatInput.trim() || chatCargando}
                 style={{
                   width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-                  background: !chatInput.trim() || chatCargando ? 'var(--color-border)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  background: !chatInput.trim() || chatCargando ? 'var(--color-border)' : 'linear-gradient(135deg, #38bdf8, #0284c7)',
                   border: 'none', cursor: !chatInput.trim() || chatCargando ? 'default' : 'pointer',
                   color: !chatInput.trim() || chatCargando ? '#94a3b8' : '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -609,8 +609,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               onClick={() => { setActiveTab('pdf'); }}
               style={{
                 width: '100%',
-                background: 'rgba(139,92,246,0.14)',
-                color: '#c4b5fd',
+                background: 'rgba(14,165,233,0.14)',
+                color: '#7dd3fc',
                 border: 'none',
                 borderRadius: '10px',
                 padding: '10px',
@@ -640,7 +640,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   <button
                     onClick={handleDownloadPDFBlob}
                     style={{
-                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '8px',
@@ -679,13 +679,13 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   width: '56px',
                   height: '56px',
                   borderRadius: '50%',
-                  background: 'rgba(139,92,246,0.16)',
+                  background: 'rgba(14,165,233,0.16)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: '16px'
                 }}>
-                  <Sparkles size={28} color="#6d28d9" />
+                  <Sparkles size={28} color="#0284c7" />
                 </div>
                 <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>
                   Generar documento del contrato
@@ -697,7 +697,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   onClick={handleGenerateIAInline}
                   disabled={isGeneratingIA}
                   style={{
-                    background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    background: 'linear-gradient(135deg, #38bdf8, #0284c7)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '10px',
@@ -705,7 +705,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                     fontWeight: 700,
                     fontSize: '0.9rem',
                     cursor: isGeneratingIA ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 4px 14px rgba(139,92,246,0.35)',
+                    boxShadow: '0 4px 14px rgba(14,165,233,0.35)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',

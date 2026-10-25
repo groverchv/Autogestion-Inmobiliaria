@@ -16,7 +16,7 @@ const ManageNotificaciones = () => {
     { key: 'id', label: 'ID' },
     { key: 'titulo', label: 'Título', render: (item) => <span style={{ fontWeight: 600 }}>{item.titulo}</span> },
     { key: 'tipo', label: 'Tipo', render: (item) => {
-      const colors = { info: '#3b82f6', alerta: '#f59e0b', recordatorio: '#8b5cf6', pago: '#16a34a' };
+      const colors = { info: '#3b82f6', alerta: '#f59e0b', recordatorio: '#38bdf8', pago: '#16a34a' };
       return <span style={{ background: `${colors[item.tipo]}20`, color: colors[item.tipo], padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'capitalize' }}>{item.tipo}</span>;
     }},
     { key: 'mensaje', label: 'Mensaje', render: (item) => (item.mensaje?.length > 50 ? item.mensaje.substring(0, 50) + '...' : item.mensaje) },

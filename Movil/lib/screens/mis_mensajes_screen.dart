@@ -240,7 +240,7 @@ class _SalaChatScreenState extends State<SalaChatScreen> {
 
               ListTile(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.border)),
-                leading: const CircleAvatar(backgroundColor: Color(0xFF4C1D95), child: Icon(Icons.threesixty, color: Color(0xFFA855F7))),
+                leading: const CircleAvatar(backgroundColor: AppColors.backgroundSecondary, child: Icon(Icons.threesixty, color: AppColors.primary)),
                 title: const Text('Conceder Acceso al Recorrido 360°', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
                 subtitle: const Text('Otorga permiso temporal de exploración inmersiva 360°/VR', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 onTap: () {
@@ -329,11 +329,11 @@ class _SalaChatScreenState extends State<SalaChatScreen> {
               children: [
                 _buildQuickActionChip(Icons.payments_outlined, 'Pago', AppColors.primary, _abrirDialogoPago),
                 const SizedBox(width: 8),
-                _buildQuickActionChip(Icons.description_outlined, 'Contrato', AppColors.success, () {
+                _buildQuickActionChip(Icons.description_outlined, 'Contrato', AppColors.primary, () {
                   _enviarTexto('[CONTRATO DIGITAL] Solicito revisión del contrato.');
                 }),
                 const SizedBox(width: 8),
-                _buildQuickActionChip(Icons.threesixty, 'Acceso 360°', const Color(0xFFA855F7), () {
+                _buildQuickActionChip(Icons.threesixty, 'Acceso 360°', AppColors.primary, () {
                   _enviarTexto('[ACCESO 360°] Acceso a recorrido 360° habilitado.');
                 }),
               ],

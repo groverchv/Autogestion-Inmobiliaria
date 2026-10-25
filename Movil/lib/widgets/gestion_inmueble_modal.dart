@@ -284,12 +284,12 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'ACCIONES DE ADMINISTRACIÓN',
+                  'Opciones de la propiedad',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
                     letterSpacing: 0.5,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 IconButton(icon: const Icon(Icons.close, color: AppColors.textSecondary), onPressed: () => Navigator.pop(context)),
@@ -302,7 +302,6 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             _buildActionButton(
               icon: Icons.local_offer_outlined,
               label: 'Publicar / Ofertas',
-              color: AppColors.success,
               onTap: () {
                 Navigator.pop(context);
                 showModalBottomSheet(
@@ -319,7 +318,6 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             _buildActionButton(
               icon: Icons.description_outlined,
               label: 'Revisar documento',
-              color: AppColors.primary,
               onTap: _abrirAnalisisLegalIA,
             ),
             const SizedBox(height: 10),
@@ -328,7 +326,6 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             _buildActionButton(
               icon: Icons.access_time,
               label: 'Gestionar Horarios de Visita',
-              color: const Color(0xFF38BDF8),
               onTap: _abrirModalHorarios,
             ),
             const SizedBox(height: 10),
@@ -337,7 +334,6 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             _buildActionButton(
               icon: Icons.language,
               label: 'Recorrido 3D',
-              color: const Color(0xFFA855F7),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -352,7 +348,6 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             _buildActionButton(
               icon: Icons.edit_outlined,
               label: 'Editar Información Ficha',
-              color: const Color(0xFF0EA5E9),
               onTap: () {
                 Navigator.pop(context);
                 showModalBottomSheet(
@@ -369,7 +364,6 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             _buildActionButton(
               icon: isOculto ? Icons.visibility_outlined : Icons.visibility_off_outlined,
               label: isOculto ? 'Hacer Inmueble Visible' : 'Ocultar Inmueble',
-              color: AppColors.textSecondary,
               onTap: _isLoading ? () {} : _toggleOcultar,
             ),
             const SizedBox(height: 16),
@@ -409,7 +403,6 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
   Widget _buildActionButton({
     required IconData icon,
     required String label,
-    required Color color,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -421,24 +414,17 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
           color: AppColors.backgroundSecondary,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.borderSubtle),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
+            Icon(icon, color: AppColors.textSecondary, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
               ),

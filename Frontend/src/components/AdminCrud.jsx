@@ -124,7 +124,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
               </div>
             </div>
             
-            <div style="background-color: #f3e8ff; border-left: 4px solid #a855f7; padding: 12px; margin-bottom: 20px; font-size: 11px; border-radius: 6px; color: #581c87;">
+            <div style="background-color: rgba(14,165,233,0.12); border-left: 4px solid #38bdf8; padding: 12px; margin-bottom: 20px; font-size: 11px; border-radius: 6px; color: #581c87;">
               <strong>Resumen de Análisis (IA):</strong>
               <p style="margin: 4px 0 0 0; line-height: 1.4; color: var(--color-text);">${summary}</p>
             </div>
@@ -807,7 +807,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
                 className="admin-btn-primary"
                 onClick={() => setAiDropdownOpen(!aiDropdownOpen)}
                 disabled={aiLoading || !aiPrompt.trim()}
-                style={{ background: 'linear-gradient(135deg, var(--color-primary), #a855f7)', color: 'var(--color-surface)', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', height: '100%' }}
+                style={{ background: 'linear-gradient(135deg, #0284c7, var(--color-primary))', color: 'var(--color-surface)', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', height: '100%' }}
               >
                 {aiLoading ? 'Procesando...' : 'IA Reporte'} <ChevronDown size={14} />
               </button>

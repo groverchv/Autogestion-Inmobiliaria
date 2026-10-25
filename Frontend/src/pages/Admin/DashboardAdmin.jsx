@@ -58,8 +58,8 @@ const DashboardAdmin = () => {
     { icon: <Home size={24} />, label: 'Inmuebles', value: stats.inmuebles, color: '#38bdf8', bg: 'rgba(2, 132, 199, 0.1)', link: '/panel/inmuebles' },
     { icon: <FileText size={24} />, label: 'Contratos', value: stats.contratos, color: '#4ade80', bg: 'rgba(22, 163, 74, 0.1)', link: '/panel/contratos' },
     { icon: <Banknote size={24} />, label: 'Pagos', value: stats.pagos, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', link: '/panel/pagos' },
-    { icon: <LineChart size={24} />, label: 'Finanzas', value: `Bs. ${stats.ingresos.toLocaleString()}`, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)', link: '/panel/finanzas' },
-    { icon: <Archive size={24} />, label: 'Categorías', value: stats.categorias, color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)', link: '/panel/categorias' },
+    { icon: <LineChart size={24} />, label: 'Finanzas', value: `Bs. ${stats.ingresos.toLocaleString()}`, color: '#38bdf8', bg: 'rgba(99, 102, 241, 0.1)', link: '/panel/finanzas' },
+    { icon: <Archive size={24} />, label: 'Categorías', value: stats.categorias, color: '#38bdf8', bg: 'rgba(236, 72, 153, 0.1)', link: '/panel/categorias' },
     { icon: <Calendar size={24} />, label: 'Agenda', value: stats.agenda, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)', link: '/panel/agenda' },
     { icon: <Bell size={24} />, label: 'Notificaciones', value: stats.notificaciones, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', link: '/panel/notificaciones' },
   ];

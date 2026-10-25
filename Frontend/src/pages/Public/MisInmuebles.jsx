@@ -672,7 +672,7 @@ const MisInmuebles = () => {
         }}>
           <div style={{ background: '#1e293b', padding: '40px', borderRadius: '24px', maxWidth: '400px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
             <div style={{
-              width: '60px', height: '60px', border: '5px solid rgba(255,255,255,0.1)', borderTopColor: '#8b5cf6',
+              width: '60px', height: '60px', border: '5px solid rgba(255,255,255,0.1)', borderTopColor: '#38bdf8',
               borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 24px auto'
             }}></div>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '1.4rem', fontWeight: 'bold' }}>{uploadProgress.message}</h3>
@@ -682,7 +682,7 @@ const MisInmuebles = () => {
                   Procesando {uploadProgress.current} de {uploadProgress.total} panorámicas...
                 </p>
                 <div style={{ width: '100%', height: '10px', background: '#334155', borderRadius: '5px', overflow: 'hidden' }}>
-                  <div style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #a855f7)', transition: 'width 0.4s ease' }}></div>
+                  <div style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #0284c7, #38bdf8)', transition: 'width 0.4s ease' }}></div>
                 </div>
               </>
             )}
@@ -880,7 +880,7 @@ const MisInmuebles = () => {
                                 setShowEditorRecorrido(true);
                               }}
                               className="propiedad-card__admin-btn"
-                              style={{ color: '#6366f1' }}
+                              style={{ color: '#38bdf8' }}
                             >
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="12" cy="12" r="10" />
@@ -1184,17 +1184,17 @@ const MisInmuebles = () => {
 
                 {/* ─── Sección de Fotos Panorámicas 360° (RF-40) ─── */}
                 <div style={{
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
                   padding: '20px',
                   borderRadius: '16px',
-                  border: '1px solid rgba(99, 102, 241, 0.2)',
+                  border: '1px solid rgba(14, 165, 233, 0.2)',
                   marginTop: '16px',
-                  boxShadow: '0 4px 20px rgba(99, 102, 241, 0.05)'
+                  boxShadow: '0 4px 20px rgba(14, 165, 233, 0.05)'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{
-                        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
                         color: '#fff',
                         borderRadius: '50%',
                         width: '36px',
@@ -1202,7 +1202,7 @@ const MisInmuebles = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)'
+                        boxShadow: '0 4px 10px rgba(14, 165, 233, 0.3)'
                       }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="10" />
@@ -1223,9 +1223,9 @@ const MisInmuebles = () => {
                         setShowGuiaModal(true);
                       }}
                       style={{
-                        background: 'rgba(99, 102, 241, 0.1)',
-                        color: '#6366f1',
-                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        background: 'rgba(14, 165, 233, 0.1)',
+                        color: '#38bdf8',
+                        border: '1px solid rgba(14, 165, 233, 0.3)',
                         borderRadius: '20px',
                         padding: '6px 14px',
                         fontSize: '0.8rem',
@@ -1237,11 +1237,11 @@ const MisInmuebles = () => {
                         transition: 'all 0.2s',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.15)';
+                        e.currentTarget.style.background = 'rgba(14, 165, 233, 0.2)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(14, 165, 233, 0.15)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                        e.currentTarget.style.background = 'rgba(14, 165, 233, 0.1)';
                         e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
@@ -1284,7 +1284,7 @@ const MisInmuebles = () => {
                                 color: 'var(--color-text)',
                                 borderTop: '1px solid var(--color-border)'
                               }}>
-                                <div style={{ fontWeight: 700, color: '#4f46e5' }}>{labelPiso}</div>
+                                <div style={{ fontWeight: 700, color: '#0284c7' }}>{labelPiso}</div>
                                 <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{labelHab}</div>
                               </div>
                               <button
@@ -1327,7 +1327,7 @@ const MisInmuebles = () => {
                       width: '100%',
                       padding: '10px',
                       borderRadius: '8px',
-                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                      border: '1px solid rgba(14, 165, 233, 0.3)',
                       background: 'var(--color-surface)',
                       cursor: 'pointer',
                       fontSize: '0.85rem',
@@ -1349,7 +1349,7 @@ const MisInmuebles = () => {
                             flexDirection: 'column',
                             background: 'var(--color-surface)',
                             borderRadius: '12px',
-                            border: `1px solid ${errorPiso || errorHabitacion ? '#f87171' : 'rgba(99, 102, 241, 0.15)'}`,
+                            border: `1px solid ${errorPiso || errorHabitacion ? '#f87171' : 'rgba(14, 165, 233, 0.15)'}`,
                             overflow: 'hidden',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
                             transition: 'all 0.3s'
@@ -1359,7 +1359,7 @@ const MisInmuebles = () => {
                               <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={`new-360-preview-${i}`} />
                               <span style={{
                                 position: 'absolute', top: '8px', left: '8px',
-                                background: 'rgba(99, 102, 241, 0.9)', color: 'var(--color-surface)',
+                                background: 'rgba(14, 165, 233, 0.9)', color: 'var(--color-surface)',
                                 fontSize: '0.7rem', padding: '4px 8px', borderRadius: '6px', fontWeight: 600
                               }}>Panorama {i + 1}</span>
                               <button
@@ -1421,7 +1421,7 @@ const MisInmuebles = () => {
                   )}
 
                   {/* ─── Música de Fondo para Recorrido VR ─── */}
-                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px dashed rgba(99, 102, 241, 0.2)' }}>
+                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px dashed rgba(14, 165, 233, 0.2)' }}>
                     <h4 style={{ margin: '0 0 8px 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9 18V5l12-2v13" />
@@ -1489,14 +1489,14 @@ const MisInmuebles = () => {
                         width: '100%',
                         padding: '10px',
                         borderRadius: '8px',
-                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        border: '1px solid rgba(14, 165, 233, 0.3)',
                         background: 'var(--color-surface)',
                         cursor: 'pointer',
                         fontSize: '0.85rem'
                       }}
                     />
                     {archivoMusica && (
-                      <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#6366f1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#38bdf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span>Seleccionado: {archivoMusica.name}</span>
                         <button
                           type="button"
@@ -1542,19 +1542,19 @@ const MisInmuebles = () => {
           <div style={{
             background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg-secondary) 100%)',
             borderRadius: '24px', width: '100%', maxWidth: '520px',
-            boxShadow: '0 25px 50px -12px rgba(99, 102, 241, 0.25)',
+            boxShadow: '0 25px 50px -12px rgba(14, 165, 233, 0.25)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            border: '1px solid rgba(99, 102, 241, 0.1)',
+            border: '1px solid rgba(14, 165, 233, 0.1)',
           }}>
             {/* Header */}
             <div style={{
               padding: '20px 24px',
-              borderBottom: '1px solid rgba(99, 102, 241, 0.1)',
+              borderBottom: '1px solid rgba(14, 165, 233, 0.1)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(168, 85, 247, 0.03) 100%)'
+              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.03) 0%, rgba(168, 85, 247, 0.03) 100%)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
                   <line x1="12" y1="18" x2="12.01" y2="18" />
                 </svg>
@@ -1563,14 +1563,14 @@ const MisInmuebles = () => {
               <button
                 onClick={() => setShowGuiaModal(false)}
                 style={{
-                  background: 'rgba(99, 102, 241, 0.05)', border: 'none',
+                  background: 'rgba(14, 165, 233, 0.05)', border: 'none',
                   fontSize: '1.2rem', cursor: 'pointer', color: 'var(--color-text-secondary)',
                   width: '32px', height: '32px', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'background 0.2s'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(14, 165, 233, 0.05)'}
               >&times;</button>
             </div>
 
@@ -1579,7 +1579,7 @@ const MisInmuebles = () => {
               {[1, 2, 3, 4].map(step => (
                 <div key={step} style={{
                   flex: 1,
-                  background: step <= guiaPasoActivo ? 'linear-gradient(90deg, #6366f1, #a855f7)' : 'transparent',
+                  background: step <= guiaPasoActivo ? 'linear-gradient(90deg, #0284c7, #38bdf8)' : 'transparent',
                   transition: 'background 0.3s ease'
                 }} />
               ))}
@@ -1592,9 +1592,9 @@ const MisInmuebles = () => {
                 <div style={{ textAlign: 'center' }}>
                   <div style={{
                     width: '70px', height: '70px', borderRadius: '50%',
-                    background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1',
+                    background: 'rgba(14, 165, 233, 0.1)', color: '#38bdf8',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.1)'
+                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.1)'
                   }}>
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
@@ -1612,9 +1612,9 @@ const MisInmuebles = () => {
                 <div style={{ textAlign: 'center' }}>
                   <div style={{
                     width: '70px', height: '70px', borderRadius: '50%',
-                    background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7',
+                    background: 'rgba(14, 165, 233, 0.1)', color: '#38bdf8',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(168, 85, 247, 0.1)'
+                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.1)'
                   }}>
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -1653,9 +1653,9 @@ const MisInmuebles = () => {
                 <div style={{ textAlign: 'center' }}>
                   <div style={{
                     width: '70px', height: '70px', borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', color: 'var(--color-surface)',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)', color: 'var(--color-surface)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.3)'
+                    margin: '0 auto 20px', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.3)'
                   }}>
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -1674,7 +1674,7 @@ const MisInmuebles = () => {
             {/* Footer / Controles */}
             <div style={{
               padding: '16px 24px',
-              borderTop: '1px solid rgba(99, 102, 241, 0.1)',
+              borderTop: '1px solid rgba(14, 165, 233, 0.1)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               background: 'var(--color-bg-secondary)'
             }}>
@@ -1706,7 +1706,7 @@ const MisInmuebles = () => {
                       width: guiaPasoActivo === step ? '20px' : '8px',
                       height: '8px',
                       borderRadius: '4px',
-                      background: guiaPasoActivo === step ? '#6366f1' : '#cbd5e1',
+                      background: guiaPasoActivo === step ? '#38bdf8' : '#cbd5e1',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease'
                     }}
@@ -1720,7 +1720,7 @@ const MisInmuebles = () => {
                   type="button"
                   onClick={() => setGuiaPasoActivo(p => Math.min(4, p + 1))}
                   style={{
-                    background: 'var(--color-primary, #6366f1)',
+                    background: 'var(--color-primary, #38bdf8)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '8px',
@@ -1728,7 +1728,7 @@ const MisInmuebles = () => {
                     fontSize: '0.85rem',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 6px rgba(99, 102, 241, 0.15)'
+                    boxShadow: '0 4px 6px rgba(14, 165, 233, 0.15)'
                   }}
                 >
                   Siguiente &rarr;
@@ -1738,7 +1738,7 @@ const MisInmuebles = () => {
                   type="button"
                   onClick={() => setShowGuiaModal(false)}
                   style={{
-                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '8px',
@@ -1746,7 +1746,7 @@ const MisInmuebles = () => {
                     fontSize: '0.85rem',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)'
+                    boxShadow: '0 4px 10px rgba(14, 165, 233, 0.3)'
                   }}
                 >
                   ¡Entendido!
@@ -1986,12 +1986,8 @@ const MisInmuebles = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {publications.map(pub => {
                       const isActiva = pub.estado === 'activa';
-                      const offerColors = {
-                        alquiler: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Alquiler', border: '1px solid rgba(16, 185, 129, 0.2)' },
-                        venta: { bg: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', label: 'Venta', border: '1px solid rgba(99, 102, 241, 0.2)' },
-                        anticretico: { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Anticrético', border: '1px solid rgba(245, 158, 11, 0.2)' },
-                      };
-                      const pubStyle = offerColors[pub.tipo_oferta] || { label: pub.tipo_oferta, color: 'var(--color-text)', bg: 'var(--color-bg-secondary)', border: '1px solid #cbd5e1' };
+                      const offerLabels = { alquiler: 'Alquiler', venta: 'Venta', anticretico: 'Anticrético' };
+                      const pubStyle = { label: offerLabels[pub.tipo_oferta] || pub.tipo_oferta, color: '#38bdf8', bg: 'rgba(14, 165, 233, 0.1)', border: '1px solid rgba(14, 165, 233, 0.25)' };
 
                       return (
                         <div key={pub.id} style={{

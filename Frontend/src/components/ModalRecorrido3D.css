@@ -50,7 +50,7 @@
 .modal-recorrido__compass-box {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -149,7 +149,7 @@
   width: 56px;
   height: 56px;
   border: 3.5px solid rgba(255, 255, 255, 0.05);
-  border-top-color: #6366f1;
+  border-top-color: #38bdf8;
   border-radius: 50%;
   animation: modal-recorrido-spin 1s cubic-bezier(0.53, 0.21, 0.29, 0.67) infinite;
   margin-bottom: 24px;
@@ -180,7 +180,7 @@
 
 .modal-recorrido__progress-bar-fg {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
   border-radius: 10px;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
@@ -292,7 +292,7 @@
 }
 
 .modal-recorrido__thumb-card--active .modal-recorrido__thumb-img-wrapper {
-  border-color: #6366f1;
+  border-color: #38bdf8;
   box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
 }
 
@@ -341,7 +341,7 @@
 }
 
 .modal-recorrido__thumb-card--active .modal-recorrido__thumb-label {
-  color: #6366f1;
+  color: #38bdf8;
   font-weight: 700;
 }
 
@@ -402,7 +402,7 @@
 }
 
 .modal-recorrido__viewer .pnlm-hotspot-base:hover {
-  background-color: #6366f1 !important;
+  background-color: #38bdf8 !important;
   border-color: #ffffff !important;
   box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45) !important;
 }
@@ -457,7 +457,7 @@
 
 /* Hover suave y sobrio para la etiqueta */
 .modal-recorrido__viewer .pnlm-hotspot-base:hover .pnlm-custom-nav-label {
-  background: #6366f1 !important;
+  background: #38bdf8 !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   box-shadow: 0 6px 14px rgba(99, 102, 241, 0.35) !important;
   transform: translateX(-50%) translateY(-1px) !important;

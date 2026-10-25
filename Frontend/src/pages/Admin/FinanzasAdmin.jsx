@@ -11,7 +11,7 @@ import html2pdf from 'html2pdf.js';
 import * as XLSX from 'xlsx';
 import './Finanzas.css';
 
-const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4'];
+const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#38bdf8', '#38bdf8', '#f97316', '#06b6d4'];
 
 /** Renderiza etiqueta EXTERNA para cada segmento del Pie (porcentaje fuera del pastel) */
 const renderEtiquetaPie = ({ cx, cy, midAngle, outerRadius, percent, index }) => {
@@ -430,7 +430,7 @@ const FinanzasAdmin = () => {
         {/* Pie Chart */}
         <div className="pdf-chart-pie chart-card">
           <div className="chart-header">
-            <FileText size={20} color="#8b5cf6" />
+            <FileText size={20} color="#38bdf8" />
             <h2>Ingresos por Tipo de Contrato</h2>
           </div>
  

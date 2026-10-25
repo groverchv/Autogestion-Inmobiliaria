@@ -294,7 +294,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
             onPressed: () => setState(() => _mostrarCotasAR = !_mostrarCotasAR),
           ),
           IconButton(
-            icon: Icon(_mostrarPinesBarrioAR ? Icons.place : Icons.place_outlined, color: _mostrarPinesBarrioAR ? const Color(0xFF10B981) : Colors.grey),
+            icon: Icon(_mostrarPinesBarrioAR ? Icons.place : Icons.place_outlined, color: _mostrarPinesBarrioAR ? const Color(0xFF38BDF8) : Colors.grey),
             tooltip: 'Capa Entorno Urbano AR',
             onPressed: () => setState(() => _mostrarPinesBarrioAR = !_mostrarPinesBarrioAR),
           ),
@@ -367,12 +367,12 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F172A).withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.6)),
+                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.6)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.place, color: Color(0xFF10B981), size: 16),
+                      const Icon(Icons.place, color: Color(0xFF38BDF8), size: 16),
                       const SizedBox(width: 6),
                       Text(
                         'Entorno AR: ${(_metaversoDatos!['pines_ar_barrio'] as List).first['nombre']} (${(_metaversoDatos!['pines_ar_barrio'] as List).first['distancia_m']}m)',

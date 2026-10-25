@@ -13,15 +13,15 @@ const TX_MAP = {
   },
   transferirPropiedad: {
     label: 'Transferencia de Dominio',
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
+    color: '#38bdf8',
+    bg: 'rgba(14,165,233,0.10)',
     icon: User,
     desc: 'Transferencia de derechos reales de dominio del inmueble a un nuevo propietario.'
   },
   crearContrato: {
     label: 'Creación de Contrato',
-    color: '#6366f1',
-    bg: '#e0e7ff',
+    color: '#38bdf8',
+    bg: 'rgba(14,165,233,0.12)',
     icon: FileText,
     desc: 'Registro inicial de los términos y condiciones de arrendamiento en la cadena.'
   },

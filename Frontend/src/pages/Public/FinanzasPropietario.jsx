@@ -125,7 +125,7 @@ const FinanzasPropietario = () => {
   }) || [];
 
   const COLORS = ['#059669', '#10b981', '#34d399', '#065f46', '#10b981', '#047857'];
-  const BAR_COLORS = ['#6366f1', '#f59e0b']; // Índigo y Ámbar (Alto contraste)
+  const BAR_COLORS = ['#38bdf8', '#f59e0b']; // Índigo y Ámbar (Alto contraste)
 
   return (
     <div style={{ paddingTop: '20px' }}>
@@ -254,7 +254,7 @@ const FinanzasPropietario = () => {
               <div style={{ background: 'var(--color-surface)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ background: 'rgba(139,92,246,0.12)', padding: '10px', borderRadius: '12px' }}>
-                    <Activity size={24} color="#8b5cf6" />
+                    <Activity size={24} color="#38bdf8" />
                   </div>
                   <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Promedio Mensual</span>
                 </div>
@@ -273,7 +273,7 @@ const FinanzasPropietario = () => {
               {/* Curva de Ingreso Neto */}
               <div className="chart-box" style={{ background: 'var(--color-surface)', padding: '32px', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', gridColumn: 'span 2' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                  <TrendingUp size={24} color="#6366f1" />
+                  <TrendingUp size={24} color="#38bdf8" />
                   <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
                     {filtros.mes ? 'Ingreso Neto por Inmueble' : 'Curva de Ingreso Neto'}
                   </h2>
@@ -374,7 +374,7 @@ const FinanzasPropietario = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '3px solid #1e293b', paddingBottom: '12px', marginBottom: '20px' }}>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: '900', color: 'var(--color-text)', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Activity size={20} className="no-print" style={{ color: '#6366f1' }} />
+                    <Activity size={20} className="no-print" style={{ color: '#38bdf8' }} />
                     Extracto de Movimientos
                   </h2>
                   <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
