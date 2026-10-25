@@ -12,7 +12,7 @@ const ManageFavoritos = () => {
           {item.inmueble_data?.imagen_principal && (
             <img 
               src={item.inmueble_data.imagen_principal} 
-              alt="" 
+              alt={item.inmueble_data.titulo || 'Inmueble favorito'}
               style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} 
             />
           )}

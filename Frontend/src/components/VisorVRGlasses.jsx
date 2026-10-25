@@ -804,6 +804,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId =
               key={`pano-asset-${pano.id}`}
               id={`pano-${pano.id}`}
               src={pano.archivo}
+              alt={pano.descripcion || 'Panorama 360°'}
               crossOrigin={pano.archivo?.startsWith('blob:') ? undefined : 'anonymous'}
               alt={pano.descripcion}
             />

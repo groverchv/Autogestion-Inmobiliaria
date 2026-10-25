@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
 import api from '../../services/api'; 
@@ -21,6 +21,14 @@ const Registro = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Escape cierra el modal de Términos (accesibilidad)
+  useEffect(() => {
+    if (!modalTerminosAbierto) return;
+    const onKeyDown = (e) => { if (e.key === 'Escape') setModalTerminosAbierto(false); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [modalTerminosAbierto]);
 
   const handleChange = (e) => {
     setFormData({
@@ -104,8 +112,8 @@ const Registro = () => {
           Accede a recorridos 360°, contratos digitales y autogestión de propiedades.
         </p>
         
-        {error && <div className="login__error" style={{ marginBottom: '1rem' }}>{error}</div>}
-        {success && <div style={{ background: '#10b981', color: 'white', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{success}</div>}
+        {error && <div className="login__error" role="alert" style={{ marginBottom: '1rem' }}>{error}</div>}
+        {success && <div role="status" aria-live="polite" style={{ background: '#10b981', color: 'white', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{success}</div>}
 
         {/* Fila: Nombre y Apellido */}
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -240,8 +248,13 @@ const Registro = () => {
           justifyContent: 'center',
           zIndex: 9999,
           padding: '20px'
-        }}>
-          <div style={{
+        }}
+        role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terminos-modal-titulo"
+            style={{
             background: '#0f172a',
             border: '1px solid #334155',
             borderRadius: '16px',
@@ -264,12 +277,13 @@ const Registro = () => {
                 <div style={{ background: 'rgba(14,165,233,0.15)', padding: '8px', borderRadius: '8px', color: '#38bdf8' }}>
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
-                <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.15rem', fontWeight: 'bold' }}>
+                <h3 id="terminos-modal-titulo" style={{ margin: 0, color: '#f8fafc', fontSize: '1.15rem', fontWeight: 'bold' }}>
                   Términos y Condiciones de Uso
                 </h3>
               </div>
               <button 
                 onClick={() => setModalTerminosAbierto(false)}
+                aria-label="Cerrar términos y condiciones"
                 style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
               >
                 ✕

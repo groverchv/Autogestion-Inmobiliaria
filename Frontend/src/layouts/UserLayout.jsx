@@ -7,11 +7,12 @@ import CookieBanner from '../components/CookieBanner';
 const UserLayout = () => {
   return (
     <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', flexDirection: 'column' }}>
+      <a href="#contenido-principal" className="skip-link">Saltar al contenido principal</a>
       <Navbar />
       <UserMenu />
-      <div style={{ flex: 1 }}>
+      <main id="contenido-principal" style={{ flex: 1 }}>
         <Outlet />
-      </div>
+      </main>
       <Footer />
       <CookieBanner />
     </div>

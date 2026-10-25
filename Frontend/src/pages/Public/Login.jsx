@@ -36,7 +36,7 @@ const Login = () => {
   return (
     <div className="login" id="login-page">
       <form className="login__form" onSubmit={handleSubmit}>
-        {error && <div className="login__error">{error}</div>}
+        {error && <div className="login__error" role="alert">{error}</div>}
 
         <div className="login__field">
           <label htmlFor="email" className="login__label">Correo Electrónico</label>

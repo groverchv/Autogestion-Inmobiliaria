@@ -33,6 +33,14 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
     }
   }, [isOpen]);
 
+  // Escape cierra el modal (accesibilidad)
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   // Cargar slots al seleccionar fecha
   useEffect(() => {
     if (!fechaSeleccionada || !inmueble?.id || !propietarioId) return;
@@ -126,6 +134,7 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
         justifyContent: 'center', zIndex: 9999, padding: '20px',
       }}
       onClick={onClose}
+      role="presentation"
     >
       <div
         style={{
@@ -134,6 +143,9 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
           boxShadow: '0 25px 50px rgba(0,0,0,0.2)',
         }}
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cita-modal-titulo"
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
         <div style={{
@@ -141,16 +153,16 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+            <h2 id="cita-modal-titulo" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
               Agendar Visita
             </h2>
             <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
               {inmueble?.titulo}
             </p>
           </div>
-          <button onClick={onClose}
+          <button onClick={onClose} aria-label="Cerrar diálogo"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-            <X size={22} />
+            <X size={22} aria-hidden="true" />
           </button>
         </div>
 

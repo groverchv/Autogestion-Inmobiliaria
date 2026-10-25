@@ -849,7 +849,7 @@ const PropiedadDetalle = () => {
           ) : (
             <img
               src={allMedia[selectedMediaIndex]?.archivo}
-              alt="Fullscreen media"
+              alt={allMedia[selectedMediaIndex]?.descripcion || `${inmueble?.titulo || 'Inmueble'} — multimedia ${selectedMediaIndex + 1}`}
               style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }}
               onClick={(e) => e.stopPropagation()}
             />

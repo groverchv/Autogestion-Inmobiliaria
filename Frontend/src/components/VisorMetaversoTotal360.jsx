@@ -166,6 +166,13 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
     return () => { cancelado = true; };
   }, [inmuebleId]);
 
+  // Escape cierra el visor (accesibilidad por teclado)
+  useEffect(() => {
+    const onKeyDown = (e) => { if (e.key === 'Escape') onClose?.(); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -383,7 +390,13 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   const clasificacion = metaData?.calidad_vida?.clasificacion || "Muy Caminable";
 
   return (
-    <div className="modal-recorrido" style={{ position: 'fixed', inset: 0, zIndex: 99999, background: '#090d16' }}>
+    <div
+      className="modal-recorrido"
+      style={{ position: 'fixed', inset: 0, zIndex: 99999, background: '#090d16' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Visor inmersivo 360° de ${metaData?.titulo || 'inmueble'}`}
+    >
       
       {/* ─── HUD Superior Flotante de Realidad Aumentada ─── */}
       <div style={{
@@ -434,6 +447,7 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
         <div style={{ pointerEvents: 'auto' }}>
           <button
             onClick={onClose}
+            aria-label="Salir del visor 360°"
             style={{
               background: 'rgba(15, 23, 42, 0.85)',
               border: '1px solid #334155',

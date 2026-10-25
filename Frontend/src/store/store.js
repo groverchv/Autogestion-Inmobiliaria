@@ -66,10 +66,8 @@ const useStore = create((set) => ({
     const root = document.documentElement;
     if (newTheme === 'dark' || (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       root.setAttribute('data-theme', 'dark');
-      root.style.backgroundColor = '#0f172a';
     } else {
       root.setAttribute('data-theme', 'light');
-      root.style.backgroundColor = '#f8fafc';
     }
   },
 }));
