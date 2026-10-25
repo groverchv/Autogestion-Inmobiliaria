@@ -3,10 +3,23 @@ import 'package:flutter/material.dart';
 
 /// Constantes del sistema y endpoints de API con detección inteligente de plataforma
 class AppConfig {
+  /// Host de API inyectado en compilación:
+  ///   flutter run --dart-define=API_HOST=192.168.1.50
+  ///   flutter build apk --dart-define=API_HOST=api.midominio.bo
+  static const String _envHost = String.fromEnvironment('API_HOST');
+
   /// Obtiene dinámicamente la URL base según la plataforma de ejecución
   static String get baseUrl {
+    if (_envHost.isNotEmpty) {
+      return _envHost.startsWith('http') ? _envHost : 'http://$_envHost:8000/api';
+    }
     if (kIsWeb) {
       return 'http://127.0.0.1:8000/api';
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      // 10.0.2.2 en el emulador resuelve al localhost de la máquina de desarrollo.
+      // En dispositivo físico, compilar con --dart-define=API_HOST=<IP-LAN>.
+      return 'http://10.0.2.2:8000/api';
     }
     return 'http://192.168.0.16:8000/api';
   }

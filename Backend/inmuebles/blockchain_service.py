@@ -1,5 +1,6 @@
 import requests
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -7,11 +8,25 @@ logger = logging.getLogger(__name__)
 # URL por defecto del API Gateway de Blockchain en puerto 4000
 BLOCKCHAIN_URL = getattr(settings, 'BLOCKCHAIN_GATEWAY_URL', 'http://localhost:4000/api/blockchain')
 
+# Pool en background para no bloquear requests/model.save() con llamadas HTTP al gateway
+_BLOCKCHAIN_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix='bc-sync')
+
 class BlockchainService:
     """
     Cliente de Servicio para comunicar el Backend Django con la Red Blockchain
     vía el API Blockchain Gateway en Node.js.
     """
+
+    @staticmethod
+    def dispatch(fn, *args, **kwargs):
+        """
+        Despacha una sincronización blockchain al pool en background (fire-and-forget).
+        El request/model.save() retorna de inmediato; el bloque se escribe asíncronamente.
+        """
+        try:
+            _BLOCKCHAIN_POOL.submit(fn, *args, **kwargs)
+        except Exception as e:
+            logger.warning(f"No se pudo despachar sincronización blockchain: {str(e)}")
 
     @staticmethod
     def _post(endpoint, payload):

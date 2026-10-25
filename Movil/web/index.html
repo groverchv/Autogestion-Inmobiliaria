@@ -32,15 +32,57 @@
   <title>movil</title>
   <link rel="manifest" href="manifest.json">
 </head>
-<body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <!-- Web Speech API Bridge for Flutter Web -->
+  <script>
+    window.startSpeechRecognition = function(callbackName) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        if (window[callbackName]) window[callbackName]('ERROR: Tu navegador no soporta captura de micrófono.');
+        return;
+      }
+      if (window._currentRecognition) {
+        try { window._currentRecognition.stop(); } catch(e){}
+      }
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.onresult = function(event) {
+        const text = event.results[0][0].transcript;
+        if (window[callbackName]) window[callbackName](text);
+      };
+      recognition.onerror = function(event) {
+        if (window[callbackName]) window[callbackName]('ERROR: ' + event.error);
+      };
+      window._currentRecognition = recognition;
+      try {
+        recognition.start();
+      } catch (err) {
+        if (window[callbackName]) window[callbackName]('ERROR: ' + err);
+      }
+    };
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+    window.stopSpeechRecognition = function() {
+      if (window._currentRecognition) {
+        try { window._currentRecognition.stop(); } catch(e){}
+      }
+    };
+
+    window.speakText = function(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'es-ES';
+      utterance.rate = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const spanishVoice = voices.find(v => v.lang.startsWith('es'));
+      if (spanishVoice) utterance.voice = spanishVoice;
+      window.speechSynthesis.speak(utterance);
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
+
+
+

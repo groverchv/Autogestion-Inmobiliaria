@@ -69,6 +69,11 @@ const IndiceCalidadVida = ({ inmuebleId, gps = null, direccion = '' }) => {
   const [categoriaFiltro, setCategoriaFiltro] = useState('todas');
   const [mostrarRadios, setMostrarRadios] = useState(true);
 
+  // Formatear dirección si viene como objeto {calle, zona, ciudad}
+  const direccionStr = typeof direccion === 'object' && direccion !== null
+    ? `${direccion.calle || ''} ${direccion.zona ? `- ${direccion.zona}` : ''} ${direccion.ciudad ? `(${direccion.ciudad})` : ''}`.trim()
+    : String(direccion || '');
+
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -141,8 +146,9 @@ const IndiceCalidadVida = ({ inmuebleId, gps = null, direccion = '' }) => {
           <div>
             <h2 className="calidad-vida-title">Índice de Calidad de Vida & Walk Score</h2>
             <p className="calidad-vida-subtitle">
-              Evaluación del entorno, conectividad y servicios a pie ({direccion || 'Zona Residencial'})
+              Evaluación del entorno, conectividad y servicios a pie ({direccionStr || 'Zona Residencial'})
             </p>
+
           </div>
         </div>
 
@@ -265,8 +271,9 @@ const IndiceCalidadVida = ({ inmuebleId, gps = null, direccion = '' }) => {
             <Popup>
               <div className="map-popup-content">
                 <strong>Inmueble Seleccionado</strong>
-                <p>{direccion || 'Punto central de análisis'}</p>
+                <p>{direccionStr || 'Punto central de análisis'}</p>
               </div>
+
             </Popup>
           </Marker>
 

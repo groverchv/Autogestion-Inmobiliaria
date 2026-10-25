@@ -14,7 +14,21 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',')]
+
+# ─── Seguridad en producción (activas solo con DEBUG=False) ──────
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True'
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # ─── Aplicaciones ────────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -104,19 +118,38 @@ if db_url and (db_url.startswith('postgres://') or db_url.startswith('postgresql
             'PASSWORD': url.password,
             'HOST': url.hostname,
             'PORT': url.port or '5432',
+            'CONN_MAX_AGE': int(os.getenv('CONN_MAX_AGE', '60')),
+            'CONN_HEALTH_CHECKS': True,
         }
     }
 else:
     DATABASES = {
         'default': {
             'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-            'NAME': os.getenv('DB_NAME', 'railway'),
+            'NAME': os.getenv('DB_NAME', 'autogestion'),
             'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', 'qFzjpZHipslPYrdKARseUmjViIsUBEsf'),
-            'HOST': os.getenv('DB_HOST', 'Postgres.railway.internal'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
             'PORT': os.getenv('DB_PORT', '5432'),
+            # 0 en dev (runserver crea threads ilimitados → agota conexiones).
+            # En producción con workers acotados usar CONN_MAX_AGE=60 + pgbouncer.
+            'CONN_MAX_AGE': int(os.getenv('CONN_MAX_AGE', '0')),
+            'CONN_HEALTH_CHECKS': True,
         }
     }
+
+# ─── Cache ───────────────────────────────────────────────────────
+CACHES = {
+    'default': {
+        'BACKEND': (
+            'django.core.cache.backends.redis.RedisCache'
+            if os.getenv('REDIS_URL')
+            else 'django.core.cache.backends.locmem.LocMemCache'
+        ),
+        'LOCATION': os.getenv('REDIS_URL', 'autogestion-locmem'),
+        'TIMEOUT': 300,
+    }
+}
 
 # ─── Contraseñas ─────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
@@ -170,7 +203,7 @@ SIMPLE_JWT = {
 }
 
 # ─── CORS & Acceso de Clientes (Móvil / Web) ───────────────────
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ['*']
 CORS_ALLOW_METHODS = ['*']
@@ -184,9 +217,9 @@ CSRF_TRUSTED_ORIGINS = [
 
 # ─── Cloudinary (almacenamiento de imágenes) ───────────────────
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', 'dfnseyypi'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY', '558788328342896'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', 'fIaMCkxQRl3XHYVKQByKU68T9OI'),
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
 }
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

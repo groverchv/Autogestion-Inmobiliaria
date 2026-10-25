@@ -6,6 +6,7 @@ from rest_framework.response import Response
 import os
 from decimal import Decimal
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.core.exceptions import ValidationError
@@ -103,7 +104,7 @@ class TipoInmuebleViewSet(viewsets.ModelViewSet):
 
 class InmuebleViewSet(viewsets.ModelViewSet):
     """CRUD para inmuebles."""
-    queryset = Inmueble.objects.select_related('tipo', 'propietario').prefetch_related('multimedia').all()
+    queryset = Inmueble.objects.select_related('tipo', 'propietario', 'direccion', 'verificacion_titulo').prefetch_related('multimedia', 'publicaciones').all()
     filter_backends = [DjangoFilterBackend, UnaccentSearchFilter]
     filterset_class = InmuebleFilter
     search_fields = [
@@ -119,13 +120,13 @@ class InmuebleViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         # Permitir ver inmuebles de forma pública
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'ciudades']:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         user = self.request.user
-        qs = Inmueble.objects.select_related('tipo', 'propietario').prefetch_related('multimedia')
+        qs = Inmueble.objects.select_related('tipo', 'propietario', 'direccion', 'verificacion_titulo').prefetch_related('multimedia', 'publicaciones')
         
         if self.request.path.startswith('/api/inmuebles/panel/'):
             if user.is_authenticated:
@@ -148,10 +149,19 @@ class InmuebleViewSet(viewsets.ModelViewSet):
             return InmuebleListSerializer
         return InmuebleSerializer
 
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        user = self.request.user
+        if user.is_authenticated:
+            ctx['favoritos_ids'] = set(
+                Favorito.objects.filter(usuario=user).values_list('inmueble_id', flat=True)
+            )
+        return ctx
+
     @action(detail=False, methods=['get'], url_path='mis_inmuebles', permission_classes=[permissions.IsAuthenticated])
     def mis_inmuebles(self, request):
         """Retorna los inmuebles pertenecientes al usuario autenticado."""
-        qs = Inmueble.objects.filter(propietario=request.user).select_related('tipo', 'propietario').prefetch_related('multimedia')
+        qs = Inmueble.objects.filter(propietario=request.user).select_related('tipo', 'propietario', 'direccion', 'verificacion_titulo').prefetch_related('multimedia', 'publicaciones')
         serializer = InmuebleListSerializer(qs, many=True)
         return Response(serializer.data)
 
@@ -161,11 +171,14 @@ class InmuebleViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def ciudades(self, request):
         """Retorna una lista de ciudades únicas disponibles."""
-        ciudades_qs = Inmueble.objects.exclude(direccion__isnull=True).values_list('direccion__ciudad', flat=True).distinct()
-        # Filtrar valores vacíos o nulos
-        ciudades = [c.strip() for c in ciudades_qs if c and c.strip()]
-        # Eliminar duplicados generados por mayúsculas/minúsculas o espacios extra
-        ciudades_unicas = sorted(list(set(c.title() for c in ciudades)))
+        ciudades_unicas = cache.get('ciudades')
+        if ciudades_unicas is None:
+            ciudades_qs = Inmueble.objects.exclude(direccion__isnull=True).values_list('direccion__ciudad', flat=True).distinct()
+            # Filtrar valores vacíos o nulos
+            ciudades = [c.strip() for c in ciudades_qs if c and c.strip()]
+            # Eliminar duplicados generados por mayúsculas/minúsculas o espacios extra
+            ciudades_unicas = sorted(list(set(c.title() for c in ciudades)))
+            cache.set('ciudades', ciudades_unicas, 3600)
         return Response(ciudades_unicas)
 
 
@@ -908,7 +921,7 @@ class CitaViewSet(viewsets.ModelViewSet):
 
 class PublicacionViewSet(viewsets.ModelViewSet):
     """CRUD para ofertas comerciales (publicaciones)."""
-    queryset = Publicacion.objects.select_related('inmueble').all()
+    queryset = Publicacion.objects.select_related('inmueble__direccion', 'inmueble__tipo').prefetch_related('inmueble__multimedia').all()
     serializer_class = PublicacionSerializer
 
     def get_permissions(self):
@@ -917,7 +930,7 @@ class PublicacionViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
-        qs = Publicacion.objects.select_related('inmueble')
+        qs = Publicacion.objects.select_related('inmueble__direccion', 'inmueble__tipo').prefetch_related('inmueble__multimedia')
         
         # Filtros opcionales
         inmueble_id = self.request.query_params.get('inmueble')
@@ -1030,8 +1043,13 @@ class BlockchainHistorialView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, asset_id, format=None):
+        cache_key = f'bc:hist:{asset_id}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached, status=status.HTTP_200_OK)
         try:
             historial = BlockchainService.obtener_historial(asset_id)
+            cache.set(cache_key, historial, 60)
             return Response(historial, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1048,7 +1066,11 @@ class BlockchainStatsView(APIView):
         try:
             if request.user.rol != 'admin':
                 return Response({"error": "No autorizado."}, status=status.HTTP_403_FORBIDDEN)
-            stats_data = BlockchainService.obtener_stats()
+            stats_data = cache.get('bc:stats')
+            if stats_data is None:
+                stats_data = BlockchainService.obtener_stats()
+                if stats_data:
+                    cache.set('bc:stats', stats_data, 30)
             if stats_data:
                 return Response(stats_data, status=status.HTTP_200_OK)
             return Response({"error": "No se pudo conectar con el Blockchain Gateway."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -1686,30 +1708,41 @@ class CalidadVidaViewSet(viewsets.ViewSet):
         inmueble = None
         if inmueble_id:
             try:
-                inmueble = Inmueble.objects.select_related('direccion', 'tipo').prefetch_related('multimedia', 'multimedia__hotspots').get(id=inmueble_id)
+                inmueble = Inmueble.objects.select_related('direccion', 'tipo').prefetch_related('multimedia', 'hotspots').get(id=inmueble_id)
             except Inmueble.DoesNotExist:
                 pass
 
         if not inmueble:
-            inmueble = Inmueble.objects.select_related('direccion', 'tipo').prefetch_related('multimedia', 'multimedia__hotspots').first()
+            inmueble = Inmueble.objects.select_related('direccion', 'tipo').prefetch_related('multimedia', 'hotspots').first()
 
         if not inmueble:
             return Response({'error': 'No hay inmuebles registrados'}, status=status.HTTP_404_NOT_FOUND)
+
+        cache_key = f'metaverso:{inmueble.id}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
 
         # 1. Panoramas 360°
         panoramas_qs = inmueble.multimedia.filter(tipo='panorama360').order_by('orden')
         panoramas_data = []
         for p in panoramas_qs:
+            # Obtener hotspots de salida desde este panorama
+            hotspots_list = list(p.hotspots_salida.values('id', 'pitch', 'yaw', 'escena_destino_id', 'texto_ayuda'))
             panoramas_data.append({
                 'id': p.id,
-                'archivo': p.archivo,
-                'descripcion': p.descripcion,
+                'archivo': p.archivo.url if hasattr(p.archivo, 'url') else str(p.archivo),
+                'descripcion': p.descripcion or 'Ambiente 360°',
                 'orden': p.orden,
-                'hotspots': list(p.hotspots.values('id', 'pitch', 'yaw', 'escena_destino', 'texto_ayuda'))
+                'hotspots': hotspots_list
             })
 
         # 2. Tour y Guía Virtual con Voz
-        tour_narrado = AsistenteEspacialEngine.generar_tour_narrado(inmueble)
+        try:
+            tour_narrado = AsistenteEspacialEngine.generar_tour_narrado(inmueble)
+        except Exception:
+            tour_narrado = []
+
 
         # 3. Cotas y Dimensiones de Realidad Aumentada
         cotas_ar = [
@@ -1745,7 +1778,7 @@ class CalidadVidaViewSet(viewsets.ViewSet):
                 'pitch': round(2.0 + (poi['distancia_metros'] % 10), 1)
             })
 
-        return Response({
+        payload = {
             'inmueble_id': inmueble.id,
             'titulo': inmueble.titulo,
             'direccion': str(inmueble.direccion) if inmueble.direccion else 'Zona Norte, Santa Cruz',
@@ -1755,7 +1788,9 @@ class CalidadVidaViewSet(viewsets.ViewSet):
             'cotas_ar': cotas_ar,
             'calidad_vida': calidad_vida,
             'pines_ar_barrio': pines_ar_barrio
-        }, status=status.HTTP_200_OK)
+        }
+        cache.set(cache_key, payload, 900)
+        return Response(payload, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get', 'post'], url_path='estimar-precio-ml')
     def estimar_precio_ml(self, request):

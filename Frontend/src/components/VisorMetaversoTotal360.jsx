@@ -16,7 +16,10 @@ import {
   Box,
   MapPin,
   HelpCircle,
-  Radio
+  Radio,
+  Mic,
+  MicOff,
+  Loader2
 } from 'lucide-react';
 import 'pannellum/build/pannellum.css';
 import 'pannellum';
@@ -31,7 +34,7 @@ import './ModalRecorrido3D.css';
  * 2. Realidad Aumentada (RA): Cotas métricas en 3D flotantes sobre objetos.
  * 3. Guía Turístico Virtual con Voz & Tour Narrado cinemático con Audio Ducking.
  * 4. Capa Geoespacial AR del Barrio: Pines flotantes hacia colegios, clínicas y Walk Score.
- * 5. Asistente de consultas por voz para mediciones y compatibilidad espacial.
+ * 5. Asistente de consultas por voz (NLP / Reconocimiento de Voz en Tiempo Real).
  */
 const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   const viewerRef = useRef(null);
@@ -47,14 +50,18 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   const [capaPinesBarrioAR, setCapaPinesBarrioAR] = useState(true);
   const [capaGuiaVoz, setCapaGuiaVoz] = useState(true);
 
-  // Estados del Tour Narrado del Guía
+  // Estados del Guía Turístico Virtual con Voz y NLP
   const [tourActivo, setTourActivo] = useState(false);
   const [pasoTourIndex, setPasoTourIndex] = useState(0);
-  const [locucionActual, setLocucionActual] = useState('Bienvenido al Metaverso Inmobiliario 360°.');
+  const [locucionActual, setLocucionActual] = useState('Bienvenido al Metaverso Inmobiliario 360°. Toca el micrófono para hablar conmigo.');
   const [audioVozActivo, setAudioVozActivo] = useState(true);
+  const [escuchandoVoz, setEscuchandoVoz] = useState(false);
+  const [procesandoNLP, setProcesandoNLP] = useState(false);
 
   const audioFondoRef = useRef(null);
   const tourTimerRef = useRef(null);
+  const recognitionRef = useRef(null);
+
 
   // ─── Control de Audio Ducking ─────────────────────────────────────────────
   const atenuarMusica = () => {
@@ -94,32 +101,138 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
     window.speechSynthesis.speak(utterance);
   }, [audioVozActivo]);
 
-  // ─── Carga de Payload Unificado (<50ms) ───────────────────────────────────
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
+  // ─── Reconocimiento de Voz Espacial y NLP (STT) ──────────────────────────
+  const procesarConsultaVoz = useCallback(async (transcripcion) => {
+    if (!transcripcion || transcripcion.trim().length === 0) return;
+    setProcesandoNLP(true);
+    setLocucionActual(`Analizando con IA: "${transcripcion}"...`);
 
-    api.get('/inmuebles/calidad-vida/metaverso-datos/', { params: { inmueble: inmuebleId } })
-      .then(res => {
-        if (active) {
-          setMetaData(res.data);
-          if (res.data.panoramas && res.data.panoramas.length > 0) {
-            setEscenaActiva(res.data.panoramas[0]);
-          }
-          setLoading(false);
-        }
-      })
-      .catch(err => {
-        console.error("Error al cargar datos del metaverso:", err);
-        setLoading(false);
+    try {
+      const res = await api.post('/inmuebles/asistente-espacial/consultar/', {
+        consulta: transcripcion,
+        inmueble_id: inmuebleId
       });
 
-    return () => {
-      active = false;
-      clearTimeout(tourTimerRef.current);
-      window.speechSynthesis?.cancel();
+      const data = res.data;
+      if (data && data.respuesta) {
+        setLocucionActual(data.respuesta);
+
+        // Si la IA nos devuelve orientación de cámara hacia el objeto
+        if (data.camara_360 && viewerInstanceRef.current?.lookAt) {
+          const { yaw, pitch, hfov } = data.camara_360;
+          try {
+            viewerInstanceRef.current.lookAt(pitch, yaw, hfov || 90, 1000);
+          } catch {}
+        }
+
+        // Responder con voz en voz alta
+        hablarEnVozAlta(data.respuesta);
+      }
+    } catch (e) {
+      console.error("Error en consulta espacial NLP:", e);
+      const fallback = "He recibido tu consulta. Puedes preguntarme por medidas de puertas, ventanas, o consultar el precio y comodidades.";
+      setLocucionActual(fallback);
+      hablarEnVozAlta(fallback);
+    } finally {
+      setProcesandoNLP(false);
+    }
+  }, [inmuebleId, hablarEnVozAlta]);
+
+  // ─── Carga de Datos del Metaverso (Endpoint Consolidado <50ms) ────────────
+  useEffect(() => {
+    let cancelado = false;
+    const panoramaFallback = { id: 'demo', archivo: '/pano_prueba.png', descripcion: 'Ambiente de demostración', orden: 0, hotspots: [] };
+
+    const cargarMetaverso = async () => {
+      try {
+        const res = await api.get('/inmuebles/calidad-vida/metaverso-datos/', {
+          params: { inmueble: inmuebleId }
+        });
+        if (cancelado) return;
+        const data = res.data;
+        setMetaData(data);
+        setEscenaActiva(data?.panoramas?.length > 0 ? data.panoramas[0] : panoramaFallback);
+      } catch (e) {
+        console.error('Error cargando metaverso-datos:', e);
+        if (cancelado) return;
+        setMetaData({ titulo: 'Recorrido Inmobiliario Total' });
+        setEscenaActiva(panoramaFallback);
+      } finally {
+        if (!cancelado) setLoading(false);
+      }
     };
+
+    cargarMetaverso();
+    return () => { cancelado = true; };
   }, [inmuebleId]);
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setEscuchandoVoz(true);
+        atenuarMusica();
+        setLocucionActual("Te escucho... Pregúntame sobre cualquier objeto, medidas o detalles.");
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        procesarConsultaVoz(transcript);
+      };
+
+      recognition.onerror = (e) => {
+        console.error("Error en captura de voz:", e);
+        setEscuchandoVoz(false);
+        restaurarMusica();
+        setLocucionActual("No pude escucharte bien. Toca el micrófono para intentarlo de nuevo.");
+      };
+
+      recognition.onend = () => {
+        setEscuchandoVoz(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+    };
+  }, [procesarConsultaVoz]);
+
+  const toggleMicrofono = () => {
+    if (!recognitionRef.current) {
+      // Fallback para navegadores sin SpeechRecognition nativo
+      const ejemplos = [
+        '¿Cuánto mide la puerta?',
+        '¿Cuánto mide el ventanal?',
+        '¿Cuánto es de largo el living?',
+        '¿Cabe un sofá de 2 metros?',
+        '¿Cuál es el precio y comodidades?'
+      ];
+      const consulta = ejemplos[Math.floor(Math.random() * ejemplos.length)];
+      procesarConsultaVoz(consulta);
+      return;
+    }
+
+    if (escuchandoVoz) {
+      try { recognitionRef.current.stop(); } catch {}
+    } else {
+      if (tourActivo) {
+        clearTimeout(tourTimerRef.current);
+        window.speechSynthesis?.cancel();
+        setTourActivo(false);
+      }
+      try { recognitionRef.current.start(); } catch {}
+    }
+  };
+
 
   // ─── Inicialización de Pannellum con Overlays de AR ───────────────────────
   useEffect(() => {
@@ -199,7 +312,7 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
     };
   }, [loading, metaData, escenaActiva, capaCotasAR, capaPinesBarrioAR]);
 
-  // ─── Ejecutar Tour Narrado Cinemático ────────────────────────────────────
+  // ─── Ejecutar Tour Narrado Cinemático Dinámico ─────────────────────────────
   const ejecutarPasoTour = useCallback((pasos, index) => {
     if (index >= pasos.length) {
       setTourActivo(false);
@@ -212,18 +325,31 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
     setPasoTourIndex(index + 1);
     setLocucionActual(`[${index + 1}/${pasos.length}] ${paso.titulo}: "${paso.locucion}"`);
 
+    // Cambiar de escena si el paso corresponde a otro panorama
+    if (paso.panorama_id && metaData?.panoramas) {
+      const targetPano = metaData.panoramas.find(p => p.id === paso.panorama_id);
+      if (targetPano && targetPano.id !== escenaActiva?.id) {
+        setEscenaActiva(targetPano);
+      }
+    }
+
     // Rotar cámara hacia el waypoint
     if (paso.camara_360 && viewerInstanceRef.current?.lookAt) {
       const { yaw, pitch, hfov } = paso.camara_360;
-      viewerInstanceRef.current.lookAt(pitch, yaw, hfov || 90, 1200);
+      setTimeout(() => {
+        try {
+          viewerInstanceRef.current?.lookAt(pitch, yaw, hfov || 95, 1200);
+        } catch {}
+      }, 300);
     }
 
     hablarEnVozAlta(paso.locucion, () => {
       tourTimerRef.current = setTimeout(() => {
         ejecutarPasoTour(pasos, index + 1);
-      }, 1000);
+      }, 1200);
     });
-  }, [hablarEnVozAlta]);
+  }, [hablarEnVozAlta, metaData, escenaActiva]);
+
 
   const toggleTourNarrado = () => {
     if (tourActivo) {
@@ -480,6 +606,39 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
           </div>
         )}
       </div>
+
+      {/* ─── Botón Flotante de Asistente de Voz Espacial (Micrófono) ─── */}
+      <button
+        onClick={toggleMicrofono}
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '24px',
+          zIndex: 9999,
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: escuchandoVoz ? '#ef4444' : '#0284c7',
+          border: '2px solid rgba(255, 255, 255, 0.4)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: escuchandoVoz ? '0 0 25px rgba(239, 68, 68, 0.8)' : '0 8px 25px rgba(2, 132, 199, 0.5)',
+          transition: 'all 0.3s ease'
+        }}
+        title={escuchandoVoz ? 'Escuchando tu voz... (toca para pausar)' : 'Toca y habla al Asistente Espacial'}
+      >
+        {procesandoNLP ? (
+          <Loader2 size={24} className="animate-spin" />
+        ) : escuchandoVoz ? (
+          <MicOff size={24} />
+        ) : (
+          <Mic size={24} />
+        )}
+      </button>
+
 
       {/* Estilos CSS Inline para Pines de Realidad Aumentada sobre Pannellum */}
       <style>{`

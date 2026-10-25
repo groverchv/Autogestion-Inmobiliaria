@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../providers/auth_provider.dart';
+
+
 
 class VisorInmersivo360Screen extends StatefulWidget {
   final String panoramaUrl;
@@ -22,6 +26,10 @@ class VisorInmersivo360Screen extends StatefulWidget {
 }
 
 class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with SingleTickerProviderStateMixin {
+  // Panorama activo actual
+  late String _panoramaActualUrl;
+  int? _panoramaActualId;
+
   // Rotación en los 3 ejes (Yaw / Pitch / Roll)
   double _yaw = 0.0;   // Horizontal (360°)
   double _pitch = 0.0; // Vertical (Arriba / Abajo)
@@ -41,6 +49,13 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   List<dynamic> _pasosTour = [];
   Timer? _tourTimer;
   String _locucionActual = '';
+  bool _procesandoNLP = false;
+  late FlutterTts _flutterTts;
+
+  // Reconocimiento de voz real (STT)
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _sttDisponible = false;
+  bool _escuchando = false;
 
   // Controlador de Animación para giros cinemáticos suaves
   late AnimationController _animController;
@@ -51,7 +66,13 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   @override
   void initState() {
     super.initState();
+    _panoramaActualUrl = widget.panoramaUrl;
     _cargarDatosMetaverso();
+
+    _flutterTts = FlutterTts();
+    _initTts();
+    _initStt();
+
 
     _animController = AnimationController(
       vsync: this,
@@ -82,6 +103,8 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     _gyroSub?.cancel();
     _tourTimer?.cancel();
     _animController.dispose();
+    _flutterTts.stop();
+    _speech.stop();
     super.dispose();
   }
 
@@ -92,6 +115,13 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     if (data != null && mounted) {
       setState(() {
         _metaversoDatos = data;
+        if (data['panoramas'] != null && (data['panoramas'] as List).isNotEmpty) {
+          final firstPano = (data['panoramas'] as List).first;
+          if (firstPano['archivo'] != null && _panoramaActualUrl.isEmpty) {
+            _panoramaActualUrl = firstPano['archivo'];
+            _panoramaActualId = firstPano['id'];
+          }
+        }
       });
     }
   }
@@ -117,14 +147,14 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     _animController.forward(from: 0.0);
   }
 
-  // ─── Iniciar Tour Guiado con Voz ─────────────────────────────────────────
+  // ─── Iniciar Tour Guiado Dinámico ────────────────────────────────────────
   Future<void> _iniciarTourVirtual() async {
     if (widget.inmuebleId == null) return;
 
     final api = context.read<AuthProvider>().apiService;
     final tourData = await api.iniciarTourVirtual(
       inmuebleId: widget.inmuebleId!,
-      fotoUrl: widget.panoramaUrl,
+      fotoUrl: _panoramaActualUrl,
     );
 
     if (tourData != null && tourData['pasos'] != null && mounted) {
@@ -145,6 +175,44 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     });
   }
 
+  Future<void> _initTts() async {
+    try {
+      await _flutterTts.setLanguage('es-ES');
+      await _flutterTts.setSpeechRate(0.48);
+      await _flutterTts.setVolume(1.0);
+      await _flutterTts.setPitch(1.05);
+    } catch (_) {}
+  }
+
+  Future<void> _initStt() async {
+    _sttDisponible = await _speech.initialize(
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          if (mounted) setState(() => _escuchando = false);
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          setState(() {
+            _escuchando = false;
+            _procesandoNLP = false;
+            _locucionActual = '';
+          });
+        }
+      },
+    );
+  }
+
+  Future<void> _hablarEnVozAlta(String texto) async {
+    if (texto.isEmpty) return;
+    try {
+      await _speech.stop();
+      await _flutterTts.stop();
+      await _flutterTts.speak(texto);
+    } catch (_) {}
+  }
+
+  // ─── Ejecutar Paso del Tour con Narración por Voz Real ───────────────
   void _ejecutarPasoTour() {
     if (!_tourActivo || _pasoTourIndex >= _pasosTour.length) {
       _detenerTourVirtual();
@@ -154,11 +222,28 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     final paso = _pasosTour[_pasoTourIndex];
     final double yawGrados = (paso['camara_360']?['yaw'] as num? ?? 0.0).toDouble();
     final double pitchGrados = (paso['camara_360']?['pitch'] as num? ?? 0.0).toDouble();
-    final double duracionSeg = (paso['duracion_seg'] as num? ?? 5.5).toDouble();
+    final double duracionSeg = (paso['duracion_seg'] as num? ?? 6.0).toDouble();
+    final int? panoId = paso['panorama_id'];
+    final String locucion = paso['locucion'] ?? '';
+
+    // Cambiar dinámicamente de panorama si el paso corresponde a otro ambiente
+    if (panoId != null && _metaversoDatos?['panoramas'] != null) {
+      final List panoramas = _metaversoDatos!['panoramas'];
+      final targetPano = panoramas.firstWhere((p) => p['id'] == panoId, orElse: () => null);
+      if (targetPano != null && targetPano['archivo'] != null) {
+        _panoramaActualUrl = targetPano['archivo'];
+        _panoramaActualId = targetPano['id'];
+      }
+    }
 
     setState(() {
-      _locucionActual = paso['locucion'] ?? '';
+      _locucionActual = '[${_pasoTourIndex + 1}/${_pasosTour.length}] ${paso['titulo']}: "$locucion"';
     });
+
+    // Reproducir locución en voz alta
+    if (locucion.isNotEmpty) {
+      _hablarEnVozAlta(locucion);
+    }
 
     // Animar cámara hacia el punto
     final targetYaw = (yawGrados * math.pi / 180.0).clamp(-math.pi, math.pi);
@@ -174,6 +259,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
       }
     });
   }
+
 
 
   @override
@@ -297,11 +383,12 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                 ),
               ),
 
-            if (_tourActivo && _locucionActual.isNotEmpty)
+            if (_locucionActual.isNotEmpty)
               Positioned(
                 top: 16,
                 left: 16,
                 right: 16,
+
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
@@ -364,8 +451,80 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     });
   }
 
-  // ─── Consultar Medidas y Espacio con IA Backend ──────────────────────
+  // ─── Activar Reconocimiento de Voz Real (STT nativo Android/iOS) ───────────
+  Future<void> _iniciarCapturaVoz() async {
+    // Si ya está escuchando, detener
+    if (_escuchando) {
+      await _speech.stop();
+      setState(() {
+        _escuchando = false;
+        _procesandoNLP = false;
+        _locucionActual = '';
+      });
+      return;
+    }
+
+    if (_procesandoNLP) return;
+
+    // Si hay un tour activo, detenerlo para dar prioridad a la voz del usuario
+    if (_tourActivo) {
+      _detenerTourVirtual();
+    }
+
+    // Detener cualquier locución TTS en curso antes de escuchar
+    await _flutterTts.stop();
+
+    if (!_sttDisponible) {
+      // Intentar inicializar nuevamente si no estaba disponible
+      _sttDisponible = await _speech.initialize();
+    }
+
+    if (!_sttDisponible) {
+      setState(() {
+        _locucionActual = 'Micrófono no disponible en este dispositivo.';
+      });
+      _hablarEnVozAlta('El micrófono no está disponible en este momento.');
+      return;
+    }
+
+    setState(() {
+      _escuchando = true;
+      _procesandoNLP = false;
+      _locucionActual = 'Escuchando... Habla ahora.';
+    });
+
+    await _speech.listen(
+      onResult: (result) {
+        if (result.finalResult && result.recognizedWords.isNotEmpty) {
+          final String comandoVoz = result.recognizedWords;
+          _speech.stop();
+          setState(() {
+            _escuchando = false;
+            _locucionActual = 'Procesando: "$comandoVoz"';
+          });
+          // Comandos locales de camara (sin red)
+          _ejecutarComandoCamara(comandoVoz);
+          // Consultar al asistente NLP del backend
+          _consultarAsistente(comandoVoz);
+        }
+      },
+      listenOptions: stt.SpeechListenOptions(
+        partialResults: false,
+        cancelOnError: true,
+        localeId: 'es_ES',
+        listenFor: const Duration(seconds: 15),
+        pauseFor: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // ─── Consultar Medidas y Espacio con IA Backend (NLP y Voz) ─────────────
   Future<void> _consultarAsistente(String consulta) async {
+    setState(() {
+      _procesandoNLP = true;
+      _locucionActual = 'Analizando tu pregunta con IA: "$consulta"...';
+    });
+
     final api = context.read<AuthProvider>().apiService;
     final res = await api.consultarAsistenteEspacial(
       consulta: consulta,
@@ -373,76 +532,46 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     );
 
     if (res != null && mounted) {
-      // Si la IA nos devuelve orientación de cámara, giramos suavemente
+      final String respuestaTexto = res['respuesta'] ?? 'Medición registrada con IA.';
+
+      // Si la IA nos devuelve orientación de cámara hacia el objeto consultado, rotamos la vista 360°
       if (res['camara_360'] != null) {
         final double yawGrados = (res['camara_360']['yaw'] as num).toDouble();
         final double pitchGrados = (res['camara_360']['pitch'] as num).toDouble();
-        setState(() {
-          _yaw = (yawGrados * math.pi / 180.0).clamp(-math.pi, math.pi);
-          _pitch = (pitchGrados / 45.0).clamp(-1.0, 1.0);
-          _fov = 1.2;
-        });
+        final targetYaw = (yawGrados * math.pi / 180.0).clamp(-math.pi, math.pi);
+        final targetPitch = (pitchGrados / 45.0).clamp(-1.0, 1.0);
+        _animarCamaraHacia(targetYaw: targetYaw, targetPitch: targetPitch, targetFov: 1.15);
       }
 
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: const Color(0xFF0F172A),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        builder: (ctx) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.auto_awesome, color: Color(0xFF38BDF8), size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    res['elemento'] ?? 'Medición Espacial 360°',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                res['respuesta'] ?? '',
-                style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 14, height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              if (res['dimensiones'] != null)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (res['dimensiones']['largo_m'] != null)
-                      _chipMedida('Largo: ${res['dimensiones']['largo_m']} m'),
-                    if (res['dimensiones']['ancho_m'] != null)
-                      _chipMedida('Ancho: ${res['dimensiones']['ancho_m']} m'),
-                    if (res['dimensiones']['alto_m'] != null)
-                      _chipMedida('Alto: ${res['dimensiones']['alto_m']} m'),
-                    if (res['dimensiones']['area_m2'] != null)
-                      _chipMedida('Área: ${res['dimensiones']['area_m2']} m²', isArea: true),
-                  ],
-                ),
-            ],
-          ),
-        ),
-      );
+      setState(() {
+        _procesandoNLP = false;
+        _locucionActual = respuestaTexto;
+      });
+
+      // Decir la respuesta en voz alta a través de los altavoces / auriculares
+      _hablarEnVozAlta(respuestaTexto);
+
+      // Auto-ocultar el banner de locución después de 9 segundos
+      Timer(const Duration(seconds: 9), () {
+        if (mounted && _locucionActual == respuestaTexto) {
+          setState(() {
+            _locucionActual = '';
+          });
+        }
+      });
+    } else {
+      if (mounted) {
+        setState(() {
+          _procesandoNLP = false;
+        });
+      }
     }
   }
 
-  Widget _chipMedida(String label, {bool isArea = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isArea ? const Color(0xFF0284C7) : const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF334155)),
-      ),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-    );
-  }
+
+
+
+
 
   Widget _buildSinglePanoramaView() {
     final alignX = (_yaw / math.pi).clamp(-1.0, 1.0);
@@ -458,7 +587,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
               ..scale(_fov, _fov, 1.0),
             alignment: Alignment.center,
             child: Image.network(
-              widget.panoramaUrl,
+              _panoramaActualUrl.isNotEmpty ? _panoramaActualUrl : widget.panoramaUrl,
               fit: BoxFit.cover,
               alignment: Alignment(alignX, alignY),
               errorBuilder: (context, error, stackTrace) => const Center(
@@ -468,91 +597,104 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
           ),
         ),
 
-        // ─── Controles Flotantes de Cámara & Preguntas ───────────────────────
-        Positioned(
-          bottom: 20,
-          left: 16,
-          right: 16,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Barra de Sugerencias de Preguntas
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _botonPregunta('¿Cuánto mide la puerta?'),
-                    _botonPregunta('¿Cuánto mide la ventana?'),
-                    _botonPregunta('¿Cuánto es de largo el patio?'),
-                    _botonPregunta('¿Cabe refrigerador de 90 cm?'),
-                  ],
-                ),
+        // ─── Selector de Ambientes / Habitaciones Dinámico ───
+        if (_metaversoDatos?['panoramas'] != null && (_metaversoDatos!['panoramas'] as List).length > 1)
+          Positioned(
+            bottom: 90,
+            left: 16,
+            right: 16,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: (_metaversoDatos!['panoramas'] as List).map<Widget>((p) {
+                  final bool esActivo = p['id'] == _panoramaActualId || p['archivo'] == _panoramaActualUrl;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(
+                        p['descripcion'] ?? 'Ambiente',
+                        style: TextStyle(
+                          color: esActivo ? Colors.white : Colors.grey[300],
+                          fontSize: 12,
+                          fontWeight: esActivo ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      selected: esActivo,
+                      selectedColor: const Color(0xFF0284C7),
+                      backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.85),
+                      side: BorderSide(
+                        color: esActivo ? const Color(0xFF38BDF8) : const Color(0xFF334155),
+                      ),
+                      onSelected: (selected) {
+                        if (selected && p['archivo'] != null) {
+                          setState(() {
+                            _panoramaActualUrl = p['archivo'];
+                            _panoramaActualId = p['id'];
+                          });
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
               ),
-              const SizedBox(height: 8),
+            ),
+          ),
 
-              // Botonera de Control de Cámara 360°
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.75),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF334155)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Color(0xFF38BDF8), size: 20),
-                      onPressed: () => _ejecutarComandoCamara('izquierda'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_upward, color: Color(0xFF38BDF8), size: 20),
-                      onPressed: () => _ejecutarComandoCamara('arriba'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_downward, color: Color(0xFF38BDF8), size: 20),
-                      onPressed: () => _ejecutarComandoCamara('abajo'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_forward, color: Color(0xFF38BDF8), size: 20),
-                      onPressed: () => _ejecutarComandoCamara('derecha'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.zoom_in, color: Color(0xFF38BDF8), size: 22),
-                      onPressed: () => _ejecutarComandoCamara('acercate'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.zoom_out, color: Color(0xFF38BDF8), size: 22),
-                      onPressed: () => _ejecutarComandoCamara('alejate'),
-                    ),
-                  ],
-                ),
+        // ─── Controles Flotantes de Cámara & Preguntas ───────────────────────
+
+        // ─── Asistente de Voz Espacial Flotante ───
+        Positioned(
+          bottom: 24,
+          right: 20,
+          child: GestureDetector(
+            onTap: _iniciarCapturaVoz,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _escuchando
+                    ? const Color(0xFF10B981)
+                    : _procesandoNLP
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF0284C7),
+                boxShadow: [
+                  BoxShadow(
+                    color: (_escuchando
+                            ? const Color(0xFF10B981)
+                            : _procesandoNLP
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFF0284C7))
+                        .withValues(alpha: 0.55),
+                    blurRadius: _escuchando ? 24 : 12,
+                    spreadRadius: _escuchando ? 6 : 2,
+                  )
+                ],
               ),
-            ],
+              child: _procesandoNLP && !_escuchando
+                  ? const Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                      ),
+                    )
+                  : Icon(
+                      _escuchando ? Icons.mic : Icons.mic_none,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _botonPregunta(String texto) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: ElevatedButton(
-        onPressed: () => _consultarAsistente(texto),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1E293B),
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Color(0xFF38BDF8)),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        ),
-        child: Text(texto, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
 
   Widget _buildVRDualView() {
+
     final alignX = (_yaw / math.pi).clamp(-1.0, 1.0);
     final alignY = _pitch.clamp(-1.0, 1.0);
 

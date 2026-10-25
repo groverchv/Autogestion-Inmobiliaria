@@ -66,22 +66,32 @@ class Pago(models.Model):
         # Primero guardamos en la base de datos local
         super().save(*args, **kwargs)
         
-        # Sincronización asíncrona a Blockchain si fue completado
+        # Sincronización asíncrona a Blockchain si fue completado (background)
         if self.estado == 'completado':
             try:
                 from inmuebles.blockchain_service import BlockchainService
-                BlockchainService.registrar_pago(
-                    pago_id=self.id,
-                    contrato_id=self.contrato.id,
-                    monto=self.monto,
-                    fecha_str=self.fecha,
-                    tipo_pago=self.tipo_pago.nombre if self.tipo_pago else "Efectivo",
-                    transaction_id=self.referencia
-                )
+                BlockchainService.dispatch(self._sync_blockchain_pago)
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.warning(f"Error sincronizando pago {self.id} con Blockchain: {str(e)}")
+                logger.warning(f"Error despachando sync blockchain de pago {self.id}: {str(e)}")
+
+    def _sync_blockchain_pago(self):
+        """Registra el pago en el ledger — corre en el pool de background."""
+        try:
+            from inmuebles.blockchain_service import BlockchainService
+            BlockchainService.registrar_pago(
+                pago_id=self.id,
+                contrato_id=self.contrato.id,
+                monto=self.monto,
+                fecha_str=self.fecha,
+                tipo_pago=self.tipo_pago.nombre if self.tipo_pago else "Efectivo",
+                transaction_id=self.referencia
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error sincronizando pago {self.id} con Blockchain: {str(e)}")
 
     def __str__(self):
         return f'Pago #{self.id} — {self.monto} Bs'

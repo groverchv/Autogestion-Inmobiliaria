@@ -2642,6 +2642,129 @@
         }
       ],
       "blockHash": "d3fe4f28e42aba46abdda9467e61eef484c85c4a47029710e862f55e8ac4adb3"
+    },
+    {
+      "blockNumber": 131,
+      "prevHash": "d3fe4f28e42aba46abdda9467e61eef484c85c4a47029710e862f55e8ac4adb3",
+      "timestamp": "2026-10-25T20:17:41.777Z",
+      "transactions": [
+        {
+          "txId": "tx_5d38403c69e025bd165740184138b47d",
+          "timestamp": "2026-10-25T20:17:41.777Z",
+          "txName": "crearContrato",
+          "args": {
+            "id": "CON-6",
+            "inmuebleId": "INM-11",
+            "propietarioId": "USR-2",
+            "inquilinoId": "USR-3",
+            "montoAlquiler": 2800,
+            "montoDeposito": 5600,
+            "fechaInicio": "2026-11-01",
+            "fechaFin": "2027-10-31"
+          }
+        }
+      ],
+      "blockHash": "bf44ed739c1a0c71e0662c55ecec757e4791069074502085f99b368104bf0726"
+    },
+    {
+      "blockNumber": 132,
+      "prevHash": "bf44ed739c1a0c71e0662c55ecec757e4791069074502085f99b368104bf0726",
+      "timestamp": "2026-10-25T20:17:55.891Z",
+      "transactions": [
+        {
+          "txId": "tx_e1f34d710b8d30afb4adcdda72462b14",
+          "timestamp": "2026-10-25T20:17:55.891Z",
+          "txName": "firmarContrato",
+          "args": {
+            "id": "CON-6",
+            "rolUsuario": "propietario",
+            "hashFirmaDigital": "a9e32e539578316dd6f03417afe3cf035ae90af868d24665dae216a18702a60d"
+          }
+        }
+      ],
+      "blockHash": "0e39bc42ffe18a5f14dde01fdaa835e96a42128ccde1191bd16a18f6b64a0a77"
+    },
+    {
+      "blockNumber": 133,
+      "prevHash": "0e39bc42ffe18a5f14dde01fdaa835e96a42128ccde1191bd16a18f6b64a0a77",
+      "timestamp": "2026-10-25T20:17:55.900Z",
+      "transactions": [
+        {
+          "txId": "tx_67d29c9ca66f0f2153aff268a6cdfd2b",
+          "timestamp": "2026-10-25T20:17:55.900Z",
+          "txName": "firmarContrato",
+          "args": {
+            "id": "CON-6",
+            "rolUsuario": "inquilino",
+            "hashFirmaDigital": "7573e3afd8f45f7b47d58afc785e54bde2f3e89d691f03ae0445b4a63d54da70"
+          }
+        }
+      ],
+      "blockHash": "8069e6a74f44b28cb23458a84b2d758319418e79a38d3a7e88b5f7a782b4fba4"
+    },
+    {
+      "blockNumber": 134,
+      "prevHash": "8069e6a74f44b28cb23458a84b2d758319418e79a38d3a7e88b5f7a782b4fba4",
+      "timestamp": "2026-10-25T20:18:45.439Z",
+      "transactions": [
+        {
+          "txId": "tx_af7fe9287422347f67e5dc1f0409993b",
+          "timestamp": "2026-10-25T20:18:45.439Z",
+          "txName": "registrarPago",
+          "args": {
+            "id": "PAG-9",
+            "contratoId": "CON-6",
+            "monto": 2800,
+            "fecha": "2026-10-25",
+            "tipoPago": "QR",
+            "stripeTransactionId": "QR-DEMO-001"
+          }
+        }
+      ],
+      "blockHash": "a595d53c4672f79d7b7135517bc5df0fe6273941c63601f7231dcf7a9bd003b3"
+    },
+    {
+      "blockNumber": 135,
+      "prevHash": "a595d53c4672f79d7b7135517bc5df0fe6273941c63601f7231dcf7a9bd003b3",
+      "timestamp": "2026-10-25T20:30:15.935Z",
+      "transactions": [
+        {
+          "txId": "tx_5bd545d858f1d50e4cdb5767807cdaf4",
+          "timestamp": "2026-10-25T20:30:15.935Z",
+          "txName": "registrarInmueble",
+          "args": {
+            "id": "INM-11",
+            "titulo": "Casa zona 2do anillo",
+            "propietarioId": "USR-2",
+            "direccion": "Santa Cruz, 2do anillo - Manuela Velasco",
+            "hashTituloPropiedad": "977d7d9c84b65be465b15ad74ae4d50374875683146915461f6f92979ad3a912"
+          }
+        }
+      ],
+      "blockHash": "74f2f46924449be73f639c09f499fc90d4d2465d6f96fa0ad5cae785908f3457"
+    },
+    {
+      "blockNumber": 136,
+      "prevHash": "74f2f46924449be73f639c09f499fc90d4d2465d6f96fa0ad5cae785908f3457",
+      "timestamp": "2026-10-25T21:11:16.526Z",
+      "transactions": [
+        {
+          "txId": "tx_202b2138a6a437785391a5e310f3776c",
+          "timestamp": "2026-10-25T21:11:16.526Z",
+          "txName": "crearContrato",
+          "args": {
+            "id": "CON-8",
+            "inmuebleId": "INM-11",
+            "propietarioId": "USR-2",
+            "inquilinoId": "USR-3",
+            "montoAlquiler": 2800,
+            "montoDeposito": 2800,
+            "fechaInicio": "2026-11-01",
+            "fechaFin": "2027-11-01"
+          }
+        }
+      ],
+      "blockHash": "b726a7efc1a1a70b26f2ad35b80076e37b8df4868889b1e622f02ffa6530c4fc"
     }
   ],
   "worldState": {
@@ -2649,11 +2772,11 @@
       "docType": "pago",
       "id": "PAG-9",
       "contratoId": "CON-6",
-      "monto": 3500,
-      "fecha": "2026-06-13",
-      "tipoPago": "Efectivo",
-      "stripeTransactionId": "",
-      "timestamp": "2026-06-14T00:41:50.385Z"
+      "monto": 2800,
+      "fecha": "2026-10-25",
+      "tipoPago": "QR",
+      "stripeTransactionId": "QR-DEMO-001",
+      "timestamp": "2026-10-25T20:18:45.439Z"
     },
     "PAG-10": {
       "docType": "pago",
@@ -2875,17 +2998,17 @@
       "id": "CON-6",
       "inmuebleId": "INM-11",
       "propietarioId": "USR-2",
-      "inquilinoId": "USR-2",
-      "montoAlquiler": 3500,
-      "montoDeposito": 7000,
-      "fechaInicio": "2026-05-14",
-      "fechaFin": "2027-05-14",
+      "inquilinoId": "USR-3",
+      "montoAlquiler": 2800,
+      "montoDeposito": 5600,
+      "fechaInicio": "2026-11-01",
+      "fechaFin": "2027-10-31",
       "firmas": {
         "propietario": "a9e32e539578316dd6f03417afe3cf035ae90af868d24665dae216a18702a60d",
-        "inquilino": "81602086a61a04b2b58ecf3333464a8ab1999c0ee751a63bf0c34302a9ee2c9b"
+        "inquilino": "7573e3afd8f45f7b47d58afc785e54bde2f3e89d691f03ae0445b4a63d54da70"
       },
       "estado": "activo",
-      "timestamp": "2026-06-14T00:41:50.143Z"
+      "timestamp": "2026-10-25T20:17:55.900Z"
     },
     "CON-7": {
       "docType": "contrato",
@@ -2907,19 +3030,19 @@
     "CON-8": {
       "docType": "contrato",
       "id": "CON-8",
-      "inmuebleId": "INM-13",
-      "propietarioId": "USR-4",
-      "inquilinoId": "USR-4",
-      "montoAlquiler": 0,
-      "montoDeposito": 25000,
-      "fechaInicio": "2026-05-29",
-      "fechaFin": "2027-07-03",
+      "inmuebleId": "INM-11",
+      "propietarioId": "USR-2",
+      "inquilinoId": "USR-3",
+      "montoAlquiler": 2800,
+      "montoDeposito": 2800,
+      "fechaInicio": "2026-11-01",
+      "fechaFin": "2027-11-01",
       "firmas": {
-        "propietario": "2ff9f98624c78909db61e633cfdaad72ae545aeb0197aa6324a3f47c956380ab",
-        "inquilino": "770d87714506dd842ad39e4799808a1c6c7c2e328ef13e6e517f8d336688f4f1"
+        "propietario": "",
+        "inquilino": ""
       },
-      "estado": "activo",
-      "timestamp": "2026-06-14T00:41:50.279Z"
+      "estado": "pendiente",
+      "timestamp": "2026-10-25T21:11:16.526Z"
     },
     "CON-9": {
       "docType": "contrato",
@@ -3557,6 +3680,17 @@
       "verificacionEstado": "verificado",
       "hashTituloPropiedad": "0fddebc23dd309842acceedbfd6aae7a0abfbaee6b845cd5f76b6532d56b4d63",
       "timestamp": "2026-06-14T03:30:53.270Z"
+    },
+    "INM-11": {
+      "docType": "inmueble",
+      "id": "INM-11",
+      "titulo": "Casa zona 2do anillo",
+      "propietarioId": "USR-2",
+      "direccion": "Santa Cruz, 2do anillo - Manuela Velasco",
+      "estado": "disponible",
+      "verificacionEstado": "verificado",
+      "hashTituloPropiedad": "977d7d9c84b65be465b15ad74ae4d50374875683146915461f6f92979ad3a912",
+      "timestamp": "2026-10-25T20:30:15.935Z"
     }
   }
 }

@@ -453,10 +453,10 @@ class AsistenteEspacialEngine:
     @classmethod
     def generar_tour_narrado(cls, inmueble_obj: Any, foto_360_url: Optional[str] = None) -> Dict[str, Any]:
         """
-        Genera un itinerario cinemático secuenciado para el Guía Turístico Virtual con Voz 360°.
-        Provee bienvenida personalizada, datos arquitectónicos y rotaciones esféricas suaves (yaw, pitch, hfov).
+        Genera un itinerario cinemático dinámico secuenciado por ambientes reales del inmueble.
+        Adapta la locución al ambiente activo (sala, cocina, dormitorio, terraza, etc.).
         """
-        titulo = getattr(inmueble_obj, 'titulo', 'esta hermosa propiedad') if inmueble_obj else 'esta propiedad'
+        titulo = getattr(inmueble_obj, 'titulo', 'esta propiedad') if inmueble_obj else 'esta propiedad'
         tipo = inmueble_obj.tipo.nombre if hasattr(inmueble_obj, 'tipo') and inmueble_obj.tipo else 'inmueble'
         precio = getattr(inmueble_obj, 'precio', '0.00') if inmueble_obj else '0.00'
         oferta = inmueble_obj.get_tipo_oferta_display() if hasattr(inmueble_obj, 'get_tipo_oferta_display') else 'Alquiler'
@@ -464,47 +464,86 @@ class AsistenteEspacialEngine:
         habs = getattr(inmueble_obj, 'habitaciones', 3) if inmueble_obj else 3
         banos = getattr(inmueble_obj, 'banos', 2) if inmueble_obj else 2
 
-        pasos = [
-            {
-                'id': 1,
-                'titulo': 'Bienvenida y Vista Panorámica',
-                'locucion': f"¡Hola! Te doy una cordial bienvenida a {titulo}. Soy tu guía virtual interactivo. Estamos ante un {tipo} de {sup:.0f} metros cuadrados con acabados de primera calidad.",
-                'camara_360': {'yaw': 0.0, 'pitch': 0.0, 'hfov': 105.0},
-                'duracion_seg': 6.0
-            },
-            {
-                'id': 2,
-                'titulo': 'Iluminación Natural y Ventanales',
-                'locucion': "Observa los amplios ventanales corredizos a la izquierda. Están diseñados para maximizar la luz solar y conectar visualmente con el exterior.",
-                'camara_360': {'yaw': -35.0, 'pitch': 3.0, 'hfov': 85.0},
-                'duracion_seg': 6.0
-            },
-            {
-                'id': 3,
-                'titulo': 'Área Social y Sala de Estar',
-                'locucion': "Girando hacia el área social, dispones de una distribución espaciosa para tu juego de living y entretenimiento con excelente altura de cielo raso.",
-                'camara_360': {'yaw': 75.0, 'pitch': -5.0, 'hfov': 80.0},
-                'duracion_seg': 5.5
-            },
-            {
-                'id': 4,
-                'titulo': 'Distribución, Puertas y Accesos',
-                'locucion': f"Esta propiedad cuenta con {habs} dormitorios, {banos} baños y acceso fluido hacia las áreas privadas. Además, se ofrece en {oferta} por Bs. {precio}.",
-                'camara_360': {'yaw': 175.0, 'pitch': -2.0, 'hfov': 80.0},
-                'duracion_seg': 6.5
-            },
-            {
-                'id': 5,
-                'titulo': 'Interacción en Tiempo Real',
-                'locucion': "El recorrido narrado ha finalizado. Puedes tocar el micrófono cuando gustes para preguntarme medidas exactas o pedirme que enfoque cualquier lugar.",
+        # Extraer panoramas reales del inmueble
+        panoramas_qs = inmueble_obj.multimedia.filter(tipo='panorama360').order_by('orden') if inmueble_obj else []
+        pasos = []
+
+        if panoramas_qs and len(panoramas_qs) > 0:
+            for idx, p in enumerate(panoramas_qs):
+                desc = p.descripcion or f'Ambiente {idx+1}'
+                desc_lower = desc.lower()
+                
+                # Locución contextualizada por ambiente
+                if 'cocina' in desc_lower:
+                    loc = f"Nos encontramos ahora en la {desc}. Diseñada con mobiliario empotrado de alto impacto y encimeras de fácil limpieza, conectando directamente con el comedor."
+                    cam = {'yaw': -45.0, 'pitch': -5.0, 'hfov': 90.0}
+                elif 'dormitorio' in desc_lower or 'suite' in desc_lower or 'cuarto' in desc_lower or 'habitación' in desc_lower:
+                    loc = f"Pasamos a {desc}. Un espacio íntimo con excelente confort acústico y ventilación natural cruzada, ideal para el descanso."
+                    cam = {'yaw': 30.0, 'pitch': 0.0, 'hfov': 85.0}
+                elif 'baño' in desc_lower:
+                    loc = f"Aquí observamos el {desc}, equipado con box de vidrio templado, grifería de bajo consumo y revestimiento cerámico de alta durabilidad."
+                    cam = {'yaw': 15.0, 'pitch': -8.0, 'hfov': 95.0}
+                elif 'terraza' in desc_lower or 'balcon' in desc_lower or 'balcón' in desc_lower:
+                    loc = f"Estamos en la {desc}. Ofrece una vista panorámica privilegiada y ventilación continua para disfrutar del entorno barrial."
+                    cam = {'yaw': 90.0, 'pitch': 5.0, 'hfov': 100.0}
+                elif idx == 0:
+                    loc = f"¡Hola! Te doy la bienvenida a {titulo}. Soy tu guía virtual espacial. Nos encontramos en la {desc}, un {tipo} de {sup:.0f} metros cuadrados disponible en {oferta} por Bs. {precio}."
+                    cam = {'yaw': 0.0, 'pitch': 0.0, 'hfov': 100.0}
+                else:
+                    loc = f"Nos trasladamos a la {desc}. Observa la amplitud de los muros y la iluminación que realza cada detalle constructivo."
+                    cam = {'yaw': 45.0, 'pitch': -2.0, 'hfov': 90.0}
+
+                pasos.append({
+                    'id': idx + 1,
+                    'panorama_id': p.id,
+                    'titulo': desc,
+                    'locucion': loc,
+                    'camara_360': cam,
+                    'duracion_seg': 6.5
+                })
+
+            # Paso de cierre y preguntas
+            pasos.append({
+                'id': len(pasos) + 1,
+                'panorama_id': panoramas_qs[0].id,
+                'titulo': 'Recorrido Interactivo Abierto',
+                'locucion': f"Has conocido los principales ambientes de {titulo}. Puedes navegar libremente entre habitaciones o consultarme por voz sobre cualquier medida.",
                 'camara_360': {'yaw': 0.0, 'pitch': 0.0, 'hfov': 100.0},
-                'duracion_seg': 5.0
-            }
-        ]
+                'duracion_seg': 5.5
+            })
+        else:
+            # Fallback cinemático
+            pasos = [
+                {
+                    'id': 1,
+                    'panorama_id': None,
+                    'titulo': 'Bienvenida Panorámica',
+                    'locucion': f"¡Hola! Te doy la bienvenida a {titulo}. Soy tu guía virtual. Estamos ante un {tipo} de {sup:.0f} metros cuadrados con {habs} dormitorios y {banos} baños.",
+                    'camara_360': {'yaw': 0.0, 'pitch': 0.0, 'hfov': 100.0},
+                    'duracion_seg': 6.0
+                },
+                {
+                    'id': 2,
+                    'panorama_id': None,
+                    'titulo': 'Iluminación y Ventanales',
+                    'locucion': "Observa los ventanales corredizos a la izquierda, diseñados para captar abundante iluminación natural.",
+                    'camara_360': {'yaw': -35.0, 'pitch': 3.0, 'hfov': 85.0},
+                    'duracion_seg': 5.5
+                },
+                {
+                    'id': 3,
+                    'panorama_id': None,
+                    'titulo': 'Área Social',
+                    'locucion': f"Girando hacia la sala de estar, dispones de amplios metros para tu mobiliario. La propiedad se ofrece en {oferta} por Bs. {precio}.",
+                    'camara_360': {'yaw': 75.0, 'pitch': -5.0, 'hfov': 85.0},
+                    'duracion_seg': 6.0
+                }
+            ]
 
         return {
             'propiedad_titulo': titulo,
             'total_pasos': len(pasos),
             'pasos': pasos
         }
+
 

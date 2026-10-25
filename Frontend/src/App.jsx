@@ -21,14 +21,12 @@ const App = () => {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const applyTheme = (e) => {
         root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-        root.style.backgroundColor = e.matches ? '#0f172a' : '#f8fafc';
       };
       applyTheme(mediaQuery);
       mediaQuery.addEventListener('change', applyTheme);
       return () => mediaQuery.removeEventListener('change', applyTheme);
     } else {
       root.setAttribute('data-theme', theme);
-      root.style.backgroundColor = theme === 'dark' ? '#0f172a' : '#f8fafc';
     }
   }, [theme]);
 

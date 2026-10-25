@@ -64,7 +64,8 @@ const Registro = () => {
         ci: formData.ci,
         nacimiento: formData.nacimiento,
         password: formData.password,
-        rol: 'usuario'
+        rol: 'usuario',
+        acepta_terminos: aceptaTerminos
       });
 
       setSuccess('¡Registro exitoso! Redirigiendo al inicio de sesión...');
@@ -197,7 +198,11 @@ const Registro = () => {
             >
               Términos y Condiciones Generales de Uso
             </button>
-            {' '}y la Política de Privacidad de Inmobiliaria Nobleve.
+            {' '}y la{' '}
+            <Link to="/privacidad" target="_blank" style={{ color: '#38bdf8', fontWeight: 'bold' }}>
+              Política de Privacidad
+            </Link>
+            {' '}de Inmobiliaria Nobleve.
           </label>
         </div>
 

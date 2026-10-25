@@ -22,6 +22,7 @@ import PagoExitoso from './pages/Public/PagoExitoso';
 import PagoCancelado from './pages/Public/PagoCancelado';
 import MisContratos from './pages/Public/MisContratos';
 import MisPagos from './pages/Public/MisPagos';
+import LegalPage from './pages/Legal/LegalPage';
 
 // Pages - Admin
 import DashboardAdmin from './pages/Admin/DashboardAdmin';
@@ -71,6 +72,10 @@ const router = createBrowserRouter([
         path: '/pago-cancelado',
         element: <PagoCancelado />,
       },
+      { path: '/privacidad', element: <LegalPage doc="privacidad" /> },
+      { path: '/terminos', element: <LegalPage doc="terminos" /> },
+      { path: '/cookies', element: <LegalPage doc="cookies" /> },
+      { path: '/reembolsos', element: <LegalPage doc="reembolsos" /> },
       {
         element: <ProtectedRoute />,
         children: [

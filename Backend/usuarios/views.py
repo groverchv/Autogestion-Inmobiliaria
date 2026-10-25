@@ -80,6 +80,11 @@ class RegistroView(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        if request.data.get('acepta_terminos'):
+            from django.utils import timezone
+            user.acepto_terminos_at = timezone.now()
+            user.terminos_version = 'v1.0'
+            user.save(update_fields=['acepto_terminos_at', 'terminos_version'])
         return Response(
             UsuarioSerializer(user).data,
             status=status.HTTP_201_CREATED,
@@ -381,18 +386,34 @@ class ResenaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         inmueble_id = self.request.query_params.get('inmueble')
         qs = Resena.objects.select_related('usuario', 'inmueble')
+        # El público solo ve reseñas aprobadas; staff/admin las ven todas (moderación)
+        if not (self.request.user.is_authenticated and (self.request.user.is_staff or self.request.user.rol == 'admin')):
+            qs = qs.filter(aprobada=True)
         if inmueble_id:
             qs = qs.filter(inmueble_id=inmueble_id)
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+        # Anti reseñas falsas: solo usuarios con interacción real (cita completada o contrato)
+        inmueble = serializer.validated_data.get('inmueble')
+        user = self.request.user
+        if not (user.is_staff or user.rol == 'admin'):
+            from inmuebles.models import Cita, Contrato
+            tiene_interaccion = (
+                Cita.objects.filter(inmueble=inmueble, cliente=user, estado='completada').exists()
+                or Contrato.objects.filter(inmueble=inmueble, inquilino=user, estado__in=['aceptado', 'activo', 'finalizado']).exists()
+                or inmueble.propietario_id == user.id
+            )
+            if not tiene_interaccion:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError('Solo puedes reseñar inmuebles con los que hayas tenido una cita completada o contrato.')
+        serializer.save(usuario=user)
 
     @action(detail=False, methods=['get'], url_path='promedio/(?P<inmueble_id>[^/.]+)')
     def promedio(self, request, inmueble_id=None):
-        """Obtener promedio de calificación de un inmueble."""
+        """Obtener promedio de calificación de un inmueble (solo reseñas aprobadas)."""
         from django.db.models import Avg
-        result = Resena.objects.filter(inmueble_id=inmueble_id).aggregate(
+        result = Resena.objects.filter(inmueble_id=inmueble_id, aprobada=True).aggregate(
             promedio=Avg('calificacion'),
             total=Count('id')
         )

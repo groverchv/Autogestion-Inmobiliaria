@@ -13,16 +13,19 @@
   --color-danger: #ef4444;
   --color-info: #0ea5e9;
 
-  /* Colores neutrales */
-  --color-bg: #f8fafc;
-  --color-bg-secondary: #f1f5f9;
-  --color-bg-card: #ffffff;
-  --color-bg-hover: #e2e8f0;
+  /* Colores neutrales y Fondos Juveniles */
+  --color-bg: #f0f7ff;
+  --color-bg-gradient: linear-gradient(180deg, #0284c7 0%, #0ea5e9 25%, #38bdf8 52%, #bae6fd 80%, #ffffff 100%);
+  --color-bg-ambient: radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.9) 0%, rgba(56, 189, 248, 0.25) 45%, rgba(2, 132, 199, 0.08) 100%),
+                      linear-gradient(180deg, #0284c7 0%, #0ea5e9 30%, #38bdf8 65%, #f0f9ff 100%);
+  --color-bg-secondary: rgba(255, 255, 255, 0.7);
+  --color-bg-card: rgba(255, 255, 255, 0.88);
+  --color-bg-hover: #e0f2fe;
   --color-surface: #ffffff;
-  --color-border: #cbd5e1;
-  --color-text: #0f172a;
-  --color-text-secondary: #334155;
-  --color-text-muted: #64748b;
+  --color-border: rgba(186, 230, 253, 0.6);
+  --color-text: #0b2545;
+  --color-text-secondary: #1e3a5f;
+  --color-text-muted: #475569;
 
   /* Tipografía */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -81,9 +84,12 @@
 /* ─── Modo Oscuro (Dark Mode) ──────────────────────────────── */
 [data-theme="dark"] {
   /* Colores neutrales */
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-card: #1e293b;
+  --color-bg: #091322;
+  --color-bg-gradient: linear-gradient(180deg, #033054 0%, #075985 30%, #0284c7 65%, #0369a1 90%, #091322 100%);
+  --color-bg-ambient: radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.25) 0%, rgba(14, 165, 233, 0.1) 50%, transparent 100%),
+                      linear-gradient(180deg, #05192d 0%, #0c2d48 40%, #0e3b61 100%);
+  --color-bg-secondary: rgba(30, 41, 59, 0.75);
+  --color-bg-card: rgba(15, 23, 42, 0.85);
   --color-bg-hover: #334155;
   --color-surface: #1e293b;
   --color-border: #334155;

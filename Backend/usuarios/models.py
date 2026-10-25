@@ -28,6 +28,8 @@ class Usuario(AbstractUser):
     nacimiento = models.DateField(null=True, blank=True)
     ci = models.CharField('Cédula de Identidad', max_length=20, blank=True, db_index=True)
     activo = models.BooleanField(default=True)
+    acepto_terminos_at = models.DateTimeField(null=True, blank=True)
+    terminos_version = models.CharField(max_length=20, blank=True)
 
     class Meta:
         db_table = 'usuarios_usuario'
@@ -191,6 +193,7 @@ class Resena(models.Model):
         help_text='Calificación de 1 a 5 estrellas'
     )
     comentario = models.TextField(blank=True)
+    aprobada = models.BooleanField(default=False)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 

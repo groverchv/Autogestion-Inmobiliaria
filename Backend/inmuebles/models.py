@@ -393,12 +393,22 @@ class Contrato(models.Model):
         is_new = self.pk is None
         # Guardar en base de datos primero
         super().save(*args, **kwargs)
-        
-        # Sincronización asíncrona a Blockchain
+
+        # Sincronización asíncrona a Blockchain (background, no bloquea el request)
+        try:
+            from .blockchain_service import BlockchainService
+            BlockchainService.dispatch(self._sync_blockchain, is_new)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error despachando sync blockchain de contrato {self.id}: {str(e)}")
+
+    def _sync_blockchain(self, is_new):
+        """Escritura real al ledger blockchain — corre en el pool de background."""
         try:
             from .blockchain_service import BlockchainService
             import hashlib
-            
+
             # 1. Si es un nuevo contrato, registrar borrador en Ledger
             if is_new:
                 BlockchainService.registrar_contrato(
@@ -411,15 +421,15 @@ class Contrato(models.Model):
                     inicio_str=self.inicio,
                     fin_str=self.fin
                 )
-            
+
             # 2. Si el contrato pasa a activo o aceptado, registrar firmas criptográficas simuladas de las partes
             if self.estado in ['activo', 'aceptado']:
                 hash_propietario = hashlib.sha256(f"PROPIETARIO-{self.id}-{self.inmueble.propietario.id}".encode()).hexdigest()
                 hash_inquilino = hashlib.sha256(f"INQUILINO-{self.id}-{self.inquilino.id}".encode()).hexdigest()
-                
+
                 BlockchainService.registrar_firma_contrato(self.id, 'propietario', hash_propietario)
                 BlockchainService.registrar_firma_contrato(self.id, 'inquilino', hash_inquilino)
-                
+
             elif self.estado in ['finalizado', 'cancelado']:
                 # Actualizar estado final en Blockchain
                 BlockchainService._put("contratos/firmar", {
@@ -606,29 +616,39 @@ class VerificacionTitulo(models.Model):
         # Primero guardamos en la base de datos local
         super().save(*args, **kwargs)
         
-        # Sincronización asíncrona a Blockchain si fue verificado con éxito
+        # Sincronización asíncrona a Blockchain si fue verificado con éxito (background)
         if self.estado == 'verificado':
             try:
                 from .blockchain_service import BlockchainService
-                import hashlib
-                
-                # Calculamos un hash único del archivo de título
-                hash_titulo = hashlib.sha256(self.archivo_titulo.encode('utf-8')).hexdigest()
-                
-                # Obtener dirección del inmueble
-                dir_str = str(self.inmueble.direccion) if self.inmueble.direccion else "Sin dirección"
-                
-                BlockchainService.registrar_inmueble(
-                    inmueble_id=self.inmueble.id,
-                    titulo=self.inmueble.titulo,
-                    propietario_id=self.inmueble.propietario.id,
-                    direccion_str=dir_str,
-                    hash_titulo=hash_titulo
-                )
+                BlockchainService.dispatch(self._sync_blockchain_inmueble)
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.warning(f"Error sincronizando título {self.id} con Blockchain: {str(e)}")
+                logger.warning(f"Error despachando sync blockchain de título {self.id}: {str(e)}")
+
+    def _sync_blockchain_inmueble(self):
+        """Registra el inmueble en el ledger — corre en el pool de background."""
+        try:
+            from .blockchain_service import BlockchainService
+            import hashlib
+
+            # Calculamos un hash único del archivo de título
+            hash_titulo = hashlib.sha256(self.archivo_titulo.encode('utf-8')).hexdigest()
+
+            # Obtener dirección del inmueble
+            dir_str = str(self.inmueble.direccion) if self.inmueble.direccion else "Sin dirección"
+
+            BlockchainService.registrar_inmueble(
+                inmueble_id=self.inmueble.id,
+                titulo=self.inmueble.titulo,
+                propietario_id=self.inmueble.propietario.id,
+                direccion_str=dir_str,
+                hash_titulo=hash_titulo
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error sincronizando título {self.id} con Blockchain: {str(e)}")
 
     def __str__(self):
         return f'Verificación {self.estado} — {self.inmueble.titulo}'

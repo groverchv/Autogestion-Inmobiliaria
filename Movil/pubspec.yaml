@@ -43,6 +43,14 @@ dependencies:
   permission_handler: ^13.0.1
   image_picker: ^1.1.2
   file_picker: ^12.0.0
+  flutter_tts: ^4.2.2
+  speech_to_text: ^7.0.0
+
+
+dependency_overrides:
+  # permission_handler_android 14.0.0 usa Kotlin DSL nuevo incompatible con
+  # el wiring AGP 8.11/Kotlin 2.2 del proyecto — se fija en 13.0.1 para compilar.
+  permission_handler_android: 13.0.1
 
 dev_dependencies:
   flutter_test:

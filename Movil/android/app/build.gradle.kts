@@ -7,7 +7,8 @@ plugins {
 
 android {
     namespace = "com.autogestion.inmobiliaria.movil"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage requiere SDK 37; flutter.compileSdkVersion queda atrás (36)
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

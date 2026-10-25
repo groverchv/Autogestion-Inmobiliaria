@@ -60,11 +60,11 @@ class InmuebleSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'propietario', 'creado', 'actualizado', 'superficie']
 
     def get_precio(self, obj):
-        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        pub_activa = next((p for p in obj.publicaciones.all() if p.estado == 'activa'), None)
         return pub_activa.precio if pub_activa else None
 
     def get_tipo_oferta(self, obj):
-        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        pub_activa = next((p for p in obj.publicaciones.all() if p.estado == 'activa'), None)
         return pub_activa.tipo_oferta if pub_activa else None
 
     def create(self, validated_data):
@@ -126,14 +126,17 @@ class InmuebleListSerializer(serializers.ModelSerializer):
         ]
 
     def get_precio(self, obj):
-        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        pub_activa = next((p for p in obj.publicaciones.all() if p.estado == 'activa'), None)
         return pub_activa.precio if pub_activa else None
 
     def get_tipo_oferta(self, obj):
-        pub_activa = obj.publicaciones.filter(estado='activa').first()
+        pub_activa = next((p for p in obj.publicaciones.all() if p.estado == 'activa'), None)
         return pub_activa.tipo_oferta if pub_activa else None
 
     def get_is_favorito(self, obj):
+        favoritos_ids = self.context.get('favoritos_ids')
+        if favoritos_ids is not None:
+            return obj.id in favoritos_ids
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
@@ -141,15 +144,10 @@ class InmuebleListSerializer(serializers.ModelSerializer):
         return Favorito.objects.filter(usuario_id=request.user.id, inmueble_id=obj.id).exists()
 
     def get_imagen_principal(self, obj):
-        try:
-            img = obj.multimedia.filter(principal=True).first()
-            if not img:
-                img = obj.multimedia.first()
-            
-            if img and img.archivo:
-                return img.archivo
-        except Exception:
-            pass
+        media = list(obj.multimedia.all())
+        img = next((m for m in media if m.principal), None) or (media[0] if media else None)
+        if img and img.archivo:
+            return img.archivo
         return None
 
     def get_verificacion_estado(self, obj):

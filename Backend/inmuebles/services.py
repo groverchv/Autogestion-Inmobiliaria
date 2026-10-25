@@ -450,6 +450,65 @@ TU ROL:
         raise Exception(f"Error al contactar al asistente IA: {e}")
 
 
+def _analizar_titulo_heuristico(texto: str, propietario_nombre: str) -> dict:
+    """Fallback offline cuando Groq no está disponible: valida el título
+    por reglas sobre el texto OCR (keywords registrales bolivianas,
+    coincidencia de propietario y gravámenes)."""
+    t = (texto or '').lower()
+
+    terminos_titulo = [
+        'folio real', 'derechos reales', 'ddrr', 'matricula', 'matrícula',
+        'escritura', 'testimonio', 'asiento', 'titulo de propiedad',
+        'título de propiedad', 'propiedad inmueble', 'registro'
+    ]
+    hits_titulo = [k for k in terminos_titulo if k in t]
+    es_titulo = len(hits_titulo) >= 2
+
+    nombre_tokens = [w for w in (propietario_nombre or '').lower().split() if len(w) > 2]
+    coincide_propietario = bool(nombre_tokens) and any(w in t for w in nombre_tokens)
+
+    gravamenes = []
+    if 'hipoteca' in t and 'libre de gravamenes' not in t and 'libre de gravámenes' not in t:
+        gravamenes.append('Posible hipoteca mencionada en el documento')
+    if 'embargo' in t:
+        gravamenes.append('Posible embargo mencionado en el documento')
+
+    alertas = []
+    if not es_titulo:
+        alertas.append('El documento no contiene terminología registral suficiente')
+    if es_titulo and not coincide_propietario:
+        alertas.append(f'No se encontró coincidencia con el propietario registrado ({propietario_nombre})')
+
+    if not es_titulo:
+        estado, score = 'rechazado', 10
+        resumen = 'El documento no corresponde a un título de propiedad inmobiliaria (no se hallaron términos registrales).'
+    elif gravamenes:
+        estado, score = 'observado', 55
+        resumen = 'Título identificado, pero se detectaron posibles gravámenes. Revisión manual sugerida.'
+    elif not coincide_propietario:
+        estado, score = 'observado', 50
+        resumen = 'Documento registral identificado; el propietario no coincide claramente con el registrado en el sistema.'
+    else:
+        estado, score = 'verificado', 80
+        resumen = 'Documento identificado como título de propiedad con coincidencia del propietario registrado.'
+
+    return {
+        'tipo_documento': 'Folio Real' if 'folio real' in t else ('Escritura Pública' if 'escritura' in t else 'Desconocido'),
+        'propietario_registrado': propietario_nombre if coincide_propietario else None,
+        'documento_identidad': None,
+        'matricula_inmobiliaria': None,
+        'superficie_registrada_m2': None,
+        'departamento': 'Santa Cruz de la Sierra' if 'santa cruz' in t else None,
+        'municipio': None,
+        'zona': None,
+        'gravamenes': gravamenes,
+        'alertas': alertas,
+        'score_confianza': score,
+        'estado': estado,
+        'resumen_publico': resumen,
+    }
+
+
 def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_bytes: bytes = None) -> VerificacionTitulo:
     """Realiza la verificación de un título de propiedad mediante OCR e IA (Groq)."""
     import os
@@ -612,13 +671,12 @@ def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_by
     verificacion.save()
 
 
-    # 3. Analizar con Groq
+    # 3. Analizar con Groq (o heurístico local si no hay API key configurada)
     api_key = settings.GROQ_API_KEY
     if not api_key:
-        verificacion.estado = VerificacionTitulo.EstadoVerificacion.ERROR
-        verificacion.resumen_publico = "Error: API Key de Groq no configurada"
-        verificacion.save()
-        return verificacion
+        resultado_json = _analizar_titulo_heuristico(texto_extraido, inmueble.propietario.get_full_name() if inmueble.propietario else '')
+        fuente_analisis = 'Análisis heurístico local (API Key de Groq no configurada)'
+        return _aplicar_resultado_verificacion(verificacion, resultado_json, inmueble, fuente_analisis)
 
     # Determinar el propietario esperado para comparar
     propietario_nombre = inmueble.propietario.get_full_name() if inmueble.propietario else 'Desconocido'
@@ -694,7 +752,7 @@ Retorna ÚNICAMENTE el objeto JSON crudo. Sin comentarios, sin explicaciones, si
         resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers_req, timeout=60)
         resp.raise_for_status()
         content = resp.json()['choices'][0]['message']['content'].strip()
-        
+
         # Limpiar markdown
         if content.startswith("```json"):
             content = content[7:]
@@ -705,35 +763,44 @@ Retorna ÚNICAMENTE el objeto JSON crudo. Sin comentarios, sin explicaciones, si
         content = content.strip()
 
         resultado_json = json.loads(content)
-
-        estado_ia = resultado_json.get('estado', 'verificado')
-        if estado_ia == 'verificado':
-            verificacion.estado = VerificacionTitulo.EstadoVerificacion.VERIFICADO
-        elif estado_ia == 'observado':
-            verificacion.estado = VerificacionTitulo.EstadoVerificacion.OBSERVADO
-        elif estado_ia == 'rechazado':
-            verificacion.estado = VerificacionTitulo.EstadoVerificacion.RECHAZADO
-        else:
-            verificacion.estado = VerificacionTitulo.EstadoVerificacion.VERIFICADO
-
-        verificacion.resultado_ia = resultado_json
-        verificacion.score_confianza = resultado_json.get('score_confianza', 100)
-        verificacion.resumen_publico = resultado_json.get('resumen_publico', 'Título verificado por IA')
-        verificacion.save()
-
-        # Crear notificación al propietario
-        crear_notificacion_sistema(
-            usuario=inmueble.propietario,
-            titulo='Verificación de Título Completada',
-            mensaje=f'El análisis legal del título para "{inmueble.titulo}" ha finalizado. Estado: {verificacion.get_estado_display()}. Confianza: {verificacion.score_confianza}%.',
-            tipo=Notificacion.TipoNotificacion.CONFIRMACION if verificacion.estado == VerificacionTitulo.EstadoVerificacion.VERIFICADO else Notificacion.TipoNotificacion.ALERTA
-        )
-
+        fuente_analisis = 'IA (Groq LLaMA 3.3 70B)'
     except Exception as err:
         print(f"Error procesando análisis legal de Groq: {err}")
-        verificacion.estado = VerificacionTitulo.EstadoVerificacion.ERROR
-        verificacion.resumen_publico = "Error durante el análisis automático."
-        verificacion.save()
+        # Fallback offline: análisis por reglas sobre el texto OCR
+        resultado_json = _analizar_titulo_heuristico(texto_extraido, propietario_nombre)
+        fuente_analisis = 'Análisis heurístico local (IA no disponible)'
+
+    return _aplicar_resultado_verificacion(verificacion, resultado_json, inmueble, fuente_analisis)
+
+
+def _aplicar_resultado_verificacion(verificacion, resultado_json, inmueble, fuente_analisis):
+    """Aplica el dict resultado (IA o heurístico) al registro de verificación,
+    guarda estado/score/resumen y notifica al propietario."""
+    from usuarios.services import crear_notificacion_sistema
+    from usuarios.models import Notificacion
+
+    estado_ia = resultado_json.get('estado', 'verificado')
+    if estado_ia == 'verificado':
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.VERIFICADO
+    elif estado_ia == 'observado':
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.OBSERVADO
+    elif estado_ia == 'rechazado':
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.RECHAZADO
+    else:
+        verificacion.estado = VerificacionTitulo.EstadoVerificacion.VERIFICADO
+
+    verificacion.resultado_ia = resultado_json
+    verificacion.score_confianza = resultado_json.get('score_confianza', 100)
+    verificacion.resumen_publico = resultado_json.get('resumen_publico', 'Título verificado por IA')
+    verificacion.save()
+
+    # Crear notificación al propietario
+    crear_notificacion_sistema(
+        usuario=inmueble.propietario,
+        titulo='Verificación de Título Completada',
+        mensaje=f'El análisis legal del título para "{inmueble.titulo}" ha finalizado. Estado: {verificacion.get_estado_display()}. Confianza: {verificacion.score_confianza}%. [{fuente_analisis}]',
+        tipo=Notificacion.TipoNotificacion.CONFIRMACION if verificacion.estado == VerificacionTitulo.EstadoVerificacion.VERIFICADO else Notificacion.TipoNotificacion.ALERTA
+    )
 
     return verificacion
 
@@ -1073,4 +1140,4 @@ Responde SOLO el JSON."""
 
     return contrato
 
-
+

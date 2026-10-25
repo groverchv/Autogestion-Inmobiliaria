@@ -104,6 +104,14 @@ const PropiedadDetalle = () => {
   }, [id]);
 
   useEffect(() => {
+    if (inmueble?.titulo) {
+      const zona = inmueble.direccion?.zona || inmueble.direccion?.ciudad || '';
+      document.title = `${inmueble.titulo}${zona ? ` — ${zona}` : ''} | Nobleve`;
+    }
+    return () => { document.title = 'Autogestión Inmobiliaria 360° | Inmuebles con Tours Virtuales'; };
+  }, [inmueble]);
+
+  useEffect(() => {
     if (!isAuthenticated) {
       setTimeout(() => {
         setAcceso360({ tieneAcceso: false, propietario: false, fechaExpiracion: null, accesoId: null });
@@ -727,8 +735,14 @@ const PropiedadDetalle = () => {
             <IndiceCalidadVida 
               inmuebleId={inmueble.id} 
               gps={inmueble.gps} 
-              direccion={inmueble.direccion_completa || inmueble.direccion || ''} 
+              direccion={
+                inmueble.direccion_completa || 
+                (typeof inmueble.direccion === 'object' && inmueble.direccion !== null
+                  ? `${inmueble.direccion.calle || ''} ${inmueble.direccion.zona ? `- ${inmueble.direccion.zona}` : ''} ${inmueble.direccion.ciudad ? `(${inmueble.direccion.ciudad})` : ''}`.trim()
+                  : String(inmueble.direccion || ''))
+              } 
             />
+
 
             {inmueble.gps && (
               <div style={{ marginBottom: '32px' }}>
