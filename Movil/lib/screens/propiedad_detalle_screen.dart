@@ -472,7 +472,7 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                               );
                             },
                             icon: const Icon(Icons.document_scanner_outlined, color: AppColors.primary, size: 20),
-                            tooltip: 'Auditoría IA Check-in/out',
+                            tooltip: 'Revisión de entrega',
                           ),
                         ),
                         const SizedBox(width: 8),

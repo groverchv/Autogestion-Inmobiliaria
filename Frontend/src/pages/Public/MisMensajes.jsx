@@ -25,6 +25,11 @@ import {
   Eye,
   Orbit,
   Bot,
+  Ban,
+  Lightbulb,
+  Calendar,
+  RefreshCw,
+  Clock,
 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import ModalRecorrido3D from '../../components/ModalRecorrido3D';
@@ -38,16 +43,16 @@ import { API_BASE_URL } from '../../config';
 import './Propiedades.css';
 
 const CHIPS_EDITAR = [
-  { id: 'tipo', emoji: '📄', label: 'Tipo de contrato', pregunta: '¿Qué tipo de contrato necesito para este inmueble y cuál es la diferencia entre alquiler, venta y anticrético?' },
-  { id: 'clausulas', emoji: '📋', label: 'Cláusulas recomendadas', pregunta: '¿Qué cláusulas principales debería tener el contrato para protegerme como propietario?' },
-  { id: 'restricciones', emoji: '🚫', label: 'Restricciones', pregunta: '¿Qué restricciones son más importantes incluir para el inquilino?' },
-  { id: 'servicios', emoji: '💡', label: 'Servicios', pregunta: '¿Cómo debo manejar los servicios básicos (agua, luz, gas) en el contrato?' },
-  { id: 'garantia', emoji: '🛡️', label: 'Garantía/Depósito', pregunta: '¿Cuánto debería pedir de depósito de garantía y cómo protegerme legalmente?' },
-  { id: 'penalidades', emoji: '⚠️', label: 'Penalidades', pregunta: '¿Qué penalidades por incumplimiento recomiendas incluir?' },
-  { id: 'cancelacion', emoji: '🗓️', label: 'Cancelación', pregunta: '¿Cuál debería ser la política de cancelación y devolución del depósito?' },
-  { id: 'renovacion', emoji: '🔄', label: 'Renovación', pregunta: '¿Qué tipo de cláusula de renovación o prórroga me conviene redactar?' },
-  { id: 'uso', emoji: '🏠', label: 'Uso del Inmueble', pregunta: '¿Qué condiciones de uso exclusivo y conservación del inmueble debo especificar?' },
-  { id: 'antecedentes', emoji: '📜', label: 'Antecedentes', pregunta: '¿Qué antecedentes de propiedad o estado actual del inmueble debo registrar en el contrato?' },
+  { id: 'tipo', icon: FileText, label: 'Tipo de contrato', pregunta: '¿Qué tipo de contrato necesito para este inmueble y cuál es la diferencia entre alquiler, venta y anticrético?' },
+  { id: 'clausulas', icon: FileSignature, label: 'Cláusulas recomendadas', pregunta: '¿Qué cláusulas principales debería tener el contrato para protegerme como propietario?' },
+  { id: 'restricciones', icon: Ban, label: 'Restricciones', pregunta: '¿Qué restricciones son más importantes incluir para el inquilino?' },
+  { id: 'servicios', icon: Lightbulb, label: 'Servicios', pregunta: '¿Cómo debo manejar los servicios básicos (agua, luz, gas) en el contrato?' },
+  { id: 'garantia', icon: Shield, label: 'Garantía/Depósito', pregunta: '¿Cuánto debería pedir de depósito de garantía y cómo protegerme legalmente?' },
+  { id: 'penalidades', icon: AlertCircle, label: 'Penalidades', pregunta: '¿Qué penalidades por incumplimiento recomiendas incluir?' },
+  { id: 'cancelacion', icon: Calendar, label: 'Cancelación', pregunta: '¿Cuál debería ser la política de cancelación y devolución del depósito?' },
+  { id: 'renovacion', icon: RefreshCw, label: 'Renovación', pregunta: '¿Qué tipo de cláusula de renovación o prórroga me conviene redactar?' },
+  { id: 'uso', icon: Home, label: 'Uso del Inmueble', pregunta: '¿Qué condiciones de uso exclusivo y conservación del inmueble debo especificar?' },
+  { id: 'antecedentes', icon: FileCheck, label: 'Antecedentes', pregunta: '¿Qué antecedentes de propiedad o estado actual del inmueble debo registrar en el contrato?' },
 ];
 
 
@@ -167,7 +172,7 @@ const TarjetaAcceso360 = ({ accesoId, expiracion, lines, isMine, esOwner, onRevo
         borderRadius: '20px',
         marginTop: '2px'
       }}>
-        <span>🕒 {timeLeft}</span>
+        <Clock size={13} style={{ verticalAlign: '-2px', marginRight: '4px' }} />{timeLeft}
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
@@ -833,7 +838,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
     } catch {
       setEditChatMensajes(prev => [...prev, {
         role: 'assistant',
-        content: '❌ Error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
+        content: 'Error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
       }]);
     } finally {
       setEditChatCargando(false);
@@ -2043,7 +2048,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                           onMouseOver={e => { e.currentTarget.style.background = '#8b5cf6'; e.currentTarget.style.color = '#fff'; }}
                           onMouseOut={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#6d28d9'; }}
                         >
-                          <span>{chip.emoji}</span> {chip.label}
+                          <chip.icon size={13} /> {chip.label}
                         </button>
                       ))}
                     </div>

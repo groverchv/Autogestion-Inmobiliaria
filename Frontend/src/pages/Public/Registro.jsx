@@ -18,6 +18,7 @@ const Registro = () => {
   });
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [modalTerminosAbierto, setModalTerminosAbierto] = useState(false);
+  const [paso, setPaso] = useState(1);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,23 @@ const Registro = () => {
       ...formData,
       [e.target.id]: e.target.value
     });
+  };
+
+  const irAPaso2 = () => {
+    setError('');
+    if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim()) {
+      setError('Completa tu nombre y correo para continuar.');
+      return;
+    }
+    if (formData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (formData.password !== formData.confirm_password) {
+      setError('Las contraseñas no coinciden. Revísalas.');
+      return;
+    }
+    setPaso(2);
   };
 
   const handleSubmit = async (e) => {
@@ -101,67 +119,91 @@ const Registro = () => {
             Crear Cuenta
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0 }}>
-            Regístrate en menos de un minuto
+            Paso {paso} de 2 · {paso === 1 ? 'Tu cuenta' : 'Tus datos'}
           </p>
+          <div style={{ display: 'flex', gap: '6px', marginTop: '10px', justifyContent: 'center' }}>
+            {[1, 2].map(n => (
+              <div key={n} style={{ width: '60px', height: '4px', borderRadius: '4px', background: n <= paso ? '#0ea5e9' : '#334155' }} />
+            ))}
+          </div>
         </div>
-        
+
         {error && <div className="login__error" role="alert" style={{ marginBottom: '1rem' }}>{error}</div>}
         {success && <div role="status" aria-live="polite" style={{ background: '#064e3b', border: '1px solid #10b981', color: '#34d399', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{success}</div>}
 
-        {/* Fila: Nombre y Apellido */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div className="login__field">
-            <label htmlFor="first_name" className="login__label">Nombre</label>
-            <input id="first_name" type="text" className="login__input" value={formData.first_name} onChange={handleChange} placeholder="Ej. Carlos" required />
-          </div>
-          <div className="login__field">
-            <label htmlFor="last_name" className="login__label">Apellido</label>
-            <input id="last_name" type="text" className="login__input" value={formData.last_name} onChange={handleChange} placeholder="Ej. Mendoza" required />
-          </div>
-        </div>
+        {paso === 1 && (
+          <>
+            {/* Fila: Nombre y Apellido */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="login__field">
+                <label htmlFor="first_name" className="login__label">Nombre</label>
+                <input id="first_name" type="text" className="login__input" value={formData.first_name} onChange={handleChange} placeholder="Ej. Carlos" required />
+              </div>
+              <div className="login__field">
+                <label htmlFor="last_name" className="login__label">Apellido</label>
+                <input id="last_name" type="text" className="login__input" value={formData.last_name} onChange={handleChange} placeholder="Ej. Mendoza" required />
+              </div>
+            </div>
 
-        <div className="login__field">
-          <label htmlFor="email" className="login__label">Correo Electrónico</label>
-          <input id="email" type="email" className="login__input" value={formData.email} onChange={handleChange} placeholder="correo@ejemplo.com" required />
-        </div>
+            <div className="login__field">
+              <label htmlFor="email" className="login__label">Correo Electrónico</label>
+              <input id="email" type="email" className="login__input" value={formData.email} onChange={handleChange} placeholder="correo@ejemplo.com" required />
+            </div>
 
-        {/* Fila: Contraseña y Confirmar */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div className="login__field">
-            <label htmlFor="password" className="login__label">Contraseña</label>
-            <input id="password" type="password" className="login__input" value={formData.password} onChange={handleChange} placeholder="Mínimo 8 caracteres" required minLength="8" />
-          </div>
-          <div className="login__field">
-            <label htmlFor="confirm_password" className="login__label">Confirmar Contraseña</label>
-            <input id="confirm_password" type="password" className="login__input" value={formData.confirm_password} onChange={handleChange} placeholder="Repite contraseña" required minLength="8" />
-          </div>
-        </div>
+            {/* Fila: Contraseña y Confirmar */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="login__field">
+                <label htmlFor="password" className="login__label">Contraseña</label>
+                <input id="password" type="password" className="login__input" value={formData.password} onChange={handleChange} placeholder="Mínimo 8 caracteres" required minLength="8" />
+              </div>
+              <div className="login__field">
+                <label htmlFor="confirm_password" className="login__label">Confirmar Contraseña</label>
+                <input id="confirm_password" type="password" className="login__input" value={formData.confirm_password} onChange={handleChange} placeholder="Repite contraseña" required minLength="8" />
+              </div>
+            </div>
 
-        {/* Fila: Cédula y Teléfono */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div className="login__field">
-            <label htmlFor="ci" className="login__label">Cédula de Identidad (CI)</label>
-            <input id="ci" type="text" className="login__input" value={formData.ci} onChange={handleChange} placeholder="Ej. 8492011 SC" />
-          </div>
-          <div className="login__field">
-            <label htmlFor="telefono" className="login__label">Teléfono / Celular</label>
-            <input id="telefono" type="tel" className="login__input" value={formData.telefono} onChange={handleChange} placeholder="Ej. 70012345" />
-          </div>
-        </div>
+            <Button type="button" fullWidth onClick={irAPaso2}>
+              Siguiente
+            </Button>
+          </>
+        )}
 
-        <div className="login__field">
-          <label htmlFor="nacimiento" className="login__label">Fecha de Nacimiento (+18 años)</label>
-          <input 
-            id="nacimiento" 
-            type="date" 
-            className="login__input" 
-            value={formData.nacimiento} 
-            onChange={handleChange} 
-            max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-            style={{ colorScheme: 'dark' }} 
-            required
-          />
-        </div>
+        {paso === 2 && (
+          <>
+            <div style={{
+              background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.25)',
+              borderRadius: '10px', padding: '12px', marginBottom: '14px',
+              fontSize: '0.82rem', color: '#bae6fd', lineHeight: '1.5',
+            }}>
+              Pedimos tu CI y fecha de nacimiento solo para confirmar que eres mayor de edad
+              y para que tus contratos y visitas queden a tu nombre real.
+            </div>
+
+            {/* Fila: Cédula y Teléfono */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="login__field">
+                <label htmlFor="ci" className="login__label">Cédula de Identidad (CI)</label>
+                <input id="ci" type="text" className="login__input" value={formData.ci} onChange={handleChange} placeholder="Ej. 8492011 SC" />
+              </div>
+              <div className="login__field">
+                <label htmlFor="telefono" className="login__label">Teléfono / Celular</label>
+                <input id="telefono" type="tel" className="login__input" value={formData.telefono} onChange={handleChange} placeholder="Ej. 70012345" />
+              </div>
+            </div>
+
+            <div className="login__field">
+              <label htmlFor="nacimiento" className="login__label">Fecha de Nacimiento (+18 años)</label>
+              <input
+                id="nacimiento"
+                type="date"
+                className="login__input"
+                value={formData.nacimiento}
+                onChange={handleChange}
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                style={{ colorScheme: 'dark' }}
+                required
+              />
+            </div>
 
         {/* Checkbox Términos y Condiciones */}
         <div style={{
@@ -207,9 +249,20 @@ const Registro = () => {
           </label>
         </div>
 
-        <Button type="submit" fullWidth loading={loading}>
-          Registrarse y Crear Cuenta
-        </Button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="button" onClick={() => { setError(''); setPaso(1); }}
+                style={{
+                  background: 'transparent', border: '1px solid #334155', color: '#94a3b8',
+                  borderRadius: '10px', padding: '0 18px', fontWeight: 600, cursor: 'pointer',
+                }}>
+                Atrás
+              </button>
+              <Button type="submit" fullWidth loading={loading}>
+                Crear mi cuenta
+              </Button>
+            </div>
+          </>
+        )}
 
         <div style={{ marginTop: '1.2rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
           ¿Ya tienes una cuenta registrada?{' '}
@@ -279,7 +332,7 @@ const Registro = () => {
                 aria-label="Cerrar términos y condiciones"
                 style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
               >
-                ✕
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 

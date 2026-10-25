@@ -12,7 +12,8 @@ import {
   ArrowRight,
   Download,
   Building2,
-  Receipt
+  Receipt,
+  X
 } from 'lucide-react';
 import './MisPagos.css';
 
@@ -143,11 +144,12 @@ const MisPagos = () => {
         <div className="mispagos-modal-overlay">
           <div className="mispagos-modal-box">
             <div className="mispagos-modal-header">
-              <button 
+              <button
                 onClick={() => setPagoSeleccionado(null)}
                 className="mispagos-modal-close"
+                aria-label="Cerrar recibo"
               >
-                ✕
+                <X size={18} />
               </button>
               <div className="mispagos-modal-icon-wrapper">
                 <CheckCircle2 size={42} color="#16a34a" />

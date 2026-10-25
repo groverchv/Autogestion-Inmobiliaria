@@ -522,7 +522,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   Future<void> _consultarAsistente(String consulta) async {
     setState(() {
       _procesandoNLP = true;
-      _locucionActual = 'Analizando tu pregunta con IA: "$consulta"...';
+      _locucionActual = 'Analizando tu pregunta: "$consulta"...';
     });
 
     final api = context.read<AuthProvider>().apiService;
@@ -532,7 +532,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     );
 
     if (res != null && mounted) {
-      final String respuestaTexto = res['respuesta'] ?? 'Medición registrada con IA.';
+      final String respuestaTexto = res['respuesta'] ?? 'Medición registrada.';
 
       // Si la IA nos devuelve orientación de cámara hacia el objeto consultado, rotamos la vista 360°
       if (res['camara_360'] != null) {

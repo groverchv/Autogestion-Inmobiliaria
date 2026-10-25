@@ -383,7 +383,7 @@ const MisInmuebles = () => {
         }
       } else {
         alert(
-          `⚠️ Archivo inválido: "${file.name}"\n\n` +
+          `Archivo inválido: "${file.name}"\n\n` +
           `Para que el visor 360° funcione correctamente sin distorsiones, la foto debe ser panorámica (proporción cercana a 2:1, es decir, el doble de ancho que de alto).\n\n` +
           `• Proporción detectada: ${(check.relacion || 0).toFixed(2)}:1 (${check.ancho}x${check.alto}px).\n` +
           `• Por favor, captura la foto usando el modo "Panorámica" (PANO) de tu móvil y vuelve a intentarlo.`
@@ -687,7 +687,7 @@ const MisInmuebles = () => {
               </>
             )}
             <p style={{ marginTop: '24px', fontSize: '0.9rem', color: '#94a3b8', fontWeight: 600, lineHeight: 1.5 }}>
-              ⚠️ Por favor, mantén esta aplicación abierta y la pantalla encendida.
+              Por favor, mantén esta aplicación abierta y la pantalla encendida.
             </p>
           </div>
           <style>{`
@@ -1497,7 +1497,7 @@ const MisInmuebles = () => {
                     />
                     {archivoMusica && (
                       <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#6366f1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>✓ Seleccionado: {archivoMusica.name}</span>
+                        <span>Seleccionado: {archivoMusica.name}</span>
                         <button
                           type="button"
                           onClick={() => setArchivoMusica(null)}
@@ -2163,7 +2163,7 @@ const MisInmuebles = () => {
 
                   <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '12px', border: '1px solid #bfdbfe' }}>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: '#93c5fd', lineHeight: 1.4 }}>
-                      💡 <strong>Recomendación:</strong> Para obtener la mejor precisión, sube un documento escaneado con buena iluminación y resolución, de preferencia la matrícula computarizada (Folio Real) o testimonio notarial de propiedad.
+                      <strong>Recomendación:</strong> Para obtener la mejor precisión, sube un documento escaneado con buena iluminación y resolución, de preferencia la matrícula computarizada (Folio Real) o testimonio notarial de propiedad.
                     </p>
                   </div>
 
@@ -2281,7 +2281,7 @@ const MisInmuebles = () => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {verificacionData.resultado_ia.alertas.map((alerta, i) => (
                               <div key={i} style={{ background: 'rgba(244, 63, 94, 0.10)', color: '#f87171', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #fecaca', display: 'flex', gap: '8px' }}>
-                                <span style={{ fontWeight: 'bold' }}>⚠</span>
+                                <AlertCircle size={14} />
                                 <span>{alerta}</span>
                               </div>
                             ))}

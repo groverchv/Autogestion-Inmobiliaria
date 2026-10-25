@@ -170,7 +170,7 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
           children: [
             Icon(Icons.verified_user_outlined, color: AppColors.primary),
             SizedBox(width: 8),
-            Text('Análisis Legal de Título (IA)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            Text('Revisar documento de propiedad', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ],
         ),
         content: Column(
@@ -183,7 +183,7 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'El motor inteligente de IA audita los folios reales, certificados catastrales y sella la trazabilidad en Blockchain para garantizar seguridad jurídica.',
+              'Revisamos el documento de propiedad y guardamos un registro seguro del análisis. Esta revisión es referencial y no reemplaza una verificación notarial.',
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 12),
@@ -200,7 +200,7 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Documentos en orden y sellados criptográficamente.',
+                      'Documento revisado y en orden.',
                       style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -215,11 +215,11 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             onPressed: () {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Auditoría Legal IA verificada'), backgroundColor: AppColors.success),
+                const SnackBar(content: Text('Documento revisado'), backgroundColor: AppColors.success),
               );
             },
             icon: const Icon(Icons.refresh, size: 16, color: Colors.white),
-            label: const Text('Re-Auditar con IA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text('Revisar de nuevo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryDark),
           ),
         ],
@@ -318,7 +318,7 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             // 2. Análisis Legal de Título (IA)
             _buildActionButton(
               icon: Icons.description_outlined,
-              label: 'Análisis Legal de Título (IA)',
+              label: 'Revisar documento',
               color: AppColors.primary,
               onTap: _abrirAnalisisLegalIA,
             ),
@@ -336,7 +336,7 @@ class _GestionInmuebleModalState extends State<GestionInmuebleModal> {
             // 4. Recorrido 3D y Hotspots (IA)
             _buildActionButton(
               icon: Icons.language,
-              label: 'Recorrido 3D y Hotspots (IA)',
+              label: 'Recorrido 3D',
               color: const Color(0xFFA855F7),
               onTap: () {
                 Navigator.pop(context);

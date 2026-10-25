@@ -675,7 +675,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId =
                 </div>
               </div>
               <div className="step">
-                <span className="step-num">🕹️</span>
+                <span className="step-num"><Gamepad size={20} /></span>
                 <div>
                   <strong>Joystick / Palanca analógica:</strong>
                   <br />• Empuja <strong>hacia adelante</strong> para hacer <strong>Zoom IN</strong> (acercar imagen).
@@ -691,7 +691,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId =
               border: '1px solid rgba(59, 130, 246, 0.25)',
               fontSize: '0.82rem', color: '#94a3b8', lineHeight: '1.5'
             }}>
-              <strong style={{ color: '#60a5fa' }}>💡 Consejo:</strong> Si tu mando tiene un interruptor de modo 
+              <strong style={{ color: '#60a5fa' }}>Consejo:</strong> Si tu mando tiene un interruptor de modo 
               (Game / Music / Selfie), usa el modo <strong style={{ color: '#60a5fa' }}>Game</strong> para 
               mejor experiencia. Si el joystick cambia el volumen del celular, el zoom 
               funcionará igualmente.
@@ -756,7 +756,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId =
                 title={`Mando conectado: ${gamepadName}`}
               >
                 <Gamepad size={16} />
-                <span>Mando ✓</span>
+                <span>Mando conectado</span>
               </span>
             )}
           </div>

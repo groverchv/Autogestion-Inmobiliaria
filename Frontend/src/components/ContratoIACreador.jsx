@@ -296,7 +296,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
     } catch {
       setMensajes(prev => [...prev, {
         role: 'assistant',
-        content: '❌ Error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
+        content: 'Error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
       }]);
     } finally {
       setCargando(false);
@@ -346,7 +346,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
       console.error(err);
       setMensajes(prev => [...prev, {
         role: 'assistant',
-        content: `❌ Error al guardar el contrato: ${err.response?.data?.error || 'Error desconocido'}. Verifica que todos los campos estén completos.`
+        content: `Error al guardar el contrato: ${err.response?.data?.error || 'Error desconocido'}. Verifica que todos los campos estén completos.`
       }]);
     } finally {
       setEnviando(false);

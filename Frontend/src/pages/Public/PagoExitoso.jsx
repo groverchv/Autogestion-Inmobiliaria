@@ -89,9 +89,9 @@ const PagoExitoso = () => {
             >
               <CheckCircle size={48} color="#fff" />
             </div>
-            <h1 style={{ color: '#34d399', fontSize: '1.8rem', marginBottom: '8px' }}>¡Pago Exitoso!</h1>
+            <h1 style={{ color: '#34d399', fontSize: '1.8rem', marginBottom: '8px' }}>¡Pago recibido!</h1>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.05rem', marginBottom: '28px' }}>
-              Tu pago ha sido procesado correctamente.
+              Tu pago se registró correctamente y el propietario ya fue avisado.
             </p>
 
             {transaccion && (
@@ -148,6 +148,10 @@ const PagoExitoso = () => {
               </div>
             )}
 
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>
+              ¿Qué sigue? Puedes descargar tu comprobante o revisar el estado en Mi actividad.
+            </p>
+
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               {transaccion?.comprobante_url && (
                 <a
@@ -172,7 +176,7 @@ const PagoExitoso = () => {
                 </a>
               )}
               <Link
-                to="/mensajes"
+                to="/mi-actividad"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -187,7 +191,7 @@ const PagoExitoso = () => {
                   fontSize: '0.95rem',
                 }}
               >
-                Volver al Chat
+                Ver mi actividad
               </Link>
               <Link
                 to="/propiedades"
@@ -205,7 +209,7 @@ const PagoExitoso = () => {
                   fontSize: '0.95rem',
                 }}
               >
-                <Home size={18} /> Inicio
+                <Home size={18} /> Ir al inicio
               </Link>
             </div>
           </>

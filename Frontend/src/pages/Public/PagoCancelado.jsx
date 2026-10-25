@@ -33,12 +33,12 @@ const PagoCancelado = () => {
         >
           <XCircle size={48} color="#fff" />
         </div>
-        <h1 style={{ color: '#ea580c', fontSize: '1.8rem', marginBottom: '8px' }}>Pago Cancelado</h1>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.05rem', marginBottom: '28px' }}>
-          El proceso de pago ha sido cancelado. No se ha realizado ningún cargo.
+        <h1 style={{ color: '#ea580c', fontSize: '1.8rem', marginBottom: '8px' }}>Pago cancelado</h1>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.05rem', marginBottom: '12px' }}>
+          No se realizó ningún cargo a tu tarjeta.
         </p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '28px' }}>
-          Puedes volver al chat para solicitar un nuevo enlace de pago al propietario.
+          ¿Qué sigue? Si fue un error, puedes intentarlo de nuevo desde Mensajes o pedir al propietario un nuevo enlace de pago.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -57,7 +57,7 @@ const PagoCancelado = () => {
               fontSize: '0.95rem',
             }}
           >
-            <MessageSquare size={18} /> Volver al Chat
+            <MessageSquare size={18} /> Volver a mensajes
           </Link>
           <Link
             to="/propiedades"
@@ -75,7 +75,7 @@ const PagoCancelado = () => {
               fontSize: '0.95rem',
             }}
           >
-            <Home size={18} /> Inicio
+            <Home size={18} /> Ir al inicio
           </Link>
         </div>
       </div>

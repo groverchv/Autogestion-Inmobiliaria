@@ -4,6 +4,7 @@ import {
   ClipboardList, MessageSquare, Printer, Ban, ShieldCheck, Lightbulb, Calendar, RefreshCw, Zap, History
 } from 'lucide-react';
 import BlockchainAuditTrail from './BlockchainAuditTrail';
+import CollapsibleDetails from './CollapsibleDetails';
 import useAlertConfirm from '../hooks/useAlertConfirm';
 import contratoService from '../services/contratoService';
 
@@ -113,7 +114,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
   const handleAceptar = () => {
     showConfirm({
       title: '¿Aceptar y Firmar Contrato?',
-      message: '¿Estás seguro de que deseas aceptar los términos y condiciones de este contrato? Al aceptar, se registrarán automáticamente tus firmas criptográficas digitales en la Blockchain.',
+      message: 'Al firmar, aceptas las condiciones del contrato y tu acuerdo queda registrado de forma segura. Esta acción no se puede deshacer.',
       status: 'question',
       confirmText: 'Sí, aceptar y firmar',
       cancelText: 'Cancelar',
@@ -123,7 +124,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
           await contratoService.aceptar(c.id);
           showAlert({
             title: '¡Contrato Firmado!',
-            message: 'Has firmado y aceptado el contrato exitosamente. Sus bloques e historial digital se han sellado de forma inmutable en la Blockchain.',
+            message: 'Has firmado el contrato. El acuerdo quedó registrado de forma segura.',
             status: 'success'
           });
           onUpdate();
@@ -193,7 +194,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
     } catch {
       setChatMensajes(prev => [...prev, {
         role: 'assistant',
-        content: '❌ Ocurrió un error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
+        content: 'Ocurrió un error al contactar al asistente. Verifica tu conexión e intenta de nuevo.'
       }]);
     } finally {
       setChatCargando(false);
@@ -251,14 +252,14 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
   const cfg = estadoConfig[c.estado] || estadoConfig.pendiente;
   const sectionStyle = { marginBottom: '20px' };
   const titleStyle = { fontSize: '0.8rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' };
-  const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.9rem' };
+  const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--color-border)', fontSize: '0.9rem' };
   const labelStyle = { color: 'var(--color-text-secondary)', fontWeight: 500 };
   const valueStyle = { fontWeight: 600, color: 'var(--color-text)', textAlign: 'right', maxWidth: '60%' };
 
   return (
     <div style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column', gap: '15px', padding: '4px' }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', padding: '16px', background: 'linear-gradient(135deg, #f8fafc, #e0e7ff)', borderRadius: '12px', flexShrink: 0 }}>
+      <div style={{ textAlign: 'center', padding: '16px', background: 'linear-gradient(135deg, var(--color-bg-secondary), rgba(99,102,241,0.15))', borderRadius: '12px', flexShrink: 0 }}>
         <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text)' }}>CONTRATO DE {(c.tipo_contrato_nombre || 'INMUEBLE').toUpperCase()}</div>
         <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Contrato N. {c.id} · Creado: {new Date(c.creado).toLocaleDateString('es-BO')}</div>
         <span style={{ display: 'inline-block', marginTop: '8px', background: cfg.bg, color: cfg.color, padding: '4px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>{cfg.label}</span>
@@ -283,7 +284,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             gap: '6px',
           }}
         >
-          <ClipboardList size={16} /> Resumen y Firmas
+          <ClipboardList size={16} /> Resumen
         </button>
         <button
           onClick={() => setActiveTab('chat')}
@@ -302,7 +303,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             gap: '6px',
           }}
         >
-          <MessageSquare size={16} /> Abogado Virtual
+          <MessageSquare size={16} /> Preguntas
         </button>
         <button
           onClick={() => setActiveTab('pdf')}
@@ -321,7 +322,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
             gap: '6px',
           }}
         >
-          <Printer size={16} /> Vista de Impresión (PDF)
+          <Printer size={16} /> Documento
         </button>
       </div>
 
@@ -371,17 +372,21 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               <div style={rowStyle}><span style={labelStyle}>Vigencia</span><span style={valueStyle}>{c.inicio} → {c.fin || 'Indefinido'}</span></div>
             </div>
 
-            {/* Cláusulas Legales */}
-            {c.antecedentes && <div style={sectionStyle}><div style={titleStyle}>Antecedentes</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #bae6fd' }}>{c.antecedentes}</div></div>}
-            {c.clausulas && <div style={sectionStyle}><div style={titleStyle}>Cláusulas</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.clausulas}</div></div>}
-            {c.clausulas_especiales && <div style={sectionStyle}><div style={titleStyle}>Cláusulas Especiales</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: '#faf5ff', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #e9d5ff' }}>{c.clausulas_especiales}</div></div>}
-            {c.uso_exclusivo && <div style={sectionStyle}><div style={titleStyle}>Uso Exclusivo del Inmueble</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(16, 185, 129, 0.10)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid #bbf7d0' }}>{c.uso_exclusivo}</div></div>}
-            {c.condiciones_uso && <div style={sectionStyle}><div style={titleStyle}>Condiciones de Uso</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.condiciones_uso}</div></div>}
-            {c.penalidades && <div style={sectionStyle}><div style={titleStyle}>Penalidades</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(244, 63, 94, 0.10)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.penalidades}</div></div>}
-            {c.politica_cancelacion && <div style={sectionStyle}><div style={titleStyle}>Política de Cancelación</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.politica_cancelacion}</div></div>}
-            {c.incluye_servicios && <div style={sectionStyle}><div style={titleStyle}>Servicios Incluidos</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(16, 185, 129, 0.10)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.incluye_servicios}</div></div>}
-            {c.restricciones && <div style={sectionStyle}><div style={titleStyle}>Restricciones</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(251,191,36,0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.restricciones}</div></div>}
-            {c.observaciones && <div style={sectionStyle}><div style={titleStyle}>Observaciones</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.observaciones}</div></div>}
+            {/* Texto legal completo — oculto para no abrumar */}
+            {(c.antecedentes || c.clausulas || c.clausulas_especiales || c.uso_exclusivo || c.condiciones_uso || c.penalidades || c.politica_cancelacion || c.incluye_servicios || c.restricciones || c.observaciones) && (
+              <CollapsibleDetails label="Ver texto legal completo del contrato">
+                {c.antecedentes && <div style={sectionStyle}><div style={titleStyle}>Antecedentes</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid var(--color-border)' }}>{c.antecedentes}</div></div>}
+                {c.clausulas && <div style={sectionStyle}><div style={titleStyle}>Cláusulas</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.clausulas}</div></div>}
+                {c.clausulas_especiales && <div style={sectionStyle}><div style={titleStyle}>Cláusulas Especiales</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid var(--color-border)' }}>{c.clausulas_especiales}</div></div>}
+                {c.uso_exclusivo && <div style={sectionStyle}><div style={titleStyle}>Uso Exclusivo del Inmueble</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(16, 185, 129, 0.10)', padding: '12px', borderRadius: '8px', lineHeight: '1.6', border: '1px solid rgba(16,185,129,0.25)' }}>{c.uso_exclusivo}</div></div>}
+                {c.condiciones_uso && <div style={sectionStyle}><div style={titleStyle}>Condiciones de Uso</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.condiciones_uso}</div></div>}
+                {c.penalidades && <div style={sectionStyle}><div style={titleStyle}>Penalidades</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(244, 63, 94, 0.10)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.penalidades}</div></div>}
+                {c.politica_cancelacion && <div style={sectionStyle}><div style={titleStyle}>Política de Cancelación</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.politica_cancelacion}</div></div>}
+                {c.incluye_servicios && <div style={sectionStyle}><div style={titleStyle}>Servicios Incluidos</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(16, 185, 129, 0.10)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.incluye_servicios}</div></div>}
+                {c.restricciones && <div style={sectionStyle}><div style={titleStyle}>Restricciones</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'rgba(251,191,36,0.12)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.restricciones}</div></div>}
+                {c.observaciones && <div style={sectionStyle}><div style={titleStyle}>Observaciones</div><div style={{ fontSize: '0.88rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap', background: 'var(--color-bg-secondary)', padding: '12px', borderRadius: '8px', lineHeight: '1.6' }}>{c.observaciones}</div></div>}
+              </CollapsibleDetails>
+            )}
             {c.motivo_rechazo && <div style={sectionStyle}><div style={titleStyle}>Motivo de Rechazo</div><div style={{ fontSize: '0.88rem', color: '#f87171', whiteSpace: 'pre-wrap', background: 'rgba(239,68,68,0.12)', padding: '12px', borderRadius: '8px' }}>{c.motivo_rechazo}</div></div>}
 
 
@@ -395,18 +400,18 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                     border: 'none', borderRadius: '10px', padding: '12px', fontWeight: 700, fontSize: '0.95rem',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   }}>
-                    <CheckCircle size={18} /> Aceptar Contrato
+                    <CheckCircle size={18} /> Firmar contrato
                   </button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <input type="text" value={motivoRechazo} onChange={e => setMotivoRechazo(e.target.value)} placeholder="Motivo de rechazo (obligatorio para rechazar)..."
+                  <input type="text" value={motivoRechazo} onChange={e => setMotivoRechazo(e.target.value)} placeholder="Si no estás de acuerdo, explica el motivo..."
                     style={{ border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px', fontSize: '0.9rem', width: '100%' }} />
                   <button onClick={handleRechazar} disabled={actionLoading} style={{
                     background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid #fca5a5', borderRadius: '10px',
                     padding: '10px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   }}>
-                    <XCircle size={16} /> Rechazar Contrato
+                    <XCircle size={16} /> No estoy de acuerdo
                   </button>
                 </div>
               </div>
@@ -419,7 +424,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               marginTop: '10px'
             }}>
-              <FileText size={18} /> Descargar Contrato Básico PDF
+              <FileText size={18} /> Descargar PDF
             </button>
           </div>
         )}
@@ -437,8 +442,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   <Bot size={16} color="#fff" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Asistente Legal IA</div>
-                  <div style={{ fontSize: '0.72rem', color: '#8b5cf6' }}>Abogado Inmobiliario Boliviano · Powered by Llama 3.3</div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Asistente legal</div>
+                  <div style={{ fontSize: '0.72rem', color: '#8b5cf6' }}>Responde tus dudas sobre el contrato</div>
                 </div>
               </div>
               <button
@@ -544,8 +549,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                           enviarMensaje(t.pregunta);
                         }}
                         style={{
-                          background: '#f5f3ff', color: '#6d28d9',
-                          border: '1.5px solid #ddd6fe',
+                          background: 'rgba(139,92,246,0.12)', color: '#c4b5fd',
+                          border: '1.5px solid rgba(139,92,246,0.35)',
                           borderRadius: '20px', padding: '5px 12px',
                           fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
                           transition: 'all 0.15s',
@@ -557,9 +562,9 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                           e.currentTarget.style.borderColor = '#8b5cf6';
                         }}
                         onMouseOut={e => {
-                          e.currentTarget.style.background = '#f5f3ff';
-                          e.currentTarget.style.color = '#6d28d9';
-                          e.currentTarget.style.borderColor = '#ddd6fe';
+                          e.currentTarget.style.background = 'rgba(139,92,246,0.12)';
+                          e.currentTarget.style.color = '#c4b5fd';
+                          e.currentTarget.style.borderColor = 'rgba(139,92,246,0.35)';
                         }}
                       >
                         <t.icon size={13} style={{ flexShrink: 0 }} /> {t.label}
@@ -577,7 +582,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviarMensaje()}
-                placeholder="Escribe tu consulta al asistente legal..."
+                placeholder="Escribe tu duda sobre el contrato..."
                 disabled={chatCargando}
                 style={{
                   flex: 1, border: '1.5px solid var(--color-border)', borderRadius: '12px',
@@ -604,8 +609,8 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               onClick={() => { setActiveTab('pdf'); }}
               style={{
                 width: '100%',
-                background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-                color: '#5b21b6',
+                background: 'rgba(139,92,246,0.14)',
+                color: '#c4b5fd',
                 border: 'none',
                 borderRadius: '10px',
                 padding: '10px',
@@ -619,7 +624,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                 marginTop: '5px'
               }}
             >
-              <Sparkles size={14} /> Redactar cláusulas en PDF Oficial de Impresión
+              <Sparkles size={14} /> Ver documento para imprimir
             </button>
           </div>
         )}
@@ -630,7 +635,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-text)', fontWeight: 600 }}>
-                    Previsualización del Documento Notarial (Generado por IA)
+                    Vista previa del documento
                   </span>
                   <button
                     onClick={handleDownloadPDFBlob}
@@ -648,13 +653,13 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                       gap: '6px'
                     }}
                   >
-                    📥 Descargar PDF Oficial
+                    Descargar PDF
                   </button>
                 </div>
                 <iframe
                   src={pdfBlobUrl}
                   title="Contrato PDF"
-                  style={{ width: '100%', height: '100%', border: '1px solid #cbd5e1', borderRadius: '8px', background: 'var(--color-surface)' }}
+                  style={{ width: '100%', height: '100%', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)' }}
                 />
               </>
             ) : (
@@ -665,7 +670,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                 justifyContent: 'center',
                 height: '100%',
                 background: 'var(--color-bg-secondary)',
-                border: '2px dashed #cbd5e1',
+                border: '2px dashed var(--color-border)',
                 borderRadius: '12px',
                 padding: '20px',
                 textAlign: 'center'
@@ -674,7 +679,7 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   width: '56px',
                   height: '56px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #ede9fe, #c7d2fe)',
+                  background: 'rgba(139,92,246,0.16)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -683,10 +688,10 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   <Sparkles size={28} color="#6d28d9" />
                 </div>
                 <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>
-                  Generar Contrato Formal con IA
+                  Generar documento del contrato
                 </h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', maxWidth: '380px', marginBottom: '20px', lineHeight: '1.5' }}>
-                  La IA redactará el documento legal formal con formato notarial boliviano, incorporando todas las cláusulas acordadas y el historial de chat con el asistente.
+                  Se redactará el documento formal del contrato con todas las condiciones acordadas, listo para imprimir o guardar.
                 </p>
                 <button
                   onClick={handleGenerateIAInline}
@@ -710,10 +715,10 @@ const ContratoDetalle = ({ contrato: c, user, onUpdate }) => {
                   {isGeneratingIA ? (
                     <>
                       <div style={{ width: '16px', height: '16px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                      Redactando contrato con IA...
+                      Generando documento...
                     </>
                   ) : (
-                    <><Sparkles size={16} /> Redactar y Generar PDF</>
+                    <><Sparkles size={16} /> Generar documento</>
                   )}
                 </button>
               </div>
