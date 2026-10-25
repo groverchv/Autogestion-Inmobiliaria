@@ -2024,7 +2024,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                         Pregúntale al asesor sobre:
                       </span>
                       <span style={{
-                        fontSize: '0.65rem', background: '#ede9fe', color: '#7c3aed',
+                        fontSize: '0.65rem', background: 'rgba(139,92,246,0.14)', color: '#c4b5fd',
                         borderRadius: '10px', padding: '2px 8px', fontWeight: 700,
                       }}>
                         {pendientes.length} de {CHIPS_EDITAR.length} temas pendientes
@@ -2039,14 +2039,14 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                             enviarMensajeEditChat(chip.pregunta);
                           }}
                           style={{
-                            background: '#f5f3ff', color: '#6d28d9',
-                            border: '1.5px solid #ddd6fe',
+                            background: 'rgba(139,92,246,0.12)', color: '#c4b5fd',
+                            border: '1.5px solid rgba(139,92,246,0.35)',
                             borderRadius: '20px', padding: '4px 10px',
                             fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600,
                             display: 'flex', alignItems: 'center', gap: '4px',
                           }}
                           onMouseOver={e => { e.currentTarget.style.background = '#8b5cf6'; e.currentTarget.style.color = '#fff'; }}
-                          onMouseOut={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#6d28d9'; }}
+                          onMouseOut={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; e.currentTarget.style.color = '#c4b5fd'; }}
                         >
                           <chip.icon size={13} /> {chip.label}
                         </button>

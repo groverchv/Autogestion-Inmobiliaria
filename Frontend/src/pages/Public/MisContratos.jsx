@@ -9,11 +9,11 @@ import contratoService from '../../services/contratoService';
 import './Propiedades.css';
 
 const estadoConfig = {
-  borrador: { color: '#94a3b8', bg: 'var(--color-bg-secondary)', label: 'Borrador', icon: Clock },
-  enviado: { color: '#f59e0b', bg: 'rgba(251,191,36,0.12)', label: 'En Revisión', icon: AlertTriangle },
-  aceptado: { color: '#10b981', bg: '#d1fae5', label: 'Aceptado', icon: CheckCircle },
+  borrador: { color: '#94a3b8', bg: 'var(--color-bg-secondary)', label: 'En preparación', icon: Clock },
+  enviado: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', label: 'Esperando firma', icon: AlertTriangle },
+  aceptado: { color: '#34d399', bg: 'rgba(16,185,129,0.14)', label: 'Firmado', icon: CheckCircle },
   rechazado: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', label: 'Rechazado', icon: XCircle },
-  activo: { color: '#6366f1', bg: '#e0e7ff', label: 'Activo', icon: CheckCircle },
+  activo: { color: '#818cf8', bg: 'rgba(99,102,241,0.14)', label: 'Vigente', icon: CheckCircle },
   finalizado: { color: 'var(--color-text-secondary)', bg: 'var(--color-bg-secondary)', label: 'Finalizado', icon: Clock },
   cancelado: { color: '#f87171', bg: 'rgba(239,68,68,0.12)', label: 'Cancelado', icon: XCircle },
   pendiente: { color: '#f59e0b', bg: 'rgba(251,191,36,0.12)', label: 'Pendiente', icon: Clock },

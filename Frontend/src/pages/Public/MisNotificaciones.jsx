@@ -99,7 +99,7 @@ const MisNotificaciones = () => {
                 onClick={() => setTab('usuario')}
                 style={{
                   border: '1px solid var(--color-border)',
-                  background: tab === 'usuario' ? '#eff6ff' : 'var(--color-surface)',
+                  background: tab === 'usuario' ? 'rgba(14,165,233,0.14)' : 'var(--color-surface)',
                   color: 'var(--color-text)',
                   borderRadius: '8px',
                   padding: '8px 10px',
@@ -153,8 +153,8 @@ const MisNotificaciones = () => {
                   key={n.id}
                   style={{
                     padding: '14px 16px',
-                    borderBottom: '1px solid #f1f5f9',
-                    background: n.leida ? 'var(--color-surface)' : tab === 'sistema' ? '#f0fdfa' : '#eff6ff',
+                    borderBottom: '1px solid var(--color-border)',
+                    background: n.leida ? 'var(--color-surface)' : tab === 'sistema' ? 'rgba(16,185,129,0.08)' : 'rgba(14,165,233,0.10)',
                     display: 'flex',
                     gap: '10px',
                     alignItems: 'flex-start',

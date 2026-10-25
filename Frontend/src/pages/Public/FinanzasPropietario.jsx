@@ -253,7 +253,7 @@ const FinanzasPropietario = () => {
 
               <div style={{ background: 'var(--color-surface)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#f5f3ff', padding: '10px', borderRadius: '12px' }}>
+                  <div style={{ background: 'rgba(139,92,246,0.12)', padding: '10px', borderRadius: '12px' }}>
                     <Activity size={24} color="#8b5cf6" />
                   </div>
                   <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Promedio Mensual</span>
@@ -286,7 +286,7 @@ const FinanzasPropietario = () => {
                         data={chartData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 25 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                         <XAxis
                           dataKey="mesLabel"
                           stroke="#94a3b8"

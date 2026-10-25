@@ -2117,7 +2117,7 @@ const MisInmuebles = () => {
                 <form onSubmit={handleSubirTitulo} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {verificacionData?.estado === 'error' && (
                     <div style={{
-                      background: 'rgba(244, 63, 94, 0.10)', border: '1px solid #fecaca', borderRadius: '10px',
+                      background: 'rgba(244, 63, 94, 0.10)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: '10px',
                       padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: '10px'
                     }}>
                       <ShieldAlert size={20} style={{ color: '#f87171', flexShrink: 0, marginTop: '2px' }} />
@@ -2161,8 +2161,8 @@ const MisInmuebles = () => {
                     </div>
                   </div>
 
-                  <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '12px', border: '1px solid #bfdbfe' }}>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#93c5fd', lineHeight: 1.4 }}>
+                  <div style={{ background: 'rgba(14,165,233,0.10)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(14,165,233,0.3)' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#7dd3fc', lineHeight: 1.4 }}>
                       <strong>Recomendación:</strong> Para obtener la mejor precisión, sube un documento escaneado con buena iluminación y resolución, de preferencia la matrícula computarizada (Folio Real) o testimonio notarial de propiedad.
                     </p>
                   </div>
@@ -2186,16 +2186,16 @@ const MisInmuebles = () => {
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '16px', borderRadius: '12px',
                     background: verificacionData.estado === 'verificado' ? 'rgba(16,185,129,0.12)' :
-                      verificacionData.estado === 'observado' ? '#fef3c7' :
-                        verificacionData.estado === 'rechazado' ? '#fee2e2' : '#f1f5f9',
+                      verificacionData.estado === 'observado' ? 'rgba(251,191,36,0.12)' :
+                        verificacionData.estado === 'rechazado' ? 'rgba(244,63,94,0.12)' : 'var(--color-bg-secondary)',
                     border: '1px solid ' + (
                       verificacionData.estado === 'verificado' ? '#bbf7d0' :
-                        verificacionData.estado === 'observado' ? '#fef08a' :
-                          verificacionData.estado === 'rechazado' ? '#fecaca' : '#cbd5e1'
+                        verificacionData.estado === 'observado' ? 'rgba(251,191,36,0.35)' :
+                          verificacionData.estado === 'rechazado' ? 'rgba(244,63,94,0.35)' : 'var(--color-border)'
                     ),
-                    color: verificacionData.estado === 'verificado' ? '#14532d' :
-                      verificacionData.estado === 'observado' ? '#713f12' :
-                        verificacionData.estado === 'rechazado' ? '#7f1d1d' : '#334155'
+                    color: verificacionData.estado === 'verificado' ? '#4ade80' :
+                      verificacionData.estado === 'observado' ? '#fbbf24' :
+                        verificacionData.estado === 'rechazado' ? '#f87171' : 'var(--color-text-secondary)'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {verificacionData.estado === 'verificado' ? <ShieldCheck size={32} /> : <ShieldAlert size={32} />}
@@ -2280,7 +2280,7 @@ const MisInmuebles = () => {
                           <h5 style={{ margin: 0, fontSize: '0.85rem', color: '#f87171', fontWeight: 700 }}>Observaciones / Irregularidades</h5>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {verificacionData.resultado_ia.alertas.map((alerta, i) => (
-                              <div key={i} style={{ background: 'rgba(244, 63, 94, 0.10)', color: '#f87171', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #fecaca', display: 'flex', gap: '8px' }}>
+                              <div key={i} style={{ background: 'rgba(244, 63, 94, 0.10)', color: '#f87171', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid rgba(244,63,94,0.3)', display: 'flex', gap: '8px' }}>
                                 <AlertCircle size={14} />
                                 <span>{alerta}</span>
                               </div>
