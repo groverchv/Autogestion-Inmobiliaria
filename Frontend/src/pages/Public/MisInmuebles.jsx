@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Check, X, Clock, Trash2, Tag, Megaphone, Plus, Calendar, AlertCircle, ShieldCheck, ShieldAlert, FileText, UploadCloud, RefreshCw, Settings, ChevronDown, ChevronUp, Eye, EyeOff, Edit3 } from 'lucide-react';
 import tituloService from '../../services/tituloService';
 import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
@@ -36,6 +36,7 @@ const LocationPicker = ({ position, setPosition }) => {
 };
 
 const MisInmuebles = () => {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { showAlert, showConfirm, ModalComponent } = useAlertConfirm();
 
@@ -702,26 +703,7 @@ const MisInmuebles = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h1 style={{ fontSize: '1.8rem', color: 'var(--color-text)', margin: 0 }}>Mis Propiedades</h1>
             <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  titulo: '', descripcion: '', tipo: tipos.length > 0 ? tipos[0].id : '',
-                  ciudad: '', zona: '', calle: '', referencia: '', valor_activo: '', largo: '', ancho: '', superficie: '',
-                  habitaciones: 0, banos: 0, garaje: false, estado: 'disponible',
-                  gps: ''
-                });
-                setArchivos([]);
-                setPreviewUrls([]);
-                setExistingMedia([]);
-                setExisting360([]);
-                setExistingMusica(null);
-                setArchivoMusica(null);
-                setArchivos360([]);
-                setPreview360([]);
-                setMeta360([]);
-                setMediaToDelete([]);
-                setShowModal(true);
-              }}
+              onClick={() => navigate('/publicar')}
               style={{ background: 'var(--color-primary)', color: 'var(--color-surface)', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
             >
               + Publicar propiedad
@@ -740,12 +722,7 @@ const MisInmuebles = () => {
               <h2 style={{ margin: '0 0 8px 0', color: 'var(--color-text)' }}>No tienes inmuebles registrados</h2>
               <p style={{ color: 'var(--color-text-secondary)', marginBottom: '24px' }}>Tus propiedades publicadas aparecerán aquí y en el catálogo público.</p>
               <button
-                onClick={() => {
-                  if (tipos.length > 0 && !formData.tipo) setFormData(p => ({ ...p, tipo: tipos[0].id }));
-                  setExistingMusica(null);
-                  setArchivoMusica(null);
-                  setShowModal(true);
-                }}
+                onClick={() => navigate('/publicar')}
                 style={{ background: 'var(--color-primary)', color: 'var(--color-surface)', border: 'none', padding: '12px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Publicar mi primera propiedad

@@ -23,6 +23,7 @@ import PagoCancelado from './pages/Public/PagoCancelado';
 import MisContratos from './pages/Public/MisContratos';
 import MisPagos from './pages/Public/MisPagos';
 import MiActividad from './pages/Public/MiActividad';
+import WizardPublicar from './pages/Public/WizardPublicar';
 import LegalPage from './pages/Legal/LegalPage';
 
 // Pages - Admin
@@ -91,6 +92,10 @@ const router = createBrowserRouter([
           {
             path: '/mi-actividad',
             element: <MiActividad />,
+          },
+          {
+            path: '/publicar',
+            element: <WizardPublicar />,
           },
           {
             path: '/mi-agenda',

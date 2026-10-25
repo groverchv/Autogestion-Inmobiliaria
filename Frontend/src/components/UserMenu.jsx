@@ -167,7 +167,7 @@ const UserMenu = () => {
 
         {/* 5. Publicar propiedad — acción destacada */}
         <Link
-          to="/mis-inmuebles"
+          to="/publicar"
           className="hero-nav__link hero-nav__btn-crear-foto"
           style={{
             background: 'var(--color-primary)',

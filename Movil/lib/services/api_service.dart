@@ -235,6 +235,52 @@ class ApiService {
     return null;
   }
 
+  Future<List<Map<String, dynamic>>> getTiposInmueble() async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/inmuebles/tipos/'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      final List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
+      return results.map((t) => {'id': t['id'], 'nombre': t['nombre']?.toString() ?? ''}).toList();
+    }
+    return [];
+  }
+
+  Future<int> crearInmueble(Map<String, dynamic> payload) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/inmuebles/panel/lista/'),
+      headers: _headers(token),
+      body: jsonEncode(payload),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data['id'] as int;
+    }
+    throw Exception('No se pudo publicar. Revisa los datos e intenta de nuevo.');
+  }
+
+  Future<void> crearPublicacion({
+    required int inmuebleId,
+    required String tipoOferta,
+    required double precio,
+  }) async {
+    final token = await getToken();
+    await http.post(
+      Uri.parse('$_baseUrl/inmuebles/panel/publicaciones/'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'inmueble': inmuebleId,
+        'tipo_oferta': tipoOferta,
+        'precio': precio,
+        'estado': 'activa',
+      }),
+    );
+  }
+
   // ─── Citas ───────────────────────────────────────────────────────────
   Future<List<Cita>> getMisCitas() async {
     final token = await getToken();

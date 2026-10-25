@@ -4,6 +4,7 @@ import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import 'captura_360_screen.dart';
+import 'wizard_publicar_screen.dart';
 import '../widgets/gestion_inmueble_modal.dart';
 
 class MisInmueblesScreen extends StatefulWidget {
@@ -203,6 +204,18 @@ class _MisInmueblesScreenState extends State<MisInmueblesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final publicado = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(builder: (_) => const WizardPublicarScreen()),
+          );
+          if (publicado == true) _cargarInmuebles();
+        },
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Publicar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
