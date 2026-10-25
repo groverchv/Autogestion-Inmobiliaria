@@ -365,10 +365,10 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         }}>
           <CheckCircle2 size={32} color="#fff" />
         </div>
-        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>
+        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>
           {contratoEdicion ? '¡Contrato actualizado!' : '¡Contrato enviado al cliente!'}
         </div>
-        <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
+        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
           {contratoEdicion ? 'El borrador se actualizó correctamente con las nuevas cláusulas.' : 'El cliente recibirá una notificación y podrá revisarlo desde el chat.'}
         </div>
       </div>
@@ -391,7 +391,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               <Bot size={17} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text)' }}>
                 Abogado IA · {contratoEdicion ? 'Editor' : 'Creador'} de Contratos
               </div>
               <div style={{ fontSize: '0.7rem', color: '#8b5cf6' }}>
@@ -412,10 +412,10 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--color-border)',
           borderRadius: '12px',
           padding: '12px',
-          background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+          background: 'linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-secondary) 100%)',
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
@@ -442,8 +442,8 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
                 maxWidth: '80%',
                 background: msg.role === 'user'
                   ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
-                  : '#ffffff',
-                color: msg.role === 'user' ? '#fff' : '#1e293b',
+                  : 'var(--color-bg-secondary)',
+                color: msg.role === 'user' ? '#fff' : 'var(--color-text)',
                 borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
                 padding: '9px 13px',
                 fontSize: '0.82rem',
@@ -451,7 +451,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
                 boxShadow: msg.role === 'user'
                   ? '0 2px 10px rgba(99,102,241,0.3)'
                   : '0 1px 6px rgba(0,0,0,0.07)',
-                border: msg.role === 'assistant' ? '1px solid #e2e8f0' : 'none',
+                border: msg.role === 'assistant' ? '1px solid var(--color-border)' : 'none',
                 borderLeft: msg.role === 'assistant' ? '3px solid #8b5cf6' : 'none',
                 whiteSpace: 'pre-wrap',
               }}>
@@ -469,7 +469,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
                 <Bot size={12} color="#fff" />
               </div>
               <div style={{
-                background: '#fff', border: '1px solid #e2e8f0', borderLeft: '3px solid #8b5cf6',
+                background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #8b5cf6',
                 borderRadius: '4px 16px 16px 16px',
                 padding: '10px 16px', display: 'flex', gap: '4px', alignItems: 'center',
               }}>
@@ -539,24 +539,24 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             placeholder={grabando ? "Escuchando voz..." : "Cuéntame qué condiciones quieres en el contrato..."}
             disabled={cargando}
             style={{
-              flex: 1, border: '1.5px solid #e2e8f0', borderRadius: '10px',
+              flex: 1, border: '1.5px solid var(--color-border)', borderRadius: '10px',
               padding: '9px 14px', fontSize: '0.85rem', outline: 'none',
-              background: grabando ? '#fef2f2' : '#fff',
-              borderColor: grabando ? '#ef4444' : '#e2e8f0',
+              background: grabando ? 'rgba(244, 63, 94, 0.10)' : 'var(--color-surface)',
+              borderColor: grabando ? '#ef4444' : 'var(--color-border)',
               opacity: cargando ? 0.6 : 1,
             }}
             onFocus={e => { if (!grabando) e.target.style.borderColor = '#8b5cf6'; }}
-            onBlur={e => { if (!grabando) e.target.style.borderColor = '#e2e8f0'; }}
+            onBlur={e => { if (!grabando) e.target.style.borderColor = 'var(--color-border)'; }}
           />
           <button
             onClick={toggleGrabacion}
             disabled={cargando}
             style={{
               width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-              background: grabando ? '#ef4444' : '#f1f5f9',
+              background: grabando ? '#ef4444' : 'var(--color-bg-secondary)',
               border: '1.5px solid ' + (grabando ? '#ef4444' : '#cbd5e1'),
               cursor: 'pointer',
-              color: grabando ? '#fff' : '#64748b',
+              color: grabando ? '#fff' : 'var(--color-text-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               animation: grabando ? 'pulse-red 1.5s infinite' : 'none',
             }}
@@ -569,7 +569,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             disabled={!input.trim() || cargando}
             style={{
               width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-              background: !input.trim() || cargando ? '#e2e8f0' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              background: !input.trim() || cargando ? 'var(--color-border)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
               border: 'none', cursor: !input.trim() || cargando ? 'default' : 'pointer',
               color: !input.trim() || cargando ? '#94a3b8' : '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -585,13 +585,13 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
-        background: '#f8fafc',
+        background: 'var(--color-bg-secondary)',
         borderRadius: '14px',
         padding: '18px',
-        border: '1px solid #e2e8f0',
+        border: '1px solid var(--color-border)',
         overflowY: 'auto',
       }}>
-        <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <FileSignature size={16} color="#6366f1" />
           Datos del Contrato
         </div>
@@ -604,7 +604,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
           <select
             value={form.tipo_contrato_id}
             onChange={e => setForm({ ...form, tipo_contrato_id: e.target.value })}
-            style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem', background: '#fff' }}
+            style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem', background: 'var(--color-surface)' }}
           >
             <option value="">Seleccionar...</option>
             {tiposContrato.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
@@ -620,7 +620,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               value={form.monto}
               onChange={e => setForm({ ...form, monto: e.target.value })}
               placeholder="Ej. 1500"
-              style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
+              style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
             />
           </div>
           <div>
@@ -628,7 +628,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             <select
               value={form.moneda}
               onChange={e => setForm({ ...form, moneda: e.target.value })}
-              style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 6px', fontSize: '0.85rem', background: '#fff' }}
+              style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: '8px', padding: '8px 6px', fontSize: '0.85rem', background: 'var(--color-surface)' }}
             >
               <option value="BOB">BOB</option>
               <option value="USD">USD</option>
@@ -643,7 +643,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             type="date"
             value={form.inicio}
             onChange={e => setForm({ ...form, inicio: e.target.value })}
-            style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
+            style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
           />
         </div>
 
@@ -654,7 +654,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
             type="date"
             value={form.fin}
             onChange={e => setForm({ ...form, fin: e.target.value })}
-            style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
+            style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
           />
         </div>
 
@@ -666,7 +666,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               type="number"
               value={form.deposito}
               onChange={e => setForm({ ...form, deposito: e.target.value })}
-              style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
+              style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
             />
           </div>
           <div>
@@ -677,7 +677,7 @@ Para comenzar, completa los datos básicos en el panel derecho (tipo de contrato
               max="31"
               value={form.dia_pago}
               onChange={e => setForm({ ...form, dia_pago: e.target.value })}
-              style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
+              style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.85rem' }}
             />
           </div>
         </div>

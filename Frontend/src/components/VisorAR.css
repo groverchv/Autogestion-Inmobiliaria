@@ -99,9 +99,9 @@
   justify-content: center;
   align-items: center;
   padding: 16px;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: var(--border-radius-md, 8px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   align-self: center;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }

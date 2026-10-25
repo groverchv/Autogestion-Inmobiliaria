@@ -6,8 +6,8 @@ import './BlockchainAuditTrail.css';
 const TX_MAP = {
   registrarInmueble: {
     label: 'Registro de Propiedad',
-    color: '#0284c7',
-    bg: '#f0f9ff',
+    color: '#38bdf8',
+    bg: 'var(--color-bg-secondary)',
     icon: Home,
     desc: 'Título de propiedad verificado criptográficamente en la Blockchain.'
   },
@@ -27,7 +27,7 @@ const TX_MAP = {
   },
   firmarContrato: {
     label: 'Firma Digital de Contrato',
-    color: '#059669',
+    color: '#34d399',
     bg: '#ecfdf5',
     icon: CheckCircle2,
     desc: 'Registro de firma criptográfica inmutable por una de las partes contratantes.'
@@ -35,7 +35,7 @@ const TX_MAP = {
   registrarPago: {
     label: 'Auditoría de Pago',
     color: '#d97706',
-    bg: '#fffbeb',
+    bg: 'rgba(251, 191, 36, 0.10)',
     icon: Clock,
     desc: 'Recibo y comprobante de pago de alquiler/garantía registrado para auditoría histórica.'
   }
@@ -120,10 +120,10 @@ const BlockchainAuditTrail = ({ assetId }) => {
 
   if (error) {
     return (
-      <div className="blockchain-empty" style={{ borderColor: '#fca5a5', background: '#fff5f5' }}>
+      <div className="blockchain-empty" style={{ borderColor: 'rgba(248,113,113,0.35)', background: '#fff5f5' }}>
         <HelpCircle size={40} style={{ color: '#f87171', marginBottom: '12px' }} />
-        <h4 className="blockchain-empty__title" style={{ color: '#991b1b' }}>Blockchain Inaccesible</h4>
-        <p className="blockchain-empty__desc" style={{ color: '#b91c1c' }}>{error}</p>
+        <h4 className="blockchain-empty__title" style={{ color: '#f87171' }}>Blockchain Inaccesible</h4>
+        <p className="blockchain-empty__desc" style={{ color: '#f87171' }}>{error}</p>
       </div>
     );
   }
@@ -164,8 +164,8 @@ const BlockchainAuditTrail = ({ assetId }) => {
         {history.map((node) => {
           const txConfig = TX_MAP[node.txName] || {
             label: formatKeyName(node.txName),
-            color: '#475569',
-            bg: '#f1f5f9',
+            color: 'var(--color-text)',
+            bg: 'var(--color-bg-secondary)',
             icon: Database,
             desc: 'Operación del sistema consolidada en el ledger de bloques.'
           };
@@ -204,7 +204,7 @@ const BlockchainAuditTrail = ({ assetId }) => {
                   <span className="blockchain-node__time">{formatDate(node.timestamp)}</span>
                 </div>
 
-                <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#475569', lineHeight: '1.4' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: 'var(--color-text)', lineHeight: '1.4' }}>
                   {txConfig.desc}
                 </p>
 
@@ -237,7 +237,7 @@ const BlockchainAuditTrail = ({ assetId }) => {
                 {/* Desglose de Datos del Bloque al expandir */}
                 {isExpanded && (
                   <div className="blockchain-data-panel" onClick={(e) => e.stopPropagation()}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '8px' }}>
                       Datos Consolidados del Ledger
                     </div>
                     <div className="blockchain-data-grid">
@@ -249,9 +249,9 @@ const BlockchainAuditTrail = ({ assetId }) => {
                               <div className="blockchain-data-label">{formatKeyName(key)}</div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
                                 {Object.entries(value).map(([subKey, subVal]) => (
-                                  <div key={subKey} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', background: '#f8fafc', padding: '6px 10px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                                    <span style={{ fontWeight: 600, color: '#64748b', textTransform: 'capitalize' }}>{subKey}:</span>
-                                    <span style={{ fontFamily: 'monospace', color: subVal ? '#059669' : '#94a3b8', fontSize: '0.74rem', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '75%' }} title={subVal || 'Sin firmar'}>
+                                  <div key={subKey} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', background: 'var(--color-bg-secondary)', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--color-border)' }}>
+                                    <span style={{ fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'capitalize' }}>{subKey}:</span>
+                                    <span style={{ fontFamily: 'monospace', color: subVal ? '#34d399' : '#94a3b8', fontSize: '0.74rem', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '75%' }} title={subVal || 'Sin firmar'}>
                                       {subVal ? `${subVal.substring(0, 16)}...` : 'Pendiente de firma'}
                                     </span>
                                   </div>

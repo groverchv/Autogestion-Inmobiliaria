@@ -2,9 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import useAuth from '../hooks/useAuth';
 import api from '../services/api';
-import { 
-  ChevronDown, Search, Building2, Calendar, Heart, 
-  FileText, CreditCard, TrendingUp, MessageSquare, Bell, User, Camera 
+import {
+  ChevronDown, Search, Building2, Calendar, Heart,
+  TrendingUp, MessageSquare, Bell, User, Camera, PlusCircle
 } from 'lucide-react';
 import CrearFotoModal from './CrearFotoModal';
 import './UserMenu.css';
@@ -15,7 +15,7 @@ const Badge = ({ count }) => {
     <span style={{
       position: 'absolute', top: '50%', right: '12px',
       transform: 'translateY(-50%)',
-      background: '#ef4444', color: '#fff', fontSize: '0.65rem',
+      background: '#ef4444', color: 'var(--color-surface)', fontSize: '0.65rem',
       fontWeight: 700, borderRadius: '10px', padding: '1px 6px',
       minWidth: '16px', textAlign: 'center', lineHeight: '14px'
     }}>
@@ -25,16 +25,12 @@ const Badge = ({ count }) => {
 };
 
 const UserMenu = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
   const [badges, setBadges] = useState({ notificaciones: 0, mensajes: 0 });
-  const [activeDropdown, setActiveDropdown] = useState(null); // 'propiedades' | 'finanzas' | 'alertas' | null
+  const [cuentaOpen, setCuentaOpen] = useState(false);
   const [isCrearFotoOpen, setIsCrearFotoOpen] = useState(false);
-
-  // Referencias para detectar clicks externos y cerrar los dropdowns
-  const propRef = useRef(null);
-  const finRef = useRef(null);
-  const msgRef = useRef(null);
+  const cuentaRef = useRef(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -48,15 +44,10 @@ const UserMenu = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  // Cerrar dropdowns al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        (propRef.current && !propRef.current.contains(event.target)) &&
-        (finRef.current && !finRef.current.contains(event.target)) &&
-        (msgRef.current && !msgRef.current.contains(event.target))
-      ) {
-        setActiveDropdown(null);
+      if (cuentaRef.current && !cuentaRef.current.contains(event.target)) {
+        setCuentaOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -69,157 +60,130 @@ const UserMenu = () => {
 
   const getStyle = (path) => {
     const isActive = currentPath.startsWith(path) && path !== '/' || currentPath === path;
-    if (isActive) {
-      return { 
-        color: 'var(--color-primary)', 
-        background: 'rgba(14,165,233,0.08)',
-        textDecoration: 'none', 
-        fontWeight: 600 
-      };
-    }
-    return { 
-      color: 'var(--color-text-secondary)', 
-      textDecoration: 'none', 
-      fontWeight: 500 
+    return {
+      color: isActive ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+      background: isActive ? 'rgba(14,165,233,0.08)' : undefined,
+      textDecoration: 'none',
+      fontWeight: isActive ? 600 : 500,
     };
   };
 
-  const isGroupActive = (paths) => {
-    return paths.some(path => currentPath.startsWith(path));
-  };
-
-  const toggleDropdown = (name) => {
-    setActiveDropdown(prev => (prev === name ? null : name));
-  };
-
-  const closeAll = () => {
-    setActiveDropdown(null);
-  };
+  const cuentaPaths = ['/mi-actividad', '/mi-agenda', '/mis-contratos', '/mis-pagos', '/mis-inmuebles', '/mis-finanzas', '/favoritos', '/perfil'];
+  const cuentaActive = cuentaPaths.some(p => currentPath.startsWith(p));
 
   return (
     <div className="user-menu-wrapper" id="packaged-user-menu">
       <nav className="hero-nav">
-        
-        {/* 1. Catálogo */}
+
+        {/* 1. Explorar */}
         <Link to="/propiedades" className="hero-nav__link" style={getStyle('/propiedades')}>
           <Search size={16} />
-          <span>Catálogo</span>
+          <span>Explorar</span>
         </Link>
 
-        {/* 2. Grupo: Propiedades e Interacción */}
-        <div className="hero-nav__dropdown" ref={propRef}>
-          <button 
-            className={`hero-nav__dropdown-btn ${isGroupActive(['/mis-inmuebles', '/mi-agenda', '/favoritos']) ? 'active' : ''}`}
-            onClick={() => toggleDropdown('propiedades')}
+        {/* 2. Mi cuenta */}
+        <div className="hero-nav__dropdown" ref={cuentaRef}>
+          <button
+            className={`hero-nav__dropdown-btn ${cuentaActive ? 'active' : ''}`}
+            onClick={() => setCuentaOpen(v => !v)}
           >
-            <Building2 size={16} />
-            <span>Propiedades</span>
-            <ChevronDown size={14} className={`arrow ${activeDropdown === 'propiedades' ? 'open' : ''}`} />
+            <User size={16} />
+            <span>Mi cuenta</span>
+            <ChevronDown size={14} className={`arrow ${cuentaOpen ? 'open' : ''}`} />
           </button>
-          {activeDropdown === 'propiedades' && (
+          {cuentaOpen && (
             <div className="hero-nav__dropdown-menu">
-              <Link to="/mis-inmuebles" onClick={closeAll} className="dropdown-item">
-                <Building2 size={15} />
-                <span>Mis Inmuebles</span>
-              </Link>
-              <Link to="/mi-agenda" onClick={closeAll} className="dropdown-item">
+              <Link to="/mi-actividad" onClick={() => setCuentaOpen(false)} className="dropdown-item">
                 <Calendar size={15} />
-                <span>Mi Agenda</span>
+                <span>Mi actividad</span>
               </Link>
-              <Link to="/favoritos" onClick={closeAll} className="dropdown-item">
-                <Heart size={15} />
-                <span>Favoritos</span>
+              <Link to="/mis-inmuebles" onClick={() => setCuentaOpen(false)} className="dropdown-item">
+                <Building2 size={15} />
+                <span>Mis propiedades</span>
               </Link>
-            </div>
-          )}
-        </div>
-
-        {/* 3. Grupo: Contratos y Finanzas */}
-        <div className="hero-nav__dropdown" ref={finRef}>
-          <button 
-            className={`hero-nav__dropdown-btn ${isGroupActive(['/mis-contratos', '/mis-pagos', '/mis-finanzas']) ? 'active' : ''}`}
-            onClick={() => toggleDropdown('finanzas')}
-          >
-            <FileText size={16} />
-            <span>Trámites y Finanzas</span>
-            <ChevronDown size={14} className={`arrow ${activeDropdown === 'finanzas' ? 'open' : ''}`} />
-          </button>
-          {activeDropdown === 'finanzas' && (
-            <div className="hero-nav__dropdown-menu">
-              <Link to="/mis-contratos" onClick={closeAll} className="dropdown-item">
-                <FileText size={15} />
-                <span>Mis Contratos</span>
-              </Link>
-              <Link to="/mis-pagos" onClick={closeAll} className="dropdown-item">
-                <CreditCard size={15} />
-                <span>Mis Pagos</span>
-              </Link>
-              <Link to="/mis-finanzas" onClick={closeAll} className="dropdown-item">
+              <Link to="/mis-finanzas" onClick={() => setCuentaOpen(false)} className="dropdown-item">
                 <TrendingUp size={15} />
-                <span>Mis Finanzas</span>
+                <span>Mis finanzas</span>
               </Link>
+              <Link to="/favoritos" onClick={() => setCuentaOpen(false)} className="dropdown-item">
+                <Heart size={15} />
+                <span>Mis favoritos</span>
+              </Link>
+              <Link to="/perfil" onClick={() => setCuentaOpen(false)} className="dropdown-item">
+                <User size={15} />
+                <span>Mi perfil</span>
+              </Link>
+              <button
+                type="button"
+                className="dropdown-item"
+                style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                onClick={() => { setCuentaOpen(false); setIsCrearFotoOpen(true); }}
+              >
+                <Camera size={15} />
+                <span>Cambiar foto de perfil</span>
+              </button>
             </div>
           )}
         </div>
 
-        {/* 4. Grupo: Mensajería y Alertas */}
-        <div className="hero-nav__dropdown" ref={msgRef}>
-          <button 
-            className={`hero-nav__dropdown-btn ${isGroupActive(['/mensajes', '/notificaciones']) ? 'active' : ''}`}
-            onClick={() => toggleDropdown('alertas')}
-            style={{ position: 'relative' }}
-          >
-            <MessageSquare size={16} />
-            <span>Mensajería</span>
-            {(badges.notificaciones + badges.mensajes) > 0 && (
-              <span className="group-badge-dot" />
-            )}
-            <ChevronDown size={14} className={`arrow ${activeDropdown === 'alertas' ? 'open' : ''}`} />
-          </button>
-          {activeDropdown === 'alertas' && (
-            <div className="hero-nav__dropdown-menu">
-              <Link to="/notificaciones" onClick={closeAll} className="dropdown-item" style={{ position: 'relative', paddingRight: badges.notificaciones > 0 ? '42px' : '14px' }}>
-                <Bell size={15} />
-                <span>Notificaciones</span>
-                <Badge count={badges.notificaciones} />
-              </Link>
-              <Link to="/mensajes" onClick={closeAll} className="dropdown-item" style={{ position: 'relative', paddingRight: badges.mensajes > 0 ? '42px' : '14px' }}>
-                <MessageSquare size={15} />
-                <span>Mensajes</span>
-                <Badge count={badges.mensajes} />
-              </Link>
-            </div>
+        {/* 3. Mensajes */}
+        <Link
+          to="/mensajes"
+          className="hero-nav__link"
+          style={{ ...getStyle('/mensajes'), position: 'relative' }}
+        >
+          <MessageSquare size={16} />
+          <span>Mensajes</span>
+          {badges.mensajes > 0 && (
+            <span style={{
+              position: 'absolute', top: '2px', right: '4px',
+              background: '#ef4444', color: '#fff', fontSize: '0.6rem',
+              fontWeight: 700, borderRadius: '10px', padding: '1px 5px',
+            }}>
+              {badges.mensajes > 99 ? '99+' : badges.mensajes}
+            </span>
           )}
-        </div>
-
-        {/* 5. Cuenta / Perfil */}
-        <Link to="/perfil" className="hero-nav__link" style={getStyle('/perfil')}>
-          <User size={16} />
-          <span>Mi Perfil</span>
         </Link>
 
-        {/* 6. Botón Crear Foto */}
-        <button 
-          type="button" 
-          className="hero-nav__link hero-nav__btn-crear-foto" 
-          onClick={() => setIsCrearFotoOpen(true)}
+        {/* 4. Notificaciones */}
+        <Link
+          to="/notificaciones"
+          className="hero-nav__link"
+          aria-label={`Notificaciones${badges.notificaciones > 0 ? ` (${badges.notificaciones} sin leer)` : ''}`}
+          style={{ ...getStyle('/notificaciones'), position: 'relative' }}
+        >
+          <Bell size={16} />
+          <span>Avisos</span>
+          {badges.notificaciones > 0 && (
+            <span style={{
+              position: 'absolute', top: '2px', right: '4px',
+              background: '#ef4444', color: '#fff', fontSize: '0.6rem',
+              fontWeight: 700, borderRadius: '10px', padding: '1px 5px',
+            }}>
+              {badges.notificaciones > 99 ? '99+' : badges.notificaciones}
+            </span>
+          )}
+        </Link>
+
+        {/* 5. Publicar propiedad — acción destacada */}
+        <Link
+          to="/mis-inmuebles"
+          className="hero-nav__link hero-nav__btn-crear-foto"
           style={{
-            border: 'none',
-            background: 'rgba(14,165,233,0.1)',
-            color: 'var(--color-primary)',
+            background: 'var(--color-primary)',
+            color: '#fff',
             fontWeight: 600,
-            cursor: 'pointer'
           }}
         >
-          <Camera size={16} />
-          <span>Crear foto</span>
-        </button>
+          <PlusCircle size={16} />
+          <span>Publicar propiedad</span>
+        </Link>
 
       </nav>
 
-      <CrearFotoModal 
-        isOpen={isCrearFotoOpen} 
-        onClose={() => setIsCrearFotoOpen(false)} 
+      <CrearFotoModal
+        isOpen={isCrearFotoOpen}
+        onClose={() => setIsCrearFotoOpen(false)}
       />
     </div>
   );

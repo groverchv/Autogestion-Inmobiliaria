@@ -20,7 +20,7 @@ const ManageAgenda = () => {
     { key: 'fecha_fin', label: 'Fecha/Hora Fin', render: (item) => item.fecha_fin ? new Date(item.fecha_fin).toLocaleString('es-BO') : '—' },
     { key: 'ubicacion', label: 'Ubicación' },
     { key: 'completado', label: 'Estado', render: (item) => (
-      <span style={{ color: item.completado ? '#16a34a' : '#f59e0b', fontWeight: 600 }}>
+      <span style={{ color: item.completado ? '#4ade80' : '#f59e0b', fontWeight: 600 }}>
         {item.completado ? 'Completado' : 'Pendiente'}
       </span>
     )},

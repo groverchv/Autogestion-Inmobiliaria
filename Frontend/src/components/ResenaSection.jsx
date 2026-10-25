@@ -20,7 +20,7 @@ const StarRating = ({ rating, size = "1rem", interactive = false, onRate = null 
           <Star
             size={parseInt(size, 10) * 16 || 16}
             fill={star <= rating ? '#fbbf24' : 'none'}
-            color={star <= rating ? '#fbbf24' : '#e2e8f0'}
+            color={star <= rating ? '#fbbf24' : 'var(--color-border)'}
           />
         </span>
       ))}
@@ -115,7 +115,7 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
       </div>
 
       {isAuthenticated && !resenas.find(r => r.usuario === userId) && (
-        <form onSubmit={handleSubmit} style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', marginBottom: '24px', border: '1px solid var(--color-border)' }}>
+        <form onSubmit={handleSubmit} style={{ background: 'var(--color-bg-secondary)', padding: '20px', borderRadius: '12px', marginBottom: '24px', border: '1px solid var(--color-border)' }}>
           <h4 style={{ margin: '0 0 12px 0', fontSize: '1rem' }}>Deja tu calificación</h4>
           <div style={{ marginBottom: '12px' }}>
             <StarRating rating={calificacion} interactive={true} onRate={setCalificacion} size="1.5rem" />
@@ -126,7 +126,7 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
             placeholder="¿Qué te pareció este inmueble? (Opcional)"
             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', resize: 'vertical', minHeight: '80px', marginBottom: '12px', fontFamily: 'inherit' }}
           />
-          <button type="submit" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
+          <button type="submit" style={{ background: 'var(--color-primary)', color: 'var(--color-surface)', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
             Enviar Opinión
           </button>
         </form>
@@ -135,11 +135,11 @@ const ResenaSection = ({ inmuebleId, isAuthenticated, userId }) => {
       {loading ? (
         <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>Cargando reseñas...</div>
       ) : resenas.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px', background: '#f8fafc', borderRadius: '8px' }}>Aún no hay reseñas para este inmueble.</div>
+        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px', background: 'var(--color-bg-secondary)', borderRadius: '8px' }}>Aún no hay reseñas para este inmueble.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {resenas.map(resena => (
-            <div key={resena.id} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '8px', background: '#fff' }}>
+            <div key={resena.id} style={{ padding: '16px', border: '1px solid var(--color-border)', borderRadius: '8px', background: 'var(--color-surface)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '4px', alignItems: 'flex-start' }}>
                 <div style={{ fontWeight: 600 }}>{resena.usuario_nombre || resena.usuario_username}</div>
                 <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>

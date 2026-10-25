@@ -162,7 +162,7 @@ const TarjetaAcceso360 = ({ accesoId, expiracion, lines, isMine, esOwner, onRevo
         fontSize: '0.8rem', 
         fontWeight: 600,
         background: expired ? 'rgba(0,0,0,0.1)' : 'rgba(16,185,129,0.15)',
-        color: expired ? '#64748b' : '#059669',
+        color: expired ? 'var(--color-text-secondary)' : '#34d399',
         padding: '6px 12px',
         borderRadius: '20px',
         marginTop: '2px'
@@ -190,7 +190,7 @@ const TarjetaAcceso360 = ({ accesoId, expiracion, lines, isMine, esOwner, onRevo
             onClick={() => onRevoke(accesoId)}
             style={{
               flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
-              background: '#ef4444', color: '#fff', border: 'none',
+              background: '#ef4444', color: 'var(--color-surface)', border: 'none',
               padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
               fontWeight: 700, fontSize: '0.8rem', justifyContent: 'center'
             }}
@@ -1056,8 +1056,8 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               disabled={detalleContratoLoading}
               style={{
                 flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
-                background: isMine ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
-                color: isMine ? '#fff' : '#475569', padding: '8px 12px', borderRadius: '8px',
+                background: isMine ? 'rgba(255,255,255,0.2)' : 'var(--color-bg-secondary)',
+                color: isMine ? '#fff' : 'var(--color-text)', padding: '8px 12px', borderRadius: '8px',
                 border: 'none', cursor: detalleContratoLoading ? 'not-allowed' : 'pointer',
                 fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center',
                 opacity: detalleContratoLoading ? 0.7 : 1
@@ -1075,7 +1075,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   onClick={() => abrirContratoIAEdicion(contratoId)}
                   style={{
                     flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none',
+                    background: 'rgba(255,255,255,0.2)', color: 'var(--color-surface)', border: 'none',
                     padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
                     fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center'
                   }}
@@ -1086,7 +1086,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   onClick={() => handleEliminarContratoPropuesto(contratoId, msg.id)}
                   style={{
                     flex: 1, display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    background: 'rgba(239, 68, 68, 0.25)', color: '#fca5a5', border: 'none',
+                    background: 'rgba(239, 68, 68, 0.25)', color: 'rgba(248,113,113,0.35)', border: 'none',
                     padding: '8px 12px', borderRadius: '8px', cursor: 'pointer',
                     fontWeight: 600, fontSize: '0.8rem', justifyContent: 'center',
                     border: '1px solid rgba(239, 68, 68, 0.4)'
@@ -1154,7 +1154,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               rel="noreferrer"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '6px',
-                color: isMine ? '#fff' : '#059669', fontWeight: 600,
+                color: isMine ? '#fff' : '#34d399', fontWeight: 600,
                 textDecoration: 'none', fontSize: '0.9rem',
               }}
             >
@@ -1194,7 +1194,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
             style={{
               width: '340px',
               borderRight: '1px solid var(--color-border)',
-              background: '#fff',
+              background: 'var(--color-surface)',
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -1251,7 +1251,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b' }}>{getOtherName(chat)}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-text)' }}>{getOtherName(chat)}</span>
                         {chat.ultimo_mensaje && (
                           <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{formatDate(chat.ultimo_mensaje.creado)}</span>
                         )}
@@ -1267,7 +1267,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                         <span
                           style={{
                             fontSize: '0.82rem',
-                            color: '#64748b',
+                            color: 'var(--color-text-secondary)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -1300,7 +1300,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
             </div>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--color-bg-secondary)' }}>
             {!selectedChat ? (
               <div
                 style={{
@@ -1321,7 +1321,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   style={{
                     padding: '14px 20px',
                     borderBottom: '1px solid var(--color-border)',
-                    background: '#fff',
+                    background: 'var(--color-surface)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -1374,8 +1374,8 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                     <button
                       onClick={handleBlockToggle}
                       style={{
-                        background: isBlocked ? '#ef4444' : '#f1f5f9',
-                        color: isBlocked ? '#fff' : '#64748b',
+                        background: isBlocked ? '#ef4444' : 'var(--color-bg-secondary)',
+                        color: isBlocked ? '#fff' : 'var(--color-text-secondary)',
                         border: 'none',
                         padding: '8px 14px',
                         borderRadius: '8px',
@@ -1393,8 +1393,8 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                     <button
                       onClick={handleDeleteChat}
                       style={{
-                        background: '#fee2e2',
-                        color: '#dc2626',
+                        background: 'rgba(239,68,68,0.12)',
+                        color: '#f87171',
                         border: 'none',
                         padding: '8px 14px',
                         borderRadius: '8px',
@@ -1414,10 +1414,10 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                 {activePub && (
                   <div
                     style={{
-                      background: 'rgba(255, 255, 255, 0.7)',
+                      background: 'rgba(15, 23, 42, 0.75)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
-                      borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+                      borderBottom: '1px solid var(--color-border)',
                       padding: '12px 24px',
                       display: 'flex',
                       alignItems: 'center',
@@ -1466,16 +1466,16 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                         {activePub.tipo_oferta === 'anticretico' && 'Anticrético'}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>Precio:</span>
-                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Precio:</span>
+                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text)' }}>
                           Bs. {parseFloat(activePub.precio).toLocaleString('es-BO')}
                         </span>
                         {activePub.tipo_oferta === 'alquiler' && (
-                          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>/mes</span>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>/mes</span>
                         )}
                       </div>
                       <span style={{ color: '#cbd5e1' }}>|</span>
-                      <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text)', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <MapPin size={14} color="#64748b" />
                         {activePub.inmueble_direccion || selectedChat.inmueble_titulo}
                       </span>
@@ -1524,7 +1524,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                       justifyContent: 'space-between',
                       gap: '16px',
                       fontSize: '0.8rem',
-                      color: '#b45309',
+                      color: '#fbbf24',
                     }}
                   >
                     <span style={{ fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -1534,7 +1534,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                     <Link
                       to={`/propiedades/${selectedChat.inmueble}`}
                       style={{
-                        color: '#b45309',
+                        color: '#fbbf24',
                         fontWeight: 700,
                         textDecoration: 'underline',
                       }}
@@ -1562,8 +1562,8 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                       <div key={msg.id} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
                         <div
                           style={{
-                            background: isMine ? 'linear-gradient(135deg, #0ea5e9, #0284c7)' : '#fff',
-                            color: isMine ? '#fff' : '#1e293b',
+                            background: isMine ? 'linear-gradient(135deg, #0ea5e9, #0284c7)' : 'var(--color-surface)',
+                            color: isMine ? '#fff' : 'var(--color-text)',
                             padding: '10px 14px',
                             borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
@@ -1598,9 +1598,9 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   <div
                     style={{
                       padding: '16px 20px',
-                      background: '#fef2f2',
+                      background: 'rgba(244, 63, 94, 0.10)',
                       textAlign: 'center',
-                      color: '#dc2626',
+                      color: '#f87171',
                       fontWeight: 600,
                       fontSize: '0.9rem',
                       display: 'flex',
@@ -1616,7 +1616,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                     style={{
                       padding: '12px 20px',
                       borderTop: '1px solid var(--color-border)',
-                      background: '#fff',
+                      background: 'var(--color-surface)',
                     }}
                   >
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
@@ -1793,7 +1793,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                         placeholder="Escribe un mensaje..."
                         style={{
                           flex: 1,
-                          border: '1px solid #e2e8f0',
+                          border: '1px solid var(--color-border)',
                           borderRadius: '24px',
                           padding: '10px 18px',
                           fontSize: '0.92rem',
@@ -1804,7 +1804,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                           e.target.style.borderColor = '#0ea5e9';
                         }}
                         onBlur={(e) => {
-                          e.target.style.borderColor = '#e2e8f0';
+                          e.target.style.borderColor = 'var(--color-border)';
                         }}
                       />
                       <button
@@ -1869,7 +1869,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               onClick={() => setShowWhatsappModal(false)}
               style={{
                 border: '1px solid var(--color-border)',
-                background: '#fff',
+                background: 'var(--color-surface)',
                 borderRadius: '8px',
                 padding: '8px 12px',
                 cursor: 'pointer',
@@ -1925,7 +1925,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   <Bot size={17} color="#fff" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>Abogado IA · Asesor Legal</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text)' }}>Abogado IA · Asesor Legal</div>
                   <div style={{ fontSize: '0.7rem', color: '#8b5cf6' }}>Consultas sobre el Contrato #{contratoForm.id}</div>
                 </div>
               </div>
@@ -1934,10 +1934,10 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               <div style={{
                 flex: 1,
                 overflowY: 'auto',
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--color-border)',
                 borderRadius: '12px',
                 padding: '12px',
-                background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+                background: 'linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-secondary) 100%)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '10px',
@@ -1965,7 +1965,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                       background: msg.role === 'user'
                         ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
                         : '#ffffff',
-                      color: msg.role === 'user' ? '#fff' : '#1e293b',
+                      color: msg.role === 'user' ? '#fff' : 'var(--color-text)',
                       borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
                       padding: '9px 13px',
                       fontSize: '0.82rem',
@@ -1973,7 +1973,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                       boxShadow: msg.role === 'user'
                         ? '0 2px 10px rgba(99,102,241,0.3)'
                         : '0 1px 6px rgba(0,0,0,0.07)',
-                      border: msg.role === 'assistant' ? '1px solid #e2e8f0' : 'none',
+                      border: msg.role === 'assistant' ? '1px solid var(--color-border)' : 'none',
                       borderLeft: msg.role === 'assistant' ? '3px solid #8b5cf6' : 'none',
                       whiteSpace: 'pre-wrap',
                     }}>
@@ -1991,7 +1991,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                       <Bot size={12} color="#fff" />
                     </div>
                     <div style={{
-                      background: '#fff', border: '1px solid #e2e8f0', borderLeft: '3px solid #8b5cf6',
+                      background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderLeft: '3px solid #8b5cf6',
                       borderRadius: '4px 16px 16px 16px',
                       padding: '10px 16px', display: 'flex', gap: '4px', alignItems: 'center',
                     }}>
@@ -2061,9 +2061,9 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   placeholder="Consúltale al Abogado IA sobre los cambios..."
                   disabled={editChatCargando}
                   style={{
-                    flex: 1, border: '1.5px solid #e2e8f0', borderRadius: '10px',
+                    flex: 1, border: '1.5px solid var(--color-border)', borderRadius: '10px',
                     padding: '9px 14px', fontSize: '0.85rem', outline: 'none',
-                    background: '#fff', opacity: editChatCargando ? 0.6 : 1,
+                    background: 'var(--color-surface)', opacity: editChatCargando ? 0.6 : 1,
                   }}
                 />
                 <button
@@ -2071,7 +2071,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   disabled={!editChatInput.trim() || editChatCargando}
                   style={{
                     width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-                    background: !editChatInput.trim() || editChatCargando ? '#e2e8f0' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    background: !editChatInput.trim() || editChatCargando ? 'var(--color-border)' : 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
                     border: 'none', cursor: !editChatInput.trim() || editChatCargando ? 'default' : 'pointer',
                     color: !editChatInput.trim() || editChatCargando ? '#94a3b8' : '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2092,9 +2092,9 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
             overflowY: 'auto',
             paddingRight: '6px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: '#f8fafc', borderRadius: '10px', marginBottom: '8px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'var(--color-bg-secondary)', borderRadius: '10px', marginBottom: '8px', flexShrink: 0 }}>
               <FileText size={24} color="#6366f1" />
-              <p style={{ margin: 0, fontSize: '0.88rem', color: '#64748b' }}>Complete los terminos legales para formalizar el acuerdo con el cliente.</p>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--color-text-secondary)' }}>Complete los terminos legales para formalizar el acuerdo con el cliente.</p>
             </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
@@ -2114,7 +2114,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                       type="text"
                       value="Bolivianos (BOB)"
                       readOnly
-                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#f9fafb', color: '#64748b', fontSize: '0.85rem' }}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}
                     />
                   </div>
                 </div>
@@ -2196,7 +2196,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', flexShrink: 0 }}>
-                  <button onClick={() => setShowContratoModal(false)} style={{ padding: '10px 20px', border: '1px solid #d1d5db', background: '#fff', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Cancelar</button>
+                  <button onClick={() => setShowContratoModal(false)} style={{ padding: '10px 20px', border: '1px solid #d1d5db', background: 'var(--color-surface)', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Cancelar</button>
                   <button
                     onClick={handleGuardarContrato}
                     disabled={contratoLoading}
@@ -2225,7 +2225,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
           {pagoLoading && contratosDisponibles.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <Loader2 size={32} className="spin" />
-              <p style={{ color: '#64748b', marginTop: '8px' }}>Cargando contratos aceptados...</p>
+              <p style={{ color: 'var(--color-text-secondary)', marginTop: '8px' }}>Cargando contratos aceptados...</p>
             </div>
           ) : contratosDisponibles.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
@@ -2235,7 +2235,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               <button 
                 onClick={() => { setShowPagoModal(false); abrirModalContrato(); }}
                 style={{
-                  background: '#6366f1', color: '#fff', border: 'none', padding: '10px 20px', 
+                  background: '#6366f1', color: 'var(--color-surface)', border: 'none', padding: '10px 20px', 
                   borderRadius: '8px', fontWeight: 700, cursor: 'pointer'
                 }}
               >
@@ -2245,7 +2245,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
           ) : (
             <>
               <div>
-                <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#374151', marginBottom: '4px', display: 'block' }}>Contrato Aceptado</label>
+                <label style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)', marginBottom: '4px', display: 'block' }}>Contrato Aceptado</label>
                 <select
                   value={pagoForm.contrato_id}
                   onChange={e => {
@@ -2265,7 +2265,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               {/* ... resto del formulario de pago (monto, moneda, etc) ... */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#374151', marginBottom: '4px', display: 'block' }}>Monto</label>
+                  <label style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)', marginBottom: '4px', display: 'block' }}>Monto</label>
                   <input
                     type="number"
                     value={pagoForm.monto}
@@ -2275,7 +2275,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                   />
                 </div>
                 <div>
-                  <label style={{ fontWeight: 600, fontSize: '0.9rem', color: '#374151', marginBottom: '4px', display: 'block' }}>Moneda</label>
+                  <label style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text)', marginBottom: '4px', display: 'block' }}>Moneda</label>
                   <select
                     value={pagoForm.moneda}
                     onChange={e => setPagoForm(prev => ({ ...prev, moneda: e.target.value }))}
@@ -2287,7 +2287,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
-                <button onClick={() => setShowPagoModal(false)} style={{ border: '1px solid #d1d5db', background: '#fff', borderRadius: '8px', padding: '10px 16px', fontWeight: 600 }}>Cancelar</button>
+                <button onClick={() => setShowPagoModal(false)} style={{ border: '1px solid #d1d5db', background: 'var(--color-surface)', borderRadius: '8px', padding: '10px 16px', fontWeight: 600 }}>Cancelar</button>
                 <button
                   onClick={handleEnviarSolicitudPago}
                   disabled={pagoLoading}
@@ -2315,7 +2315,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(14,165,233,0.06)', borderRadius: '10px' }}>
             <Orbit size={24} color="var(--color-primary)" />
-            <p style={{ margin: 0, fontSize: '0.88rem', color: '#64748b' }}>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--color-text-secondary)' }}>
               Selecciona la duración para la cual deseas permitir que el cliente explore la propiedad de forma inmersiva.
             </p>
           </div>
@@ -2326,8 +2326,8 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               disabled={acceso360Loading}
               style={{
                 padding: '16px 12px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '12px',
                 fontWeight: 600,
                 fontSize: '0.9rem',
@@ -2339,18 +2339,18 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                 gap: '4px'
               }}
               onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.background = '#f0f9ff'; }}
-              onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = '#f8fafc'; }}
             >
               <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>30 Min</span>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Visita rápida</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Visita rápida</span>
             </button>
             <button
               onClick={() => handleOtorgarAcceso360('2')}
               disabled={acceso360Loading}
               style={{
                 padding: '16px 12px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '12px',
                 fontWeight: 600,
                 fontSize: '0.9rem',
@@ -2362,18 +2362,18 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                 gap: '4px'
               }}
               onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.background = '#f0f9ff'; }}
-              onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = '#f8fafc'; }}
             >
               <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>2 Horas</span>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Estándar</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Estándar</span>
             </button>
             <button
               onClick={() => handleOtorgarAcceso360('12')}
               disabled={acceso360Loading}
               style={{
                 padding: '16px 12px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '12px',
                 fontWeight: 600,
                 fontSize: '0.9rem',
@@ -2385,18 +2385,18 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                 gap: '4px'
               }}
               onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.background = '#f0f9ff'; }}
-              onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = '#f8fafc'; }}
             >
               <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>12 Horas</span>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Medio día</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Medio día</span>
             </button>
             <button
               onClick={() => handleOtorgarAcceso360('24')}
               disabled={acceso360Loading}
               style={{
                 padding: '16px 12px',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                background: 'var(--color-bg-secondary)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '12px',
                 fontWeight: 600,
                 fontSize: '0.9rem',
@@ -2408,10 +2408,10 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
                 gap: '4px'
               }}
               onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.background = '#f0f9ff'; }}
-              onMouseOut={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = '#f8fafc'; }}
             >
               <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>24 Horas</span>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Día completo</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Día completo</span>
             </button>
           </div>
 
@@ -2420,7 +2420,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
               onClick={() => setShowAcceso360Modal(false)}
               style={{
                 border: '1px solid #d1d5db',
-                background: '#fff',
+                background: 'var(--color-surface)',
                 borderRadius: '8px',
                 padding: '10px 16px',
                 fontWeight: 600,

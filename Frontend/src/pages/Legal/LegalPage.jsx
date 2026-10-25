@@ -5,7 +5,7 @@ const styles = {
   page: {
     minHeight: '100vh',
     background: 'var(--color-bg)',
-    color: 'var(--color-text, #e2e8f0)',
+    color: 'var(--color-text)',
     padding: '2rem 1rem 4rem',
   },
   container: { maxWidth: '780px', margin: '0 auto' },
@@ -20,7 +20,7 @@ const styles = {
   },
   h1: { color: '#f8fafc', fontSize: '1.5rem', margin: '0 0 0.25rem', display: 'flex', alignItems: 'center', gap: '10px' },
   h2: { color: '#38bdf8', fontSize: '1.05rem', marginTop: '1.4rem', marginBottom: '0.4rem' },
-  meta: { color: '#64748b', fontSize: '0.8rem', marginBottom: '1.5rem' },
+  meta: { color: 'var(--color-text-secondary)', fontSize: '0.8rem', marginBottom: '1.5rem' },
   back: { color: '#38bdf8', fontSize: '0.85rem', textDecoration: 'none' },
 };
 

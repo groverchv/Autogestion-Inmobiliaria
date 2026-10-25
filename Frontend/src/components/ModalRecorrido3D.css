@@ -233,7 +233,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 
 .modal-recorrido__tip {
@@ -313,7 +313,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 
 .modal-recorrido__thumb-glow {

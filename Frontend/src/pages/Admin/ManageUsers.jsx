@@ -19,7 +19,7 @@ const ManageUsers = () => {
       </span>
     )},
     { key: 'activo', label: 'Activo', render: (item) => (
-      <span style={{ color: item.activo ? '#16a34a' : '#dc2626', fontWeight: 600 }}>{item.activo ? 'Sí' : 'No'}</span>
+      <span style={{ color: item.activo ? '#4ade80' : '#f87171', fontWeight: 600 }}>{item.activo ? 'Sí' : 'No'}</span>
     )},
   ];
 

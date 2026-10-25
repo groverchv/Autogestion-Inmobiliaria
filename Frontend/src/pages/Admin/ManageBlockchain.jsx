@@ -74,15 +74,15 @@ const ManageBlockchain = () => {
       case 'transferirPropiedad':
         return <span style={{ ...s, background: '#f0fdfa', color: '#0d9488' }}>Transferencia</span>;
       case 'crearContrato':
-        return <span style={{ ...s, background: '#dcfce7', color: '#15803d' }}>Contrato Creado</span>;
+        return <span style={{ ...s, background: 'rgba(16,185,129,0.12)', color: '#4ade80' }}>Contrato Creado</span>;
       case 'firmarContrato':
         return <span style={{ ...s, background: '#f5f3ff', color: '#6d28d9' }}>Firma Sellada</span>;
       case 'finalizarContrato':
-        return <span style={{ ...s, background: '#fee2e2', color: '#b91c1c' }}>Rescisión</span>;
+        return <span style={{ ...s, background: 'rgba(239,68,68,0.12)', color: '#f87171' }}>Rescisión</span>;
       case 'registrarPago':
-        return <span style={{ ...s, background: '#fef3c7', color: '#b45309' }}>Pago Sellado</span>;
+        return <span style={{ ...s, background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>Pago Sellado</span>;
       default:
-        return <span style={{ ...s, background: '#f1f5f9', color: '#475569' }}>{txName}</span>;
+        return <span style={{ ...s, background: 'var(--color-bg-secondary)', color: 'var(--color-text)' }}>{txName}</span>;
     }
   };
 
@@ -199,11 +199,11 @@ const ManageBlockchain = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: 'var(--color-bg-secondary)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                       <span style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)', fontWeight: 600 }}>peer0.org1.autogestion.com</span>
-                      <span style={{ background: '#dcfce7', color: '#15803d', padding: '1px 6px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 700 }}>Activo</span>
+                      <span style={{ background: 'rgba(16,185,129,0.12)', color: '#4ade80', padding: '1px 6px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 700 }}>Activo</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', background: 'var(--color-bg-secondary)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
                       <span style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)', fontWeight: 600 }}>peer0.org2.autogestion.com</span>
-                      <span style={{ background: '#dcfce7', color: '#15803d', padding: '1px 6px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 700 }}>Activo</span>
+                      <span style={{ background: 'rgba(16,185,129,0.12)', color: '#4ade80', padding: '1px 6px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 700 }}>Activo</span>
                     </div>
                   </div>
                 </div>

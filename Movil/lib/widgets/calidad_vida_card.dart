@@ -206,7 +206,7 @@ class _CalidadVidaCardState extends State<CalidadVidaCard> {
             child: Container(
               height: 250,
               width: double.infinity,
-              color: const Color(0xFFE5E7EB),
+              color: AppColors.surface,
               child: Stack(
                 alignment: Alignment.center,
                 children: [

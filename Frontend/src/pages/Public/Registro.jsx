@@ -94,34 +94,27 @@ const Registro = () => {
   };
 
   return (
-    <div className="login" id="register-page">
-      <form className="login__form" onSubmit={handleSubmit} style={{ maxWidth: '520px' }}>
-        {/* Logo Superior */}
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <img 
-            src="/logo_dark.png" 
-            alt="Nobleve Logo" 
-            style={{ height: '70px', width: 'auto', objectFit: 'contain' }}
-          />
+    <div className="login" id="register-page" style={{ width: '100%' }}>
+      <form className="login__form" onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
+          <h2 style={{ color: '#f8fafc', fontSize: '1.5rem', fontWeight: 700, margin: '0 0 4px 0' }}>
+            Crear Cuenta
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0 }}>
+            Regístrate en menos de un minuto
+          </p>
         </div>
-
-        <h2 style={{ textAlign: 'center', color: 'white', marginBottom: '0.4rem', fontSize: '1.4rem' }}>
-          Crear Cuenta en Nobleve
-        </h2>
-        <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: '1.4rem' }}>
-          Accede a recorridos 360°, contratos digitales y autogestión de propiedades.
-        </p>
         
         {error && <div className="login__error" role="alert" style={{ marginBottom: '1rem' }}>{error}</div>}
-        {success && <div role="status" aria-live="polite" style={{ background: '#10b981', color: 'white', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{success}</div>}
+        {success && <div role="status" aria-live="polite" style={{ background: '#064e3b', border: '1px solid #10b981', color: '#34d399', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{success}</div>}
 
         {/* Fila: Nombre y Apellido */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <div className="login__field" style={{ flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="login__field">
             <label htmlFor="first_name" className="login__label">Nombre</label>
             <input id="first_name" type="text" className="login__input" value={formData.first_name} onChange={handleChange} placeholder="Ej. Carlos" required />
           </div>
-          <div className="login__field" style={{ flex: 1 }}>
+          <div className="login__field">
             <label htmlFor="last_name" className="login__label">Apellido</label>
             <input id="last_name" type="text" className="login__input" value={formData.last_name} onChange={handleChange} placeholder="Ej. Mendoza" required />
           </div>
@@ -133,24 +126,24 @@ const Registro = () => {
         </div>
 
         {/* Fila: Contraseña y Confirmar */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <div className="login__field" style={{ flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="login__field">
             <label htmlFor="password" className="login__label">Contraseña</label>
             <input id="password" type="password" className="login__input" value={formData.password} onChange={handleChange} placeholder="Mínimo 8 caracteres" required minLength="8" />
           </div>
-          <div className="login__field" style={{ flex: 1 }}>
+          <div className="login__field">
             <label htmlFor="confirm_password" className="login__label">Confirmar Contraseña</label>
             <input id="confirm_password" type="password" className="login__input" value={formData.confirm_password} onChange={handleChange} placeholder="Repite contraseña" required minLength="8" />
           </div>
         </div>
 
         {/* Fila: Cédula y Teléfono */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <div className="login__field" style={{ flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="login__field">
             <label htmlFor="ci" className="login__label">Cédula de Identidad (CI)</label>
             <input id="ci" type="text" className="login__input" value={formData.ci} onChange={handleChange} placeholder="Ej. 8492011 SC" />
           </div>
-          <div className="login__field" style={{ flex: 1 }}>
+          <div className="login__field">
             <label htmlFor="telefono" className="login__label">Teléfono / Celular</label>
             <input id="telefono" type="tel" className="login__input" value={formData.telefono} onChange={handleChange} placeholder="Ej. 70012345" />
           </div>

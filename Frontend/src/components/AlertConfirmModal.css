@@ -57,18 +57,18 @@
 }
 
 .ac-modal-icon-wrapper--error {
-  background: #fef2f2;
+  background: rgba(244, 63, 94, 0.10);
   color: #ef4444;
   animation: ac-shake 0.4s ease-in-out;
 }
 
 .ac-modal-icon-wrapper--warning {
-  background: #fffbeb;
+  background: rgba(251, 191, 36, 0.10);
   color: #f59e0b;
 }
 
 .ac-modal-icon-wrapper--info {
-  background: #f0f9ff;
+  background: var(--color-bg-secondary);
   color: #0ea5e9;
 }
 

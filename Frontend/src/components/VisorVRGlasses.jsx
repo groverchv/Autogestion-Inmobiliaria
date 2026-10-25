@@ -740,7 +740,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId =
             {gyroPermission === 'prompt' && (
               <button
                 className="visor-vr-glasses__close-btn"
-                style={{ background: '#f59e0b', color: '#fff', borderColor: '#d97706' }}
+                style={{ background: '#f59e0b', color: 'var(--color-surface)', borderColor: '#d97706' }}
                 onClick={solicitarPermisoGiroscopio}
                 title="Activar sensor de movimiento"
                 type="button"
@@ -752,7 +752,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId =
             {gamepadConnected && (
               <span
                 className="visor-vr-glasses__close-btn"
-                style={{ background: '#10b981', color: '#fff', borderColor: '#059669', cursor: 'default', fontSize: '0.75rem' }}
+                style={{ background: '#10b981', color: 'var(--color-surface)', borderColor: '#34d399', cursor: 'default', fontSize: '0.75rem' }}
                 title={`Mando conectado: ${gamepadName}`}
               >
                 <Gamepad size={16} />

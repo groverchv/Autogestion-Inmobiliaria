@@ -16,7 +16,7 @@ const ManageInmuebles = () => {
     { key: 'id', label: 'ID' },
     { key: 'titulo', label: 'Título', render: (item) => <span style={{ fontWeight: 600 }}>{item.titulo}</span> },
     { key: 'tipo_nombre', label: 'Categoría', render: (item) => (
-      <span style={{ background: '#f0fdf4', color: '#15803d', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
+      <span style={{ background: 'rgba(16, 185, 129, 0.10)', color: '#4ade80', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>
         {item.tipo_nombre || 'N/A'}
       </span>
     )},

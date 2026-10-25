@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, CheckCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../services/api';
+import Stepper from './Stepper';
 
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MESES = [
@@ -19,6 +20,7 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
   const [guardando, setGuardando]             = useState(false);
   const [error, setError]                     = useState('');
   const [exito, setExito]                     = useState(false);
+  const [paso, setPaso]                       = useState(1);
 
   // Resetear al cerrar
   useEffect(() => {
@@ -29,6 +31,7 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
       setNotas('');
       setError('');
       setExito(false);
+      setPaso(1);
       setMesVista(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     }
   }, [isOpen]);
@@ -138,7 +141,7 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
     >
       <div
         style={{
-          background: '#fff', borderRadius: '20px', width: '100%',
+          background: 'var(--color-surface)', borderRadius: '20px', width: '100%',
           maxWidth: '560px', maxHeight: '90vh', overflow: 'auto',
           boxShadow: '0 25px 50px rgba(0,0,0,0.2)',
         }}
@@ -149,14 +152,14 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
       >
         {/* ── Header ─────────────────────────────────────────────────── */}
         <div style={{
-          padding: '20px 24px', borderBottom: '1px solid #e2e8f0',
+          padding: '20px 24px', borderBottom: '1px solid var(--color-border)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         }}>
           <div>
-            <h2 id="cita-modal-titulo" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-              Agendar Visita
+            <h2 id="cita-modal-titulo" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text)' }}>
+              Pedir visita
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
               {inmueble?.titulo}
             </p>
           </div>
@@ -170,15 +173,15 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
         {exito ? (
           <div style={{ padding: '48px 24px', textAlign: 'center' }}>
             <div style={{
-              width: '72px', height: '72px', borderRadius: '50%', background: '#dcfce7',
+              width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(16,185,129,0.12)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
             }}>
               <CheckCircle size={40} color="#16a34a" />
             </div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>
-              ¡Cita agendada con éxito!
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '8px' }}>
+              ¡Visita pedida!
             </h3>
-            <p style={{ color: '#64748b', marginBottom: '8px' }}>
+            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
               {fechaSeleccionada?.toLocaleDateString('es-BO', {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
               })}
@@ -186,12 +189,12 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
             <p style={{ color: '#0ea5e9', fontWeight: 600, fontSize: '1.1rem', marginBottom: '24px' }}>
               {slotSeleccionado?.hora_inicio} — {slotSeleccionado?.hora_fin}
             </p>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '24px' }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '24px' }}>
               El propietario recibirá una notificación. Puedes revisar tu cita en Mi Agenda.
             </p>
             <button onClick={onClose}
               style={{
-                background: '#0ea5e9', color: '#fff', border: 'none',
+                background: '#0ea5e9', color: 'var(--color-surface)', border: 'none',
                 padding: '12px 32px', borderRadius: '10px', fontWeight: 600,
                 cursor: 'pointer', fontSize: '1rem',
               }}>
@@ -201,21 +204,24 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
         ) : (
           <div style={{ padding: '24px' }}>
 
-            {/* ── Calendario ─────────────────────────────────────────── */}
+            <Stepper current={paso} total={3} label={paso === 1 ? 'Elige el día' : paso === 2 ? 'Elige la hora' : 'Confirma tu visita'} />
+
+            {/* ── Paso 1: Calendario ─────────────────────────────────── */}
+            {paso === 1 && (
             <div style={{ marginBottom: '24px' }}>
               <div style={{
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between', marginBottom: '16px',
               }}>
                 <button onClick={irMesAnterior}
-                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}>
+                  style={{ background: 'var(--color-bg-secondary)', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}>
                   <ChevronLeft size={18} color="#475569" />
                 </button>
-                <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '1rem' }}>
+                <span style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '1rem' }}>
                   {MESES[mesVista.getMonth()]} {mesVista.getFullYear()}
                 </span>
                 <button onClick={irMesSiguiente}
-                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}>
+                  style={{ background: 'var(--color-bg-secondary)', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}>
                   <ChevronRight size={18} color="#475569" />
                 </button>
               </div>
@@ -238,17 +244,17 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
                   return (
                     <button
                       key={dia.toISOString()}
-                      onClick={() => !pasada && setFechaSeleccionada(dia)}
+                      onClick={() => { if (!pasada) { setFechaSeleccionada(dia); setPaso(2); } }}
                       disabled={pasada}
                       style={{
                         padding: '8px 4px', borderRadius: '8px', border: 'none',
                         cursor:     pasada ? 'not-allowed' : 'pointer',
                         background: sel ? '#0ea5e9' : 'transparent',
-                        color:      sel ? '#fff' : pasada ? '#cbd5e1' : '#334155',
+                        color:      sel ? '#fff' : pasada ? '#cbd5e1' : 'var(--color-text)',
                         fontWeight: sel ? 700 : 400,
                         fontSize: '0.9rem', transition: 'background 0.15s',
                       }}
-                      onMouseEnter={e => { if (!pasada && !sel) e.currentTarget.style.background = '#e0f2fe'; }}
+                      onMouseEnter={e => { if (!pasada && !sel) e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
                       onMouseLeave={e => { if (!sel) e.currentTarget.style.background = 'transparent'; }}
                     >
                       {dia.getDate()}
@@ -257,15 +263,22 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
                 })}
               </div>
             </div>
+            )}
 
-            {/* ── Slots de hora ───────────────────────────────────────── */}
-            {fechaSeleccionada && (
+            {/* ── Paso 2: Slots de hora ───────────────────────────────── */}
+            {paso === 2 && fechaSeleccionada && (
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <Clock size={16} color="#0ea5e9" />
-                  <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
-                    Horarios — {fechaSeleccionada.toLocaleDateString('es-BO', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Clock size={16} color="#0ea5e9" />
+                    <span style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.95rem' }}>
+                      {fechaSeleccionada.toLocaleDateString('es-BO', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </span>
+                  </div>
+                  <button type="button" onClick={() => setPaso(1)}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
+                    Cambiar día
+                  </button>
                 </div>
 
                 {cargandoSlots ? (
@@ -279,14 +292,14 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
                       return (
                         <button
                           key={slot.hora_inicio}
-                          onClick={() => slot.disponible && setSlotSeleccionado(slot)}
+                          onClick={() => { if (slot.disponible) { setSlotSeleccionado(slot); setPaso(3); } }}
                           disabled={!slot.disponible}
                           style={{
                             padding: '10px 8px', borderRadius: '8px',
                             cursor:     slot.disponible ? 'pointer' : 'not-allowed',
-                            border:     sel ? '2px solid #0ea5e9' : '1px solid #e2e8f0',
-                            background: sel ? '#e0f2fe' : slot.disponible ? '#f8fafc' : '#f1f5f9',
-                            color:      sel ? '#0284c7' : slot.disponible ? '#334155' : '#cbd5e1',
+                            border:     sel ? '2px solid #0ea5e9' : '1px solid var(--color-border)',
+                            background: sel ? 'rgba(14,165,233,0.15)' : slot.disponible ? 'var(--color-bg-secondary)' : 'var(--color-bg-secondary)',
+                            color:      sel ? '#38bdf8' : slot.disponible ? 'var(--color-text)' : 'var(--color-text-muted)',
                             fontWeight: sel ? 700 : 500,
                             fontSize: '0.85rem', textAlign: 'center',
                             transition: 'all 0.15s',
@@ -304,8 +317,8 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
                   </div>
                 ) : !cargandoSlots && (
                   <div style={{
-                    padding: '16px', background: '#fef3c7', borderRadius: '8px',
-                    color: '#92400e', fontSize: '0.9rem', textAlign: 'center',
+                    padding: '16px', background: 'rgba(251,191,36,0.12)', borderRadius: '8px',
+                    color: '#fbbf24', fontSize: '0.9rem', textAlign: 'center',
                   }}>
                     {error || 'No hay horarios disponibles para este día.'}
                   </div>
@@ -313,10 +326,17 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
               </div>
             )}
 
-            {/* ── Notas ──────────────────────────────────────────────── */}
-            {slotSeleccionado && (
+            {/* ── Paso 3: Notas + Confirmación ────────────────────────── */}
+            {paso === 3 && slotSeleccionado && (
+              <>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                <button type="button" onClick={() => setPaso(2)}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
+                  Cambiar horario
+                </button>
+              </div>
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#64748b', fontWeight: 500 }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
                   Notas para el propietario (opcional)
                 </label>
                 <textarea
@@ -325,26 +345,25 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
                   placeholder="Ej: ¿Tiene estacionamiento disponible?"
                   rows={3}
                   style={{
-                    width: '100%', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    width: '100%', border: '1px solid var(--color-border)', borderRadius: '8px',
                     padding: '10px 12px', fontSize: '0.9rem', resize: 'vertical',
                     fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none',
                   }}
                   onFocus={e => (e.target.style.borderColor = '#0ea5e9')}
-                  onBlur={e  => (e.target.style.borderColor = '#e2e8f0')}
+                  onBlur={e  => (e.target.style.borderColor = 'var(--color-border)')}
                 />
               </div>
-            )}
 
-            {/* ── Resumen ─────────────────────────────────────────────── */}
-            {slotSeleccionado && fechaSeleccionada && (
+            {/* Resumen */}
+            {fechaSeleccionada && (
               <div style={{
-                padding: '14px 16px', background: '#f0f9ff', borderRadius: '10px',
+                padding: '14px 16px', background: 'var(--color-bg-secondary)', borderRadius: '10px',
                 border: '1px solid #bae6fd', marginBottom: '20px',
                 display: 'flex', alignItems: 'center', gap: '12px',
               }}>
                 <Calendar size={20} color="#0ea5e9" />
                 <div>
-                  <div style={{ fontWeight: 600, color: '#0284c7', fontSize: '0.95rem' }}>
+                  <div style={{ fontWeight: 600, color: '#38bdf8', fontSize: '0.95rem' }}>
                     {fechaSeleccionada.toLocaleDateString('es-BO', {
                       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                     })}
@@ -355,12 +374,14 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
                 </div>
               </div>
             )}
+              </>
+            )}
 
             {/* ── Error general ───────────────────────────────────────── */}
             {error && slots.length > 0 && (
               <div style={{
-                padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca',
-                borderRadius: '8px', color: '#dc2626', fontSize: '0.9rem', marginBottom: '16px',
+                padding: '12px 16px', background: 'rgba(244, 63, 94, 0.10)', border: '1px solid #fecaca',
+                borderRadius: '8px', color: '#f87171', fontSize: '0.9rem', marginBottom: '16px',
               }}>
                 {error}
               </div>
@@ -370,25 +391,27 @@ const ModalAgendarCita = ({ isOpen, onClose, inmueble, propietarioId, onCitaAgen
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button onClick={onClose}
                 style={{
-                  padding: '10px 20px', border: '1px solid #e2e8f0', borderRadius: '10px',
-                  background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer',
+                  padding: '10px 20px', border: '1px solid var(--color-border)', borderRadius: '10px',
+                  background: 'var(--color-surface)', color: 'var(--color-text-secondary)', fontWeight: 600, cursor: 'pointer',
                 }}>
                 Cancelar
               </button>
-              <button
-                onClick={handleAgendar}
-                disabled={!fechaSeleccionada || !slotSeleccionado || guardando}
-                style={{
-                  padding: '10px 24px', border: 'none', borderRadius: '10px',
-                  background: (!fechaSeleccionada || !slotSeleccionado) ? '#cbd5e1' : '#0ea5e9',
-                  color: '#fff', fontWeight: 600,
-                  cursor: (!fechaSeleccionada || !slotSeleccionado) ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                }}
-              >
-                <Calendar size={16} />
-                {guardando ? 'Agendando...' : 'Confirmar Cita'}
-              </button>
+              {paso === 3 && (
+                <button
+                  onClick={handleAgendar}
+                  disabled={guardando}
+                  style={{
+                    padding: '10px 24px', border: 'none', borderRadius: '10px',
+                    background: '#0ea5e9',
+                    color: '#fff', fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                  }}
+                >
+                  <Calendar size={16} />
+                  {guardando ? 'Enviando...' : 'Pedir visita'}
+                </button>
+              )}
             </div>
           </div>
         )}

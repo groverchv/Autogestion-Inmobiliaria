@@ -110,29 +110,29 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
           const element = document.createElement('div');
           element.style.padding = '24px';
           element.style.fontFamily = 'Arial, sans-serif';
-          element.style.color = '#0f172a';
+          element.style.color = 'var(--color-text)';
 
           element.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0ea5e9; padding-bottom: 12px; margin-bottom: 20px;">
               <div>
-                <h1 style="margin: 0; font-size: 20px; color: #0f172a;">Autogestión Inmobiliaria</h1>
-                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">Reporte de ${title} (Filtrado por IA)</p>
+                <h1 style="margin: 0; font-size: 20px; color: var(--color-text);">Autogestión Inmobiliaria</h1>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--color-text-secondary);">Reporte de ${title} (Filtrado por IA)</p>
               </div>
               <div style="text-align: right;">
-                <p style="margin: 0; font-size: 11px; color: #64748b;">Fecha: ${new Date().toLocaleString()}</p>
-                <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">Registros: ${filteredData.length}</p>
+                <p style="margin: 0; font-size: 11px; color: var(--color-text-secondary);">Fecha: ${new Date().toLocaleString()}</p>
+                <p style="margin: 4px 0 0 0; font-size: 11px; color: var(--color-text-secondary);">Registros: ${filteredData.length}</p>
               </div>
             </div>
             
             <div style="background-color: #f3e8ff; border-left: 4px solid #a855f7; padding: 12px; margin-bottom: 20px; font-size: 11px; border-radius: 6px; color: #581c87;">
               <strong>Resumen de Análisis (IA):</strong>
-              <p style="margin: 4px 0 0 0; line-height: 1.4; color: #0f172a;">${summary}</p>
+              <p style="margin: 4px 0 0 0; line-height: 1.4; color: var(--color-text);">${summary}</p>
             </div>
 
             <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
               <thead>
-                <tr style="background-color: #f1f5f9;">
-                  ${finalColumns.map(col => `<th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; color: #334155; font-weight: bold;">${col.label}</th>`).join('')}
+                <tr style="background-color: var(--color-bg-secondary);">
+                  ${finalColumns.map(col => `<th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; color: var(--color-text); font-weight: bold;">${col.label}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
@@ -141,7 +141,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
                     ${finalColumns.map(col => {
                       let val = item[col.key];
                       if (typeof val === 'boolean') val = val ? 'Sí' : 'No';
-                      return `<td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">${val ?? '—'}</td>`;
+                      return `<td style="padding: 8px; border: 1px solid #cbd5e1; color: var(--color-text);">${val ?? '—'}</td>`;
                     }).join('')}
                   </tr>
                 `).join('')}
@@ -238,23 +238,23 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
     const element = document.createElement('div');
     element.style.padding = '24px';
     element.style.fontFamily = 'Arial, sans-serif';
-    element.style.color = '#0f172a';
+    element.style.color = 'var(--color-text)';
 
     element.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0ea5e9; padding-bottom: 12px; margin-bottom: 24px;">
         <div>
-          <h1 style="margin: 0; font-size: 20px; color: #0f172a;">Autogestión Inmobiliaria</h1>
-          <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b;">Reporte de ${title}</p>
+          <h1 style="margin: 0; font-size: 20px; color: var(--color-text);">Autogestión Inmobiliaria</h1>
+          <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--color-text-secondary);">Reporte de ${title}</p>
         </div>
         <div style="text-align: right;">
-          <p style="margin: 0; font-size: 11px; color: #64748b;">Fecha: ${new Date().toLocaleString()}</p>
-          <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">Registros: ${filtered.length}</p>
+          <p style="margin: 0; font-size: 11px; color: var(--color-text-secondary);">Fecha: ${new Date().toLocaleString()}</p>
+          <p style="margin: 4px 0 0 0; font-size: 11px; color: var(--color-text-secondary);">Registros: ${filtered.length}</p>
         </div>
       </div>
       <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
         <thead>
-          <tr style="background-color: #f1f5f9;">
-            ${columns.map(col => `<th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; color: #334155; font-weight: bold;">${col.label}</th>`).join('')}
+          <tr style="background-color: var(--color-bg-secondary);">
+            ${columns.map(col => `<th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; color: var(--color-text); font-weight: bold;">${col.label}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
@@ -263,7 +263,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
               ${columns.map(col => {
                 let val = item[col.key];
                 if (typeof val === 'boolean') val = val ? 'Sí' : 'No';
-                return `<td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">${val ?? '—'}</td>`;
+                return `<td style="padding: 8px; border: 1px solid #cbd5e1; color: var(--color-text);">${val ?? '—'}</td>`;
               }).join('')}
             </tr>
           `).join('')}
@@ -695,10 +695,10 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
           align-items: flex-start;
           gap: 8px;
           padding: 10px 14px;
-          background: #fef2f2;
+          background: rgba(244, 63, 94, 0.10);
           border: 1px solid #fecaca;
           border-radius: 10px;
-          color: #dc2626;
+          color: #f87171;
           margin-bottom: 16px;
           font-size: 0.8rem;
         }
@@ -807,7 +807,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
                 className="admin-btn-primary"
                 onClick={() => setAiDropdownOpen(!aiDropdownOpen)}
                 disabled={aiLoading || !aiPrompt.trim()}
-                style={{ background: 'linear-gradient(135deg, var(--color-primary), #a855f7)', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', height: '100%' }}
+                style={{ background: 'linear-gradient(135deg, var(--color-primary), #a855f7)', color: 'var(--color-surface)', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', height: '100%' }}
               >
                 {aiLoading ? 'Procesando...' : 'IA Reporte'} <ChevronDown size={14} />
               </button>
@@ -944,7 +944,7 @@ const AdminCrud = ({ title, subtitle, endpoint, columns, formFields, idKey = 'id
                   ) : field.key === 'superficie' ? (
                     <input
                       className="admin-crud-field-input"
-                      style={{ background: '#f8fafc', color: '#64748b', fontWeight: 600 }}
+                      style={{ background: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)', fontWeight: 600 }}
                       type="text"
                       value={formData[field.key] || ''}
                       disabled

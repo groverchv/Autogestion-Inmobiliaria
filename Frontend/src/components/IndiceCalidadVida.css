@@ -1,6 +1,6 @@
 .calidad-vida-card {
-  background: #ffffff;
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 32px;
@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary);
   gap: 12px;
 }
 
@@ -21,7 +21,7 @@
   width: 32px;
   height: 32px;
   border: 3px solid rgba(2, 132, 199, 0.15);
-  border-top-color: #0284c7;
+  border-top-color: #38bdf8;
   border-radius: 50%;
   animation: cv-spin 0.8s linear infinite;
 }
@@ -57,18 +57,18 @@
 .calidad-vida-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
   margin: 0 0 4px 0;
 }
 
 .calidad-vida-subtitle {
   font-size: 0.85rem;
-  color: var(--color-text-secondary, #64748b);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
 .walk-score-badge {
-  background: #f8fafc;
+  background: var(--color-bg-secondary);
   border: 2px solid #0284c7;
   border-radius: 14px;
   padding: 10px 18px;
@@ -105,18 +105,18 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: rgba(16, 185, 129, 0.10);
+  border: 1px solid rgba(74,222,128,0.35);
   border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 20px;
-  color: #166534;
+  color: #4ade80;
   font-size: 0.88rem;
   font-weight: 500;
 }
 
 .calidad-vida-desc-icon {
-  color: #16a34a;
+  color: #4ade80;
   flex-shrink: 0;
 }
 
@@ -132,8 +132,8 @@
 }
 
 .cat-card {
-  background: #f8fafc;
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 10px 12px;
   cursor: pointer;
@@ -141,8 +141,8 @@
 }
 
 .cat-card:hover, .cat-card--active {
-  border-color: #0284c7;
-  background: #f0f9ff;
+  border-color: #38bdf8;
+  background: var(--color-bg-secondary);
 }
 
 .cat-card-header {
@@ -154,16 +154,16 @@
 }
 
 .cat-card-name {
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
 }
 
 .cat-card-dist {
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 
 .cat-progress-bg {
   height: 6px;
-  background: #e2e8f0;
+  background: var(--color-border);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -190,13 +190,13 @@
 }
 
 .poi-tab {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -205,23 +205,23 @@
 }
 
 .poi-tab:hover {
-  background: #f1f5f9;
+  background: var(--color-bg-secondary);
 }
 
 .poi-tab--active {
   background: #0284c7;
   color: white;
-  border-color: #0284c7;
+  border-color: #38bdf8;
 }
 
 .radios-toggle-btn {
-  background: #f8fafc;
+  background: var(--color-bg-secondary);
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -230,7 +230,7 @@
 
 .radios-toggle-btn--active {
   background: rgba(2, 132, 199, 0.1);
-  color: #0284c7;
+  color: #38bdf8;
   border-color: #38bdf8;
 }
 
@@ -238,7 +238,7 @@
   height: 380px;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border);
   margin-bottom: 24px;
 }
 
@@ -292,13 +292,13 @@
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #0284c7;
+  color: #38bdf8;
   display: block;
 }
 
 .popup-title {
   font-size: 0.88rem;
-  color: #0f172a;
+  color: var(--color-text);
   display: block;
   margin-bottom: 4px;
 }
@@ -306,19 +306,19 @@
 .popup-meta {
   display: flex;
   gap: 8px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-size: 0.75rem;
 }
 
 .poi-list-section {
-  border-top: 1px solid var(--color-border, #e2e8f0);
+  border-top: 1px solid var(--color-border);
   padding-top: 20px;
 }
 
 .poi-list-title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
   margin: 0 0 14px 0;
 }
 
@@ -332,20 +332,20 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #f8fafc;
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 12px 14px;
 }
 
 .poi-item-icon {
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
 }
 
 .poi-item-info {
@@ -355,13 +355,13 @@
 .poi-item-name {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
   display: block;
 }
 
 .poi-item-type {
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 
 .poi-item-distance {
@@ -371,11 +371,11 @@
 .poi-dist-m {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #0284c7;
+  color: #38bdf8;
   display: block;
 }
 
 .poi-dist-time {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }

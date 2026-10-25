@@ -33,7 +33,7 @@
   padding: 0.5rem;
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
-  background: var(--bg-input, #fff);
+  background: var(--bg-input, var(--color-surface));
   color: var(--text-color);
   font-family: inherit;
   outline: none;

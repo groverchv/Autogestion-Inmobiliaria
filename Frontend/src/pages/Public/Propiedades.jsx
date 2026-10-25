@@ -92,16 +92,16 @@ const Propiedades = () => {
   };
 
   const estadoColors = {
-    disponible: { bg: '#10b981', color: '#ffffff', border: '1px solid #10b981' },
-    ocupado: { bg: '#ef4444', color: '#ffffff', border: '1px solid #ef4444' },
-    mantenimiento: { bg: '#f59e0b', color: '#ffffff', border: '1px solid #f59e0b' },
-    reservado: { bg: '#3b82f6', color: '#ffffff', border: '1px solid #3b82f6' },
+    disponible: { bg: '#064e3b', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', label: 'Disponible' },
+    ocupado: { bg: '#450a0a', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.3)', label: 'Ocupado' },
+    mantenimiento: { bg: '#451a03', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.3)', label: 'En mantenimiento' },
+    reservado: { bg: '#172554', color: '#60a5fa', border: '1px solid rgba(96, 165, 250, 0.3)', label: 'Reservado' },
   };
 
   const offerColors = {
-    alquiler: { bg: '#0284c7', color: '#ffffff', label: 'Alquiler', border: '1px solid #0284c7' },
-    venta: { bg: '#6366f1', color: '#ffffff', label: 'Venta', border: '1px solid #6366f1' },
-    anticretico: { bg: '#ec4899', color: '#ffffff', label: 'Anticrético', border: '1px solid #ec4899' },
+    alquiler: { bg: 'rgba(2, 132, 199, 0.18)', color: '#38bdf8', label: 'Alquiler', border: '1px solid rgba(56, 189, 248, 0.35)' },
+    venta: { bg: 'rgba(99, 102, 241, 0.18)', color: '#a5b4fc', label: 'Venta', border: '1px solid rgba(165, 180, 252, 0.35)' },
+    anticretico: { bg: 'rgba(217, 70, 239, 0.18)', color: '#f0abfc', label: 'Anticrético', border: '1px solid rgba(240, 171, 252, 0.35)' },
   };
 
   return (
@@ -279,34 +279,23 @@ const Propiedades = () => {
                     )}
                     <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 2 }}>
                       <span className="propiedad-card__badge" style={{ background: estadoStyle.bg, color: estadoStyle.color, position: 'static' }}>
-                        {inm.estado}
+                        {estadoStyle.label}
                       </span>
-                      {inm.verificacion_estado && inm.verificacion_estado !== 'no_solicitado' && (
+                      {inm.verificacion_estado === 'verificado' && (
                         <span
                           className="propiedad-card__badge"
                           style={{
-                            background: inm.verificacion_estado === 'verificado' ? '#dcfce7' :
-                              inm.verificacion_estado === 'observado' ? '#fef3c7' :
-                                inm.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
-                            color: inm.verificacion_estado === 'verificado' ? '#15803d' :
-                              inm.verificacion_estado === 'observado' ? '#d97706' :
-                                inm.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
+                            background: 'rgba(9,13,22,0.85)',
+                            color: '#4ade80',
                             position: 'static',
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '4px',
                             fontWeight: 700
                           }}
-                          title={
-                            inm.verificacion_estado === 'verificado' ? 'Título de propiedad verificado por IA' :
-                              inm.verificacion_estado === 'observado' ? 'Título observado (advertencias detectadas)' :
-                                inm.verificacion_estado === 'procesando' ? 'Verificación en proceso por la IA' :
-                                  'Título de propiedad inválido o no reconocido'
-                          }
+                          title="El documento de propiedad fue revisado"
                         >
-                          {inm.verificacion_estado === 'verificado' ? '✓ Título Ok' :
-                            inm.verificacion_estado === 'observado' ? '⚠ Obs. Título' :
-                              inm.verificacion_estado === 'procesando' ? '⌛ Procesando' : '✗ Inválido'}
+                          Documento revisado
                         </span>
                       )}
                       {offerStyle && (

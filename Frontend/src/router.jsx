@@ -22,6 +22,7 @@ import PagoExitoso from './pages/Public/PagoExitoso';
 import PagoCancelado from './pages/Public/PagoCancelado';
 import MisContratos from './pages/Public/MisContratos';
 import MisPagos from './pages/Public/MisPagos';
+import MiActividad from './pages/Public/MiActividad';
 import LegalPage from './pages/Legal/LegalPage';
 
 // Pages - Admin
@@ -86,6 +87,10 @@ const router = createBrowserRouter([
           {
             path: '/auditoria-checkout',
             element: <AuditoriaCheckInOut />,
+          },
+          {
+            path: '/mi-actividad',
+            element: <MiActividad />,
           },
           {
             path: '/mi-agenda',

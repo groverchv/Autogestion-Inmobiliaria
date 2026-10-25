@@ -676,7 +676,7 @@ const EditorRecorrido = ({ inmuebleId, tituloPropiedad = '', onClose }) => {
                       />
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Crear enlace bidireccional</span>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', fontWeight: 'normal' }}>
                           Crea automáticamente el camino de regreso para que el usuario no se quede atrapado.
                         </span>
                       </div>

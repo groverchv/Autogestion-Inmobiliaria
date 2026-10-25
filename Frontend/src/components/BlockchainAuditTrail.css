@@ -286,14 +286,14 @@
   align-items: center;
   justify-content: center;
   padding: 48px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   gap: 12px;
 }
 
 .blockchain-loading__spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #e2e8f0;
+  border: 3px solid var(--color-border);
   border-top-color: #6366f1;
   border-radius: 50%;
   animation: spin 1s linear infinite;

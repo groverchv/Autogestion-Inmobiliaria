@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import BlockchainAuditTrail from '../../components/BlockchainAuditTrail';
+import CollapsibleDetails from '../../components/CollapsibleDetails';
 import { 
   CreditCard, 
   Search, 
@@ -43,10 +44,10 @@ const MisPagos = () => {
 
   const getStatusStyle = (estado) => {
     switch (estado) {
-      case 'completado': return { bg: '#f0fdf4', color: '#16a34a', icon: <CheckCircle2 size={14} /> };
-      case 'pendiente': return { bg: '#fffbeb', color: '#d97706', icon: <Clock size={14} /> };
-      case 'fallido': return { bg: '#fef2f2', color: '#dc2626', icon: <ArrowRight size={14} /> };
-      default: return { bg: '#f8fafc', color: '#64748b', icon: <FileText size={14} /> };
+      case 'completado': return { bg: 'rgba(16, 185, 129, 0.10)', color: '#4ade80', icon: <CheckCircle2 size={14} /> };
+      case 'pendiente': return { bg: 'rgba(251, 191, 36, 0.10)', color: '#d97706', icon: <Clock size={14} /> };
+      case 'fallido': return { bg: 'rgba(244, 63, 94, 0.10)', color: '#f87171', icon: <ArrowRight size={14} /> };
+      default: return { bg: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)', icon: <FileText size={14} /> };
     }
   };
 
@@ -80,12 +81,12 @@ const MisPagos = () => {
             <p style={{ color: '#94a3b8', marginTop: '16px' }}>Cargando historial de pagos...</p>
           </div>
         ) : filteredPagos.length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: '24px', padding: '80px 40px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-            <div style={{ width: '80px', height: '80px', background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '24px', padding: '80px 40px', textAlign: 'center', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: '80px', height: '80px', background: 'var(--color-bg-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <CreditCard size={40} color="#94a3b8" />
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#334155' }}>No hay registros de pagos</h3>
-            <p style={{ color: '#64748b', maxWidth: '300px', margin: '8px auto 0' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text)' }}>Aún no tienes pagos</h3>
+            <p style={{ color: 'var(--color-text-secondary)', maxWidth: '300px', margin: '8px auto 0' }}>
               Tus transacciones aparecerán aquí una vez que se procesen.
             </p>
           </div>
@@ -151,8 +152,8 @@ const MisPagos = () => {
               <div className="mispagos-modal-icon-wrapper">
                 <CheckCircle2 size={42} color="#16a34a" />
               </div>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Comprobante de Pago</h2>
-              <p style={{ color: '#64748b', margin: '8px 0 0', fontWeight: 500, fontSize: '1.1rem' }}>Autogestión Inmobiliaria - Bolivia</p>
+              <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>Tu recibo de pago</h2>
+              <p style={{ color: 'var(--color-text-secondary)', margin: '8px 0 0', fontWeight: 500, fontSize: '1.1rem' }}>Autogestión Inmobiliaria - Bolivia</p>
             </div>
 
             <div className="mispagos-modal-body">
@@ -175,19 +176,19 @@ const MisPagos = () => {
                   <div className="mispagos-modal-parties">
                     <label className="mispagos-modal-label" style={{ marginBottom: '12px' }}>Información de Partes</label>
                     <div style={{ marginBottom: '10px' }}>
-                      <div style={{ color: '#64748b', fontSize: '0.8rem' }}>Propietario:</div>
-                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{pagoSeleccionado.usuario_nombre}</div>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>Propietario:</div>
+                      <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{pagoSeleccionado.usuario_nombre}</div>
                     </div>
                     <div>
-                      <div style={{ color: '#64748b', fontSize: '0.8rem' }}>Cliente:</div>
-                      <div style={{ fontWeight: 700, color: '#1e293b' }}>Usuario Registrado</div>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>Cliente:</div>
+                      <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>Usuario Registrado</div>
                     </div>
                   </div>
 
                   <div className="mispagos-modal-concept">
                     <label className="mispagos-modal-label">Propiedad y Concepto</label>
-                    <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '1.2rem', lineHeight: '1.2' }}>{pagoSeleccionado.inmueble_titulo}</div>
-                    <div style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '6px' }}>Pago de canon/venta según Contrato #{pagoSeleccionado.contrato}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.2rem', lineHeight: '1.2' }}>{pagoSeleccionado.inmueble_titulo}</div>
+                    <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginTop: '6px' }}>Pago de canon/venta según Contrato #{pagoSeleccionado.contrato}</div>
                   </div>
                 </div>
                 
@@ -202,10 +203,10 @@ const MisPagos = () => {
                 </div>
               </div>
 
-              {/* Trazabilidad inmutable en Blockchain */}
-              <div style={{ marginTop: '24px', borderTop: '1px dashed #cbd5e1', paddingTop: '20px', marginBottom: '10px' }}>
+              {/* Registro de seguridad del pago */}
+              <CollapsibleDetails label="Ver registro de seguridad">
                 <BlockchainAuditTrail assetId={`PAG-${pagoSeleccionado.id}`} />
-              </div>
+              </CollapsibleDetails>
 
               <div className="mispagos-modal-actions">
                 <button 

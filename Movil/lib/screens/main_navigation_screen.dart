@@ -58,14 +58,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Gestión de Propiedades',
+                  'Propiedades',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.home_work_outlined, color: AppColors.primary),
-              title: const Text('Mis Inmuebles Registrados', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text('Mis propiedades', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _currentIndex = 3);
@@ -73,7 +73,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today_outlined, color: AppColors.primary),
-              title: const Text('Agenda de Visitas', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text('Mis visitas', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const MiAgendaScreen()));
@@ -81,7 +81,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.favorite_border, color: AppColors.error),
-              title: const Text('Mis Propiedades Favoritas', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text('Mis favoritos', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const MisFavoritosScreen()));
@@ -123,14 +123,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Trámites & Operaciones',
+                  'Mi actividad',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.description_outlined, color: AppColors.success),
-              title: const Text('Mis Contratos Digitales', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text('Mis contratos', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _currentIndex = 4);
@@ -138,7 +138,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.payments_outlined, color: AppColors.primary),
-              title: const Text('Mis Pagos y Finanzas', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text('Mis pagos', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const MisPagosScreen()));
@@ -146,7 +146,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.notifications_none, color: Color(0xFFFBBF24)),
-              title: const Text('Centro de Notificaciones', style: TextStyle(color: AppColors.textPrimary)),
+              title: const Text('Mis avisos', style: TextStyle(color: AppColors.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const MisNotificacionesScreen()));
@@ -265,7 +265,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_outlined),
               activeIcon: Icon(Icons.receipt_long),
-              label: 'Trámites',
+              label: 'Mi actividad',
             ),
           ],
           selectedItemColor: AppColors.primary,

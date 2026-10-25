@@ -91,7 +91,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
     <Modal isOpen={isOpen} onClose={onClose} title="Mi Perfil">
       <div className="profile-modal">
         {error && (
-          <div style={{ padding: '10px', background: '#fee2e2', color: '#ef4444', borderRadius: '8px', fontSize: '0.9rem' }}>
+          <div style={{ padding: '10px', background: 'rgba(239,68,68,0.12)', color: '#ef4444', borderRadius: '8px', fontSize: '0.9rem' }}>
             {error}
           </div>
         )}

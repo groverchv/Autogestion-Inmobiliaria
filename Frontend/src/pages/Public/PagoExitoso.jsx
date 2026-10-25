@@ -69,7 +69,7 @@ const PagoExitoso = () => {
             >
               <AlertTriangle size={40} color="#dc2626" />
             </div>
-            <h2 style={{ color: '#dc2626', marginBottom: '12px' }}>Error</h2>
+            <h2 style={{ color: '#f87171', marginBottom: '12px' }}>Error</h2>
             <p style={{ color: 'var(--color-text-muted)' }}>{error}</p>
           </div>
         ) : (
@@ -89,7 +89,7 @@ const PagoExitoso = () => {
             >
               <CheckCircle size={48} color="#fff" />
             </div>
-            <h1 style={{ color: '#059669', fontSize: '1.8rem', marginBottom: '8px' }}>¡Pago Exitoso!</h1>
+            <h1 style={{ color: '#34d399', fontSize: '1.8rem', marginBottom: '8px' }}>¡Pago Exitoso!</h1>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.05rem', marginBottom: '28px' }}>
               Tu pago ha sido procesado correctamente.
             </p>
@@ -108,7 +108,7 @@ const PagoExitoso = () => {
                 <div style={{ display: 'grid', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Monto:</span>
-                    <span style={{ fontWeight: 700, color: '#059669', fontSize: '1.1rem' }}>
+                    <span style={{ fontWeight: 700, color: '#34d399', fontSize: '1.1rem' }}>
                       ${transaccion.monto} {transaccion.moneda?.toUpperCase()}
                     </span>
                   </div>
@@ -116,8 +116,8 @@ const PagoExitoso = () => {
                     <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Estado:</span>
                     <span
                       style={{
-                        background: '#dcfce7',
-                        color: '#16a34a',
+                        background: 'rgba(16,185,129,0.12)',
+                        color: '#4ade80',
                         padding: '2px 10px',
                         borderRadius: '12px',
                         fontWeight: 600,

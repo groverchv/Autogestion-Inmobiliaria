@@ -144,16 +144,16 @@ const IndiceCalidadVida = ({ inmuebleId, gps = null, direccion = '' }) => {
             <Footprints size={24} color="#0284c7" />
           </div>
           <div>
-            <h2 className="calidad-vida-title">Índice de Calidad de Vida & Walk Score</h2>
+            <h2 className="calidad-vida-title">¿Qué hay cerca?</h2>
             <p className="calidad-vida-subtitle">
-              Evaluación del entorno, conectividad y servicios a pie ({direccionStr || 'Zona Residencial'})
+              Servicios, transporte y comercio a pie ({direccionStr || 'Zona Residencial'})
             </p>
 
           </div>
         </div>
 
-        {/* Walk Score Radial Badge */}
-        <div className="walk-score-badge" style={{ borderColor: color }}>
+        {/* Valoración del entorno */}
+        <div className="walk-score-badge" style={{ borderColor: color }} title="Estimación referencial de qué tan fácil es vivir aquí a pie">
           <div className="walk-score-number" style={{ color: color }}>
             {walk_score}
             <span className="walk-score-max">/100</span>
@@ -295,7 +295,7 @@ const IndiceCalidadVida = ({ inmuebleId, gps = null, direccion = '' }) => {
                 center={[lat, lng]}
                 radius={800}
                 pathOptions={{
-                  color: '#0284c7',
+                  color: '#38bdf8',
                   fillColor: '#0284c7',
                   fillOpacity: 0.04,
                   weight: 1.5,

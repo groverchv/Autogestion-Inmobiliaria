@@ -39,7 +39,7 @@ const Footer = () => {
           <Link to="/reembolsos" style={{ color: '#94a3b8', textDecoration: 'none' }}>Política de Reembolsos</Link>
         </nav>
       </div>
-      <div style={{ maxWidth: '1100px', margin: '1.25rem auto 0', paddingTop: '1rem', borderTop: '1px solid rgba(51, 65, 85, 0.4)', color: '#64748b' }}>
+      <div style={{ maxWidth: '1100px', margin: '1.25rem auto 0', paddingTop: '1rem', borderTop: '1px solid rgba(51, 65, 85, 0.4)', color: 'var(--color-text-secondary)' }}>
         © {year} Inmobiliaria Nobleve. Todos los derechos reservados.
       </div>
     </footer>

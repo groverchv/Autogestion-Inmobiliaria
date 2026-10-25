@@ -133,10 +133,10 @@ const FinanzasPropietario = () => {
       <div className="print-container" style={{ maxWidth: '1200px', margin: '40px auto', padding: '0 20px' }}>
         <header className="no-print" style={{ marginBottom: '32px', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, letterSpacing: '-0.02em' }}>
               Mis Finanzas
             </h1>
-            <p style={{ color: '#64748b', marginTop: '4px' }}>
+            <p style={{ color: 'var(--color-text-secondary)', marginTop: '4px' }}>
               Proyección y análisis de tus ingresos reales (Netos)
             </p>
           </div>
@@ -147,13 +147,13 @@ const FinanzasPropietario = () => {
               onClick={handleDownloadPDF}
               disabled={exporting}
               style={{
-                padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                background: '#fff', color: '#1e1b4b', fontWeight: 600, cursor: exporting ? 'not-allowed' : 'pointer',
+                padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)', color: '#1e1b4b', fontWeight: 600, cursor: exporting ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'all 0.2s'
               }}
-              onMouseOver={e => !exporting && (e.currentTarget.style.background = '#f8fafc', e.currentTarget.style.borderColor = '#cbd5e1')}
-              onMouseOut={e => !exporting && (e.currentTarget.style.background = '#fff', e.currentTarget.style.borderColor = '#e2e8f0')}
+              onMouseOver={e => !exporting && (e.currentTarget.style.background = 'var(--color-bg-hover)', e.currentTarget.style.borderColor = '#475569')}
+              onMouseOut={e => !exporting && (e.currentTarget.style.background = 'var(--color-surface)', e.currentTarget.style.borderColor = 'var(--color-border)')}
             >
               {exporting ? <Clock className="spin" size={18} /> : <FileText size={18} />}
               {exporting ? 'Generando PDF...' : 'Exportar Informe PDF'}
@@ -164,13 +164,13 @@ const FinanzasPropietario = () => {
               onClick={handleDownloadExcel}
               disabled={exportingExcel}
               style={{
-                padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                background: '#fff', color: '#1e1b4b', fontWeight: 600, cursor: exportingExcel ? 'not-allowed' : 'pointer',
+                padding: '12px 24px', borderRadius: '12px', border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)', color: '#1e1b4b', fontWeight: 600, cursor: exportingExcel ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'all 0.2s'
               }}
-              onMouseOver={e => !exportingExcel && (e.currentTarget.style.background = '#f8fafc', e.currentTarget.style.borderColor = '#cbd5e1')}
-              onMouseOut={e => !exportingExcel && (e.currentTarget.style.background = '#fff', e.currentTarget.style.borderColor = '#e2e8f0')}
+              onMouseOver={e => !exportingExcel && (e.currentTarget.style.background = 'var(--color-bg-hover)', e.currentTarget.style.borderColor = '#475569')}
+              onMouseOut={e => !exportingExcel && (e.currentTarget.style.background = 'var(--color-surface)', e.currentTarget.style.borderColor = 'var(--color-border)')}
             >
               {exportingExcel ? <Clock className="spin" size={18} /> : <FileSpreadsheet size={18} />}
               {exportingExcel ? 'Generando...' : 'Data Excel'}
@@ -186,18 +186,18 @@ const FinanzasPropietario = () => {
         <div className="print-only pdf-header">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '3px solid #1e293b', paddingBottom: '12px', marginBottom: '20px' }}>
             <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', margin: 0, letterSpacing: '0.05em' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--color-text)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.05em' }}>
                 Reporte Financiero de Ingresos
               </h1>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0' }}>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
                 Plataforma de Gestión Inmobiliaria
               </p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '12px', color: '#1e293b', fontWeight: 700, margin: 0 }}>
+              <p style={{ fontSize: '12px', color: 'var(--color-text)', fontWeight: 700, margin: 0 }}>
                 Año Fiscal: {filtros.anio || new Date().getFullYear()}
               </p>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0 0' }}>
+              <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '2px 0 0 0' }}>
                 {obtenerNombreInmuebleFiltrado()}
               </p>
               <p style={{ fontSize: '10px', color: '#94a3b8', margin: '2px 0 0 0' }}>
@@ -221,14 +221,14 @@ const FinanzasPropietario = () => {
               gap: '20px', marginBottom: '32px'
             }}>
 
-              <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div style={{ background: 'var(--color-surface)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#f0fdf4', padding: '10px', borderRadius: '12px' }}>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.10)', padding: '10px', borderRadius: '12px' }}>
                     <Wallet size={24} color="#16a34a" />
                   </div>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ingreso Neto (A tu cuenta)</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Ingreso Neto (A tu cuenta)</span>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-text)' }}>
                   {formatterMonto(reportData?.kpis?.ingreso_neto || 0)}
                 </div>
                 <div className="kpi-desc" style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '8px' }}>
@@ -236,14 +236,14 @@ const FinanzasPropietario = () => {
                 </div>
               </div>
 
-              <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div style={{ background: 'var(--color-surface)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#fffbeb', padding: '10px', borderRadius: '12px' }}>
+                  <div style={{ background: 'rgba(251, 191, 36, 0.10)', padding: '10px', borderRadius: '12px' }}>
                     <ArrowDownRight size={24} color="#d97706" />
                   </div>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Comisión Descontada</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Comisión Descontada</span>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-text)' }}>
                   {formatterMonto(reportData?.kpis?.total_comisiones || 0)}
                 </div>
                 <div className="kpi-desc" style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '8px' }}>
@@ -251,14 +251,14 @@ const FinanzasPropietario = () => {
                 </div>
               </div>
 
-              <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div style={{ background: 'var(--color-surface)', padding: '24px', borderRadius: '20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ background: '#f5f3ff', padding: '10px', borderRadius: '12px' }}>
                     <Activity size={24} color="#8b5cf6" />
                   </div>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Promedio Mensual</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>Promedio Mensual</span>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#1e293b' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-text)' }}>
                   {formatterMonto(reportData?.kpis?.promedio_mensual || 0)}
                 </div>
                 <div className="kpi-desc" style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '8px' }}>
@@ -271,10 +271,10 @@ const FinanzasPropietario = () => {
             <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
 
               {/* Curva de Ingreso Neto */}
-              <div className="chart-box" style={{ background: '#fff', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', gridColumn: 'span 2' }}>
+              <div className="chart-box" style={{ background: 'var(--color-surface)', padding: '32px', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', gridColumn: 'span 2' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                   <TrendingUp size={24} color="#6366f1" />
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
                     {filtros.mes ? 'Ingreso Neto por Inmueble' : 'Curva de Ingreso Neto'}
                   </h2>
                 </div>
@@ -303,7 +303,7 @@ const FinanzasPropietario = () => {
                         <Tooltip
                           cursor={{ fill: '#f8fafc' }}
                           formatter={(value) => [formatterMonto(value), 'Ingreso Neto']}
-                          labelStyle={{ color: '#1e293b', fontWeight: 800, marginBottom: '8px' }}
+                          labelStyle={{ color: 'var(--color-text)', fontWeight: 800, marginBottom: '8px' }}
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
                         />
                         <Bar
@@ -329,10 +329,10 @@ const FinanzasPropietario = () => {
               </div>
 
               {/* Distribución (Pie Chart) */}
-              <div className="chart-box" style={{ background: '#fff', padding: '32px', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <div className="chart-box" style={{ background: 'var(--color-surface)', padding: '32px', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                   <PieChartIcon size={24} color="#10b981" />
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
                     Distribución
                   </h2>
                 </div>
@@ -370,22 +370,22 @@ const FinanzasPropietario = () => {
 
 
             {/* --- EXTRACTO BANCARIO --- */}
-            <div className="chart-box" style={{ marginTop: '24px', padding: '24px', background: '#fff', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', pageBreakBefore: 'always' }}>
+            <div className="chart-box" style={{ marginTop: '24px', padding: '24px', background: 'var(--color-surface)', borderRadius: '24px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', pageBreakBefore: 'always' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '3px solid #1e293b', paddingBottom: '12px', marginBottom: '20px' }}>
                 <div>
-                  <h2 style={{ fontSize: '18px', fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: '900', color: 'var(--color-text)', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Activity size={20} className="no-print" style={{ color: '#6366f1' }} />
                     Extracto de Movimientos
                   </h2>
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0 0' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
                     Registro detallado de ingresos — {obtenerNombreInmuebleFiltrado()}
                   </p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                  <div className="no-print" style={{ background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>
+                  <div className="no-print" style={{ background: 'var(--color-bg-secondary)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)' }}>
                     {(reportData?.extracto_pagos || []).length} registro(s)
                   </div>
-                  <p className="print-only" style={{ fontSize: '12px', color: '#1e293b', fontWeight: 700, margin: 0 }}>
+                  <p className="print-only" style={{ fontSize: '12px', color: 'var(--color-text)', fontWeight: 700, margin: 0 }}>
                     Año Fiscal: {filtros.anio || new Date().getFullYear()}
                   </p>
                 </div>
@@ -412,7 +412,7 @@ const FinanzasPropietario = () => {
                           <td>{row.inquilino}</td>
                           <td style={{ textAlign: 'right' }}>{formatterMonto(row.ingreso_bruto)}</td>
                           <td style={{ textAlign: 'right', color: '#d97706' }}>{formatterMonto(row.comision)}</td>
-                          <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#16a34a' }}>{formatterMonto(row.ingreso_neto)}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 'bold', color: '#4ade80' }}>{formatterMonto(row.ingreso_neto)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -421,7 +421,7 @@ const FinanzasPropietario = () => {
                         <th colSpan={3} style={{ textAlign: 'left' }}>TOTAL PERIODO</th>
                         <th style={{ textAlign: 'right' }}>{formatterMonto(reportData?.kpis?.ingreso_bruto || 0)}</th>
                         <th style={{ textAlign: 'right', color: '#d97706' }}>{formatterMonto(reportData?.kpis?.total_comisiones || 0)}</th>
-                        <th style={{ textAlign: 'right', color: '#16a34a' }}>{formatterMonto(reportData?.kpis?.ingreso_neto || 0)}</th>
+                        <th style={{ textAlign: 'right', color: '#4ade80' }}>{formatterMonto(reportData?.kpis?.ingreso_neto || 0)}</th>
                       </tr>
                     </tfoot>
                   </table>
@@ -446,13 +446,13 @@ const FinanzasPropietario = () => {
         /* ========== ESTILOS DE TABLA PDF ========== */
         .print-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .print-table th, .print-table td { border: 1px solid #cbd5e1; padding: 10px 14px; }
-        .print-table thead th { background: #1e293b; color: white; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
-        .print-table tfoot th { background: #f1f5f9; font-weight: 800; font-size: 13px; }
-        .print-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .print-table thead th { background: var(--color-text); color: var(--color-surface); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .print-table tfoot th { background: var(--color-bg-secondary); font-weight: 800; font-size: 13px; }
+        .print-table tbody tr:nth-child(even) { background: var(--color-bg-secondary); }
 
         /* ========== IMPRESIÓN NATIVA ========== */
         @media print {
-          body { background: white !important; }
+          body { background: var(--color-surface) !important; }
           .no-print { display: none !important; }
           .print-only { display: block !important; }
           .print-container { padding: 0 !important; margin: 0 !important; }
@@ -463,7 +463,7 @@ const FinanzasPropietario = () => {
         .is-exporting .print-only { display: block !important; }
         .is-exporting .no-print { display: none !important; }
         .is-exporting {
-          background: white !important;
+          background: var(--color-surface) !important;
           width: 1050px !important;
           margin: 0 auto !important;
           padding: 0 16px 16px 16px !important;

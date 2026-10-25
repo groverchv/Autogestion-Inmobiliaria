@@ -16,6 +16,7 @@ import ModalAgendarCita from '../../components/ModalAgendarCita';
 import Visor360 from '../../components/Visor360';
 import VisorMetaversoTotal360 from '../../components/VisorMetaversoTotal360';
 import IndiceCalidadVida from '../../components/IndiceCalidadVida';
+import CollapsibleDetails from '../../components/CollapsibleDetails';
 
 
 let DefaultIcon = L.icon({
@@ -59,7 +60,7 @@ const RenderPaseBadge = ({ expiracion }) => {
   return (
     <div style={{
       background: 'rgba(16, 185, 129, 0.15)',
-      color: '#059669',
+      color: '#34d399',
       padding: '8px 16px',
       borderRadius: '20px',
       fontSize: '0.82rem',
@@ -217,10 +218,10 @@ const PropiedadDetalle = () => {
   };
 
   const estadoColors = {
-    disponible: { bg: '#dcfce7', color: '#15803d' },
-    ocupado: { bg: '#fee2e2', color: '#dc2626' },
-    mantenimiento: { bg: '#fef3c7', color: '#d97706' },
-    reservado: { bg: '#dbeafe', color: '#2563eb' },
+    disponible: { bg: 'rgba(16, 185, 129, 0.18)', color: '#4ade80' },
+    ocupado: { bg: 'rgba(239, 68, 68, 0.18)', color: '#f87171' },
+    mantenimiento: { bg: 'rgba(251, 191, 36, 0.18)', color: '#fbbf24' },
+    reservado: { bg: 'rgba(59, 130, 246, 0.18)', color: '#60a5fa' },
   };
 
   // Separar multimedia normal de panoramas 360°
@@ -276,7 +277,7 @@ const PropiedadDetalle = () => {
           <ChevronLeft size={18} /> Volver al catálogo
         </Link>
 
-        <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
           {(() => {
             const offerColors = {
               alquiler: { bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981', label: 'Alquiler', border: '1px solid rgba(16, 185, 129, 0.2)' },
@@ -292,7 +293,7 @@ const PropiedadDetalle = () => {
                 <div style={{ 
                   display: 'flex', 
                   borderBottom: '1px solid var(--color-border)', 
-                  background: '#f8fafc',
+                  background: 'var(--color-bg-secondary)',
                   padding: '0 24px',
                   gap: '8px'
                 }}>
@@ -353,9 +354,9 @@ const PropiedadDetalle = () => {
 
                 {/* ─── Pestaña: Fotos y Videos ─── */}
                 {tabActiva === 'media' && (
-                  <div style={{ display: 'flex', gap: '12px', background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', gap: '12px', background: 'linear-gradient(135deg, #e0f2fe, var(--color-bg-secondary))', overflow: 'hidden' }}>
                     {/* Imagen Principal */}
-                    <div style={{ flex: 1, height: '400px', position: 'relative', background: '#f0f9ff' }}>
+                    <div style={{ flex: 1, height: '400px', position: 'relative', background: 'var(--color-bg-secondary)' }}>
                       {principalMedia ? (
                         principalMedia.tipo === 'video' ? (
                           <video src={principalMedia.archivo} controls style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} onClick={() => setSelectedMediaIndex(0)} />
@@ -375,10 +376,10 @@ const PropiedadDetalle = () => {
                         {inmueble.verificacion_estado && inmueble.verificacion_estado !== 'no_solicitado' && (
                           <span 
                             style={{ 
-                              background: inmueble.verificacion_estado === 'verificado' ? '#dcfce7' : 
+                              background: inmueble.verificacion_estado === 'verificado' ? 'rgba(16,185,129,0.12)' : 
                                           inmueble.verificacion_estado === 'observado' ? '#fef3c7' : 
                                           inmueble.verificacion_estado === 'procesando' ? '#e0f2fe' : '#fee2e2',
-                              color: inmueble.verificacion_estado === 'verificado' ? '#15803d' : 
+                              color: inmueble.verificacion_estado === 'verificado' ? '#4ade80' : 
                                      inmueble.verificacion_estado === 'observado' ? '#d97706' : 
                                      inmueble.verificacion_estado === 'procesando' ? '#0369a1' : '#dc2626',
                               padding: '6px 14px', 
@@ -393,9 +394,9 @@ const PropiedadDetalle = () => {
                             }}
                           >
                             {inmueble.verificacion_estado === 'verificado' ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
-                            {inmueble.verificacion_estado === 'verificado' ? '✓ Título Verificado con IA' : 
-                             inmueble.verificacion_estado === 'observado' ? '⚠ Título Observado' : 
-                             inmueble.verificacion_estado === 'procesando' ? '⌛ Procesando Verificación' : '✗ Título Inválido'}
+                            {inmueble.verificacion_estado === 'verificado' ? 'Documento de propiedad revisado' :
+                             inmueble.verificacion_estado === 'observado' ? 'Documento en revisión' :
+                             inmueble.verificacion_estado === 'procesando' ? 'Revisando documento' : 'Documento con observaciones'}
                           </span>
                         )}
                         
@@ -407,7 +408,7 @@ const PropiedadDetalle = () => {
                       </div>
 
                       {inmueble.tipo_nombre && (
-                        <span style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(255,255,255,0.9)', color: 'var(--color-text-secondary)', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
+                        <span style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(9,13,22,0.85)', color: '#cbd5e1', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
                           {inmueble.tipo_nombre}
                         </span>
                       )}
@@ -415,7 +416,7 @@ const PropiedadDetalle = () => {
 
                     {/* Galería de Miniaturas */}
                     {thumbMedia.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px', width: '120px', minWidth: '120px', background: 'rgba(255,255,255,0.5)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px', width: '120px', minWidth: '120px', background: 'rgba(9,13,22,0.6)', backdropFilter: 'blur(8px)' }}>
                         {thumbMedia.map((media, idx) => (
                           <div
                             key={media.id}
@@ -428,7 +429,7 @@ const PropiedadDetalle = () => {
                               cursor: 'pointer',
                               border: selectedMediaIndex === idx + 1 ? '2px solid var(--color-primary)' : '1px solid rgba(0,0,0,0.1)',
                               transition: 'all 0.2s',
-                              background: '#f0f9ff'
+                              background: 'var(--color-bg-secondary)'
                             }}
                           >
                             {media.tipo === 'video' ? (
@@ -480,7 +481,7 @@ const PropiedadDetalle = () => {
                             }}
                           >
                             <Orbit size={18} />
-                            <span>Abrir Metaverso Espacial 360° + RA</span>
+                            <span>Ver recorrido completo</span>
                           </button>
                         </div>
                         <Visor360 panoramas={panoramas360} tituloPropiedad={inmueble.titulo} accesoId={acceso360.accesoId} musica={musicaVR?.archivo || '/inspirar.mp3'} />
@@ -493,7 +494,7 @@ const PropiedadDetalle = () => {
                         overflow: 'hidden',
                         boxShadow: '0 20px 40px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(0, 0, 0, 0.05)',
                         border: '1px solid rgba(255, 255, 255, 0.8)',
-                        background: '#ffffff'
+                        background: 'var(--color-surface)'
                       }}>
                         {panoramas360[0]?.archivo && (
                           <div style={{
@@ -533,10 +534,10 @@ const PropiedadDetalle = () => {
                             <Lock size={32} strokeWidth={2.2} />
                           </div>
                           <div>
-                            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 10px 0', letterSpacing: '-0.03em', color: '#0f172a' }}>
+                            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 10px 0', letterSpacing: '-0.03em', color: 'var(--color-text)' }}>
                               Recorrido Virtual 360° Privado
                             </h3>
-                            <p style={{ color: '#334155', fontSize: '0.92rem', fontWeight: 500, maxWidth: '460px', margin: '0 auto', lineHeight: '1.6' }}>
+                            <p style={{ color: 'var(--color-text)', fontSize: '0.92rem', fontWeight: 500, maxWidth: '460px', margin: '0 auto', lineHeight: '1.6' }}>
                               Este recorrido es exclusivo y protegido. Solicita un pase de acceso temporal interactivo en tiempo real al propietario para explorar el inmueble de manera inmersiva.
                             </p>
                           </div>
@@ -595,7 +596,7 @@ const PropiedadDetalle = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '32px', background: 'var(--color-bg)', padding: '24px', borderRadius: '12px' }}>
                     {inmueble.habitaciones > 0 && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bed size={20} /></div>
+                        <div style={{ background: 'var(--color-surface)', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bed size={20} /></div>
                         <div>
                           <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Habitaciones</strong>
                           <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.habitaciones}</span>
@@ -604,7 +605,7 @@ const PropiedadDetalle = () => {
                     )}
                     {inmueble.banos > 0 && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bath size={20} /></div>
+                        <div style={{ background: 'var(--color-surface)', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Bath size={20} /></div>
                         <div>
                           <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Baños</strong>
                           <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.banos}</span>
@@ -613,7 +614,7 @@ const PropiedadDetalle = () => {
                     )}
                     {inmueble.superficie > 0 && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ background: '#fff', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Maximize2 size={20} /></div>
+                        <div style={{ background: 'var(--color-surface)', padding: '8px', borderRadius: '10px', color: 'var(--color-primary)' }}><Maximize2 size={20} /></div>
                         <div>
                           <strong style={{ display: 'block', color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '2px' }}>Superficie</strong>
                           <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text)' }}>{inmueble.superficie} m²</span>
@@ -630,15 +631,14 @@ const PropiedadDetalle = () => {
                     <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{inmueble.descripcion}</p>
                   </div>
 
-                  {inmueble.publicaciones && inmueble.publicaciones.length > 0 && (
-                    <div style={{ marginBottom: '32px' }}>
-                      <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>Historial de Ofertas Comerciales</h2>
+                  {inmueble.publicaciones && inmueble.publicaciones.length > 1 && (
+                    <CollapsibleDetails label="Historial de precios">
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {inmueble.publicaciones.map(pub => {
-                          const pubStyle = offerColors[pub.tipo_oferta] || { label: pub.tipo_oferta, color: '#333', bg: '#eee' };
+                          const pubStyle = offerColors[pub.tipo_oferta] || { label: pub.tipo_oferta, color: '#94a3b8', bg: 'var(--color-bg-secondary)' };
                           const isActiva = pub.estado === 'activa';
                           return (
-                            <div key={pub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: isActiva ? 'rgba(16, 185, 129, 0.03)' : '#f8fafc', borderRadius: '12px', border: isActiva ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--color-border)' }}>
+                            <div key={pub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: isActiva ? 'rgba(16, 185, 129, 0.08)' : 'var(--color-bg-secondary)', borderRadius: '12px', border: isActiva ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--color-border)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, background: pubStyle.bg, color: pubStyle.color, border: pubStyle.border }}>
                                   {pubStyle.label}
@@ -651,7 +651,7 @@ const PropiedadDetalle = () => {
                                 <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>
                                   Bs. {parseFloat(pub.precio).toLocaleString()} {pub.tipo_oferta === 'alquiler' ? '/ mes' : pub.tipo_oferta === 'anticretico' ? '(Anticrético)' : ''}
                                 </span>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isActiva ? '#10b981' : '#64748b', textTransform: 'capitalize' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isActiva ? '#10b981' : 'var(--color-text-secondary)', textTransform: 'capitalize' }}>
                                   {pub.estado}
                                 </span>
                               </div>
@@ -659,17 +659,17 @@ const PropiedadDetalle = () => {
                           );
                         })}
                       </div>
-                    </div>
+                    </CollapsibleDetails>
                   )}
 
             {inmueble.verificacion_estado && inmueble.verificacion_estado !== 'no_solicitado' && (
               <div style={{ 
                 marginBottom: '32px',
-                background: inmueble.verificacion_estado === 'verificado' ? '#f0fdf4' : 
-                            inmueble.verificacion_estado === 'observado' ? '#fffbeb' : '#fef2f2',
+                background: inmueble.verificacion_estado === 'verificado' ? 'rgba(16, 185, 129, 0.10)' : 
+                            inmueble.verificacion_estado === 'observado' ? 'rgba(251, 191, 36, 0.10)' : 'rgba(244, 63, 94, 0.10)',
                 border: '1px solid ' + (
-                            inmueble.verificacion_estado === 'verificado' ? '#bbf7d0' : 
-                            inmueble.verificacion_estado === 'observado' ? '#fef08a' : '#fecaca'
+                            inmueble.verificacion_estado === 'verificado' ? 'rgba(74, 222, 128, 0.35)' : 
+                            inmueble.verificacion_estado === 'observado' ? 'rgba(251, 191, 36, 0.35)' : 'rgba(248, 113, 113, 0.35)'
                          ),
                 borderRadius: '12px',
                 padding: '24px',
@@ -682,22 +682,22 @@ const PropiedadDetalle = () => {
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '8px',
-                  color: inmueble.verificacion_estado === 'verificado' ? '#166534' : 
-                         inmueble.verificacion_estado === 'observado' ? '#92400e' : '#991b1b'
+                  color: inmueble.verificacion_estado === 'verificado' ? '#4ade80' : 
+                         inmueble.verificacion_estado === 'observado' ? '#fbbf24' : '#f87171'
                 }}>
                   {inmueble.verificacion_estado === 'verificado' ? (
                     <>
-                      <ShieldCheck size={24} style={{ color: '#16a34a' }} />
-                      Título Verificado por IA (Garantía de Autenticidad)
+                      <ShieldCheck size={24} style={{ color: '#4ade80' }} />
+                      Documento de propiedad revisado
                     </>
                   ) : inmueble.verificacion_estado === 'observado' ? (
                     <>
                       <ShieldAlert size={24} style={{ color: '#d97706' }} />
-                      Título con Observaciones
+                      Documento en revisión
                     </>
                   ) : (
                     <>
-                      <ShieldAlert size={24} style={{ color: '#dc2626' }} />
+                      <ShieldAlert size={24} style={{ color: '#f87171' }} />
                       Documentación de Propiedad con Advertencias
                     </>
                   )}
@@ -706,25 +706,15 @@ const PropiedadDetalle = () => {
                   margin: 0, 
                   fontSize: '0.95rem', 
                   lineHeight: '1.6', 
-                  color: inmueble.verificacion_estado === 'verificado' ? '#1e4620' : 
-                         inmueble.verificacion_estado === 'observado' ? '#78350f' : '#7f1d1d'
+                  color: inmueble.verificacion_estado === 'verificado' ? '#86efac' : 
+                         inmueble.verificacion_estado === 'observado' ? '#fcd34d' : '#fca5a5'
                 }}>
-                  {inmueble.verificacion_resumen || 'La documentación legal de propiedad fue analizada automáticamente por nuestra Inteligencia Artificial.'}
+                  {inmueble.verificacion_resumen || 'Revisamos el documento de propiedad presentado por el anunciante.'}
                 </p>
                 {inmueble.verificacion_estado === 'verificado' && inmueble.verificacion_score && (
-                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      background: '#16a34a', 
-                      color: '#fff', 
-                      padding: '3px 8px', 
-                      borderRadius: '12px', 
-                      fontWeight: 700 
-                    }}>
-                      Confianza de Análisis: {inmueble.verificacion_score}/100
-                    </span>
-                    <span style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 500 }}>
-                      ✓ Datos de DDRR e identidad validados exitosamente.
+                  <div style={{ marginTop: '16px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 500 }}>
+                      Datos de propiedad e identidad revisados. Esta revisión es orientativa y no sustituye la formalización notarial.
                     </span>
                   </div>
                 )}
@@ -766,7 +756,17 @@ const PropiedadDetalle = () => {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '24px', flexWrap: 'wrap' }}>
+            <div style={{
+              display: 'flex', gap: '16px', justifyContent: 'flex-end',
+              borderTop: '1px solid var(--color-border)', padding: '16px 0',
+              flexWrap: 'wrap',
+              position: 'sticky', bottom: 0,
+              background: 'var(--color-bg)', zIndex: 5,
+            }}>
+              <button onClick={handleContactar}
+                style={{ background: 'var(--color-bg-secondary)', color: 'var(--color-text)', border: '1px solid var(--color-border)', padding: '14px 28px', borderRadius: '10px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageCircle size={18} /> Escribir al propietario
+              </button>
               <button
                 onClick={() => {
                   if (!isAuthenticated) { navigate('/login'); return; }
@@ -774,15 +774,12 @@ const PropiedadDetalle = () => {
                 }}
                 style={{
                   background: '#10b981', color: '#fff', border: 'none',
-                  padding: '12px 32px', borderRadius: '10px', fontSize: '1rem',
-                  fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '14px 36px', borderRadius: '10px', fontSize: '1.05rem',
+                  fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                  boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
                 }}
               >
-                <Calendar size={18} /> Agendar Visita
-              </button>
-              <button onClick={handleContactar}
-                style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: '10px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MessageCircle size={18} /> Contactar Dueño
+                <Calendar size={18} /> Pedir visita
               </button>
             </div>
 
@@ -797,22 +794,22 @@ const PropiedadDetalle = () => {
       {/* Modal de Confirmación para Admin */}
       {showConfirmModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
-          <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#e0f2fe', color: '#0ea5e9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '20px', padding: '32px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(14,165,233,0.15)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <AlertCircle size={32} />
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '12px', color: '#1e293b' }}>Confirmación de contacto</h3>
-            <p style={{ color: '#64748b', marginBottom: '28px', lineHeight: '1.5' }}>¿Ya habló con el usuario sobre este inmueble?</p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '12px', color: 'var(--color-text)' }}>Confirmación de contacto</h3>
+            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '28px', lineHeight: '1.5' }}>¿Ya habló con el usuario sobre este inmueble?</p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 onClick={() => setShowConfirmModal(false)}
-                style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '12px', border: '1px solid var(--color-border)', borderRadius: '12px', background: 'var(--color-surface)', color: 'var(--color-text-secondary)', fontWeight: 600, cursor: 'pointer' }}
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmAdminContact}
-                style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '12px', background: '#0ea5e9', color: '#fff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ flex: 1, padding: '12px', border: 'none', borderRadius: '12px', background: '#0ea5e9', color: 'var(--color-surface)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
                 <Check size={18} /> Confirmar
               </button>
@@ -834,7 +831,7 @@ const PropiedadDetalle = () => {
           {allMedia.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedMediaIndex(prev => (prev > 0 ? prev - 1 : allMedia.length - 1)); }}
-              style={{ position: 'absolute', left: '24px', background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: '16px', borderRadius: '50%', backdropFilter: 'blur(4px)', transition: 'background 0.2s' }}
+              style={{ position: 'absolute', left: '24px', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'var(--color-surface)', fontSize: '2rem', cursor: 'pointer', padding: '16px', borderRadius: '50%', backdropFilter: 'blur(4px)', transition: 'background 0.2s' }}
             >
               <ChevronLeft size={32} />
             </button>
@@ -858,7 +855,7 @@ const PropiedadDetalle = () => {
           {allMedia.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); setSelectedMediaIndex(prev => (prev < allMedia.length - 1 ? prev + 1 : 0)); }}
-              style={{ position: 'absolute', right: '24px', background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', padding: '16px', borderRadius: '50%', backdropFilter: 'blur(4px)', transition: 'background 0.2s' }}
+              style={{ position: 'absolute', right: '24px', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'var(--color-surface)', fontSize: '2rem', cursor: 'pointer', padding: '16px', borderRadius: '50%', backdropFilter: 'blur(4px)', transition: 'background 0.2s' }}
             >
               <ChevronRight size={32} />
             </button>
@@ -866,7 +863,7 @@ const PropiedadDetalle = () => {
 
           <button
             onClick={() => setSelectedMediaIndex(null)}
-            style={{ position: 'absolute', top: '24px', right: '32px', background: 'none', border: 'none', color: '#fff', fontSize: '3rem', cursor: 'pointer' }}
+            style={{ position: 'absolute', top: '24px', right: '32px', background: 'none', border: 'none', color: 'var(--color-surface)', fontSize: '3rem', cursor: 'pointer' }}
           ><X size={48} /></button>
         </div>
       )}

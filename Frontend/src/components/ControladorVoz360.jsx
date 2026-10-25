@@ -516,22 +516,22 @@ const ControladorVoz360 = ({
         {dimensionesActuales && (
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {dimensionesActuales.alto_m && (
-              <span style={{ background: '#1e293b', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: '#f8fafc', border: '1px solid #334155' }}>
+              <span style={{ background: 'var(--color-text)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--color-bg-secondary)', border: '1px solid #334155' }}>
                 Alto: {dimensionesActuales.alto_m} m
               </span>
             )}
             {dimensionesActuales.ancho_m && (
-              <span style={{ background: '#1e293b', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: '#f8fafc', border: '1px solid #334155' }}>
+              <span style={{ background: 'var(--color-text)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--color-bg-secondary)', border: '1px solid #334155' }}>
                 Ancho: {dimensionesActuales.ancho_m} m
               </span>
             )}
             {dimensionesActuales.largo_m && (
-              <span style={{ background: '#1e293b', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: '#f8fafc', border: '1px solid #334155' }}>
+              <span style={{ background: 'var(--color-text)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--color-bg-secondary)', border: '1px solid #334155' }}>
                 Largo: {dimensionesActuales.largo_m} m
               </span>
             )}
             {dimensionesActuales.area_m2 && (
-              <span style={{ background: '#0284c7', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'white', fontWeight: 'bold' }}>
+              <span style={{ background: '#38bdf8', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--color-surface)', fontWeight: 'bold' }}>
                 Área: {dimensionesActuales.area_m2} m²
               </span>
             )}

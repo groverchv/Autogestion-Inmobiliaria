@@ -21,7 +21,7 @@ const ManageNotificaciones = () => {
     }},
     { key: 'mensaje', label: 'Mensaje', render: (item) => (item.mensaje?.length > 50 ? item.mensaje.substring(0, 50) + '...' : item.mensaje) },
     { key: 'leida', label: 'Leída', render: (item) => (
-      <span style={{ color: item.leida ? '#16a34a' : '#dc2626', fontWeight: 600 }}>{item.leida ? 'Sí' : 'No'}</span>
+      <span style={{ color: item.leida ? '#4ade80' : '#f87171', fontWeight: 600 }}>{item.leida ? 'Sí' : 'No'}</span>
     )},
     { key: 'creada', label: 'Creada', render: (item) => item.creada ? new Date(item.creada).toLocaleString('es-BO') : '—' },
   ];

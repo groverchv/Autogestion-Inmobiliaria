@@ -10,9 +10,9 @@ import './Propiedades.css';
 import useAlertConfirm from '../../hooks/useAlertConfirm';
 
 const ESTADO_CITA_CONFIG = {
-  pendiente: { bg: '#fef3c7', color: '#92400e', label: 'Pendiente' },
-  confirmada: { bg: '#dcfce7', color: '#166534', label: 'Confirmada' },
-  cancelada: { bg: '#fee2e2', color: '#991b1b', label: 'Cancelada' },
+  pendiente: { bg: 'rgba(251,191,36,0.12)', color: '#fbbf24', label: 'Pendiente' },
+  confirmada: { bg: 'rgba(16,185,129,0.12)', color: '#4ade80', label: 'Confirmada' },
+  cancelada: { bg: 'rgba(239,68,68,0.12)', color: '#f87171', label: 'Cancelada' },
   completada: { bg: '#e0f2fe', color: '#075985', label: 'Completada' },
 };
 
@@ -63,10 +63,10 @@ const MiAgenda = () => {
       setShowModal(false);
       setFormData({ titulo: '', descripcion: '', fecha_inicio: '', fecha_fin: '', ubicacion: '' });
       fetchTodo();
-      showAlert({ title: 'Evento Guardado', message: 'El evento ha sido registrado en tu agenda con éxito.', status: 'success' });
+      showAlert({ title: 'Visita guardada', message: 'Tu visita quedó registrada.', status: 'success' });
     } catch (err) {
       console.error(err);
-      showAlert({ title: 'Error de registro', message: 'No se pudo guardar el evento en tu agenda.', status: 'error' });
+      showAlert({ title: 'Error de registro', message: 'No se pudo guardar la visita.', status: 'error' });
     } finally {
       setSaving(false);
     }
@@ -81,7 +81,7 @@ const MiAgenda = () => {
 
   const deleteEvento = (id) => {
     showConfirm({
-      title: '¿Eliminar Evento?',
+      title: '¿Eliminar esta visita?',
       message: '¿Estás seguro de que deseas eliminar este evento de tu agenda permanentemente?',
       status: 'error',
       confirmText: 'Sí, eliminar',
@@ -90,9 +90,9 @@ const MiAgenda = () => {
         try {
           await api.delete(`/usuarios/panel/agenda/${id}/`);
           fetchTodo();
-          showAlert({ title: 'Evento Eliminado', message: 'El evento ha sido borrado exitosamente.', status: 'success' });
+          showAlert({ title: 'Visita eliminada', message: 'La visita fue eliminada.', status: 'success' });
         } catch {
-          showAlert({ title: 'Error al eliminar', message: 'Hubo un problema al eliminar el evento.', status: 'error' });
+          showAlert({ title: 'Error al eliminar', message: 'No se pudo eliminar la visita.', status: 'error' });
         }
       }
     });
@@ -103,7 +103,7 @@ const MiAgenda = () => {
       await api.patch(`/inmuebles/citas/${citaId}/cambiar-estado/`, { estado: nuevoEstado });
       fetchTodo();
       showAlert({
-        title: 'Cita Actualizada',
+        title: 'Visita actualizada',
         message: `La cita de visita ha sido marcada como "${nuevoEstado}" con éxito.`,
         status: 'success'
       });
@@ -177,7 +177,7 @@ const MiAgenda = () => {
             {tab === 'eventos' && (
               <button onClick={() => setShowModal(true)}
                 style={{
-                  background: '#0ea5e9', color: '#fff', border: 'none',
+                  background: '#0ea5e9', color: 'var(--color-surface)', border: 'none',
                   padding: '10px 20px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
                 }}>
                 + Nuevo Evento
@@ -204,7 +204,7 @@ const MiAgenda = () => {
                 </p>
                 <button onClick={() => setShowModal(true)}
                   style={{
-                    background: '#0ea5e9', color: '#fff', border: 'none',
+                    background: '#0ea5e9', color: 'var(--color-surface)', border: 'none',
                     padding: '12px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer',
                   }}>
                   Añadir mi primer evento
@@ -363,7 +363,7 @@ const MiAgenda = () => {
                                   {esProp && cita.estado === 'pendiente' && (
                                     <button onClick={() => cambiarEstadoCita(cita.id, 'confirmada')}
                                       style={{
-                                        background: '#dcfce7', color: '#166534', border: 'none',
+                                        background: 'rgba(16,185,129,0.12)', color: '#4ade80', border: 'none',
                                         borderRadius: '8px', padding: '8px 14px', cursor: 'pointer',
                                         fontWeight: 600, fontSize: '0.85rem',
                                         display: 'flex', alignItems: 'center', gap: '6px',
@@ -385,7 +385,7 @@ const MiAgenda = () => {
                                   {(cita.estado === 'pendiente' || cita.estado === 'confirmada') && (
                                     <button onClick={() => cambiarEstadoCita(cita.id, 'cancelada')}
                                       style={{
-                                        background: '#fee2e2', color: '#dc2626', border: 'none',
+                                        background: 'rgba(239,68,68,0.12)', color: '#f87171', border: 'none',
                                         borderRadius: '8px', padding: '8px 14px', cursor: 'pointer',
                                         fontWeight: 600, fontSize: '0.85rem',
                                         display: 'flex', alignItems: 'center', gap: '6px',
@@ -532,7 +532,7 @@ const MiAgenda = () => {
               </button>
               <button form="agendaForm" type="submit" disabled={saving}
                 style={{
-                  background: '#0ea5e9', color: '#fff', border: 'none',
+                  background: '#0ea5e9', color: 'var(--color-surface)', border: 'none',
                   padding: '10px 24px', borderRadius: '8px', fontWeight: 600,
                   cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1,
                 }}>

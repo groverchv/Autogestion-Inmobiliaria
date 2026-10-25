@@ -544,7 +544,7 @@ const FinanzasAdmin = () => {
         @media print {
           .no-print { display: none !important; }
           .print-only { display: block !important; }
-          body { background: white !important; }
+          body { background: var(--color-surface) !important; }
           .print-container { padding: 0 !important; margin: 0 !important; }
           @page { size: A4 landscape; margin: 10mm; }
         }
@@ -556,7 +556,7 @@ const FinanzasAdmin = () => {
         .is-exporting .config-section { display: none !important; }
 
         .is-exporting {
-          background: white !important;
+          background: var(--color-surface) !important;
           width: 1050px !important;
           margin: 0 auto !important;
           padding: 0 16px 16px 16px !important;

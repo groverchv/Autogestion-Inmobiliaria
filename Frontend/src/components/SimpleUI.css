@@ -1,0 +1,148 @@
+/* Componentes de UI simplificada — tema oscuro Nobleve */
+
+/* ─── Stepper: "Paso 2 de 5" ─────────────────────────────── */
+.stepper { margin-bottom: 1.5rem; }
+.stepper__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+.stepper__label strong { color: var(--color-text); font-weight: 600; }
+.stepper__bar {
+  height: 6px;
+  background: var(--color-bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.stepper__fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ─── EmptyState ─────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--color-text-secondary);
+}
+.empty-state__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+.empty-state__title {
+  color: var(--color-text);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+.empty-state__text {
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem;
+  max-width: 340px;
+  margin-inline: auto;
+}
+
+/* ─── SimpleStatus: píldora de estado en lenguaje llano ──── */
+.simple-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.simple-status--pendiente  { background: rgba(251,191,36,0.14); color: #fbbf24; }
+.simple-status--en-proceso { background: rgba(56,189,248,0.14);  color: #38bdf8; }
+.simple-status--listo      { background: rgba(16,185,129,0.14);  color: #34d399; }
+.simple-status--problema   { background: rgba(244,63,94,0.14);   color: #fb7185; }
+.simple-status--neutro     { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+
+/* ─── CollapsibleDetails ─────────────────────────────────── */
+.collapsible { border-top: 1px solid var(--color-border); padding-top: 10px; margin-top: 10px; }
+.collapsible__toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+.collapsible__toggle:hover { color: var(--color-text); }
+.collapsible__toggle svg { transition: transform 0.2s; }
+.collapsible__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.collapsible__body { padding: 8px 0 4px; font-size: 0.85rem; color: var(--color-text-secondary); }
+
+/* ─── ConfirmDialog (usa Modal) ──────────────────────────── */
+.confirm-dialog__text { color: var(--color-text-secondary); font-size: 0.95rem; margin: 0 0 1.25rem; }
+.confirm-dialog__actions { display: flex; gap: 10px; justify-content: flex-end; }
+.confirm-dialog__btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+}
+.confirm-dialog__btn--cancel {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+.confirm-dialog__btn--confirm { background: var(--color-primary); color: #fff; }
+.confirm-dialog__btn--danger  { background: var(--color-danger);  color: #fff; }
+
+/* ─── FieldHint ──────────────────────────────────────────── */
+.field-hint { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 4px; }
+
+/* ─── ActionNeeded: tarjeta de acción pendiente ──────────── */
+.action-needed {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.action-needed__icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+.action-needed__title { color: var(--color-text); font-weight: 600; font-size: 0.95rem; margin: 0; }
+.action-needed__text { color: var(--color-text-secondary); font-size: 0.82rem; margin: 2px 0 0; }
+.action-needed__btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}

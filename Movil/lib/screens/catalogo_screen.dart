@@ -227,97 +227,67 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ─── Buscador y Barra de Filtros Dark Mode con Degradado ───
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: AppColors.darkCardGradient,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderSubtle),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // ─── Buscador Nativo Ultra Compacto ───
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    // Campo de búsqueda con icono de lupa
-                    Expanded(
-                      child: Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (_) => _aplicarFiltros(),
-                          decoration: InputDecoration(
-                            hintText: 'Buscar por zona, ciudad o palabras clave (Ej: Equipetrol...)',
-                            hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                            prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.primary),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 18, color: AppColors.textMuted),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      _aplicarFiltros();
-                                    },
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-                        ),
-                      ),
+                Expanded(
+                  child: Container(
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderSubtle),
                     ),
-                    const SizedBox(width: 10),
-
-                    // Botón de Filtros
-                    OutlinedButton.icon(
-                      onPressed: _abrirModalFiltros,
-                      icon: const Icon(Icons.tune, size: 18, color: AppColors.primary),
-                      label: const Text(
-                        'Filtros',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (_) => _aplicarFiltros(),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar inmueble, zona...',
+                        hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.primary),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 16, color: AppColors.textMuted),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _aplicarFiltros();
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        side: const BorderSide(color: AppColors.border),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // Contador de resultados
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    '${_inmueblesFiltrados.length} propiedades encontradas',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: _abrirModalFiltros,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderSubtle),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.tune, size: 16, color: AppColors.primary),
+                        SizedBox(width: 4),
+                        Text(
+                          'Filtros',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -388,18 +358,26 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        mainAxisExtent: 300,
-      ),
-      itemCount: _inmueblesFiltrados.length,
-      itemBuilder: (context, index) {
-        final item = _inmueblesFiltrados[index];
-        return _buildCard(item);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // En pantallas móviles: 3 columnas perfectamente ceñidas sin espacio muerto
+        final int columnas = constraints.maxWidth > 550 ? 3 : (constraints.maxWidth > 320 ? 3 : 2);
+        final double itemHeight = constraints.maxWidth > 550 ? 250 : 205;
+
+        return GridView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columnas,
+            crossAxisSpacing: 6,
+            mainAxisSpacing: 6,
+            mainAxisExtent: itemHeight,
+          ),
+          itemCount: _inmueblesFiltrados.length,
+          itemBuilder: (context, index) {
+            final item = _inmueblesFiltrados[index];
+            return _buildCard(item);
+          },
+        );
       },
     );
   }
@@ -432,9 +410,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: SizedBox(
-                    height: 140,
+                    height: 95,
                     width: double.infinity,
                     child: item.imagenPrincipal != null && item.imagenPrincipal!.isNotEmpty
                         ? Image.network(
@@ -442,54 +420,38 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Container(
                               color: AppColors.surfaceElevated,
-                              child: const Icon(Icons.home_work_outlined, size: 40, color: AppColors.textMuted),
+                              child: const Icon(Icons.home_work_outlined, size: 28, color: AppColors.textMuted),
                             ),
                           )
                         : Container(
                             color: AppColors.surfaceElevated,
-                            child: const Icon(Icons.home_work_outlined, size: 40, color: AppColors.textMuted),
+                            child: const Icon(Icons.home_work_outlined, size: 28, color: AppColors.textMuted),
                           ),
                   ),
                 ),
                 Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Wrap(
-                    spacing: 4,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          item.estado.toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          item.tipoOferta.toUpperCase(),
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
+                  top: 5,
+                  left: 5,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      item.estado.toUpperCase(),
+                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 Positioned(
-                  bottom: 6,
-                  right: 8,
+                  bottom: 5,
+                  right: 5,
                   child: InkWell(
                     onTap: () => _toggleFavorito(item),
                     child: Container(
-                      width: 30,
-                      height: 30,
+                      width: 24,
+                      height: 24,
                       decoration: BoxDecoration(
                         color: AppColors.surface.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
@@ -497,7 +459,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       ),
                       child: Icon(
                         item.isFavorito ? Icons.favorite : Icons.favorite_border,
-                        size: 16,
+                        size: 13,
                         color: item.isFavorito ? AppColors.error : AppColors.textSecondary,
                       ),
                     ),
@@ -506,34 +468,35 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               ],
             ),
 
-            // Contenido
+            // Contenido Compacto Nativo sin Espacio Muerto
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.fromLTRB(6, 5, 6, 2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     item.titulo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppColors.textPrimary),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
-                    item.direccionCompleta,
+                    item.ciudad.isNotEmpty ? item.ciudad : item.direccionCompleta,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: const TextStyle(fontSize: 9.5, color: AppColors.textSecondary),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       if (item.habitaciones > 0) ...[
-                        Text('${item.habitaciones} hab.', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
-                        const SizedBox(width: 8),
+                        Text('${item.habitaciones}h', style: const TextStyle(fontSize: 9.5, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                        const SizedBox(width: 5),
                       ],
                       if (item.banos > 0) ...[
-                        Text('${item.banos} baños', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                        Text('${item.banos}b', style: const TextStyle(fontSize: 9.5, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                       ],
                     ],
                   ),
@@ -541,30 +504,29 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               ),
             ),
 
-            const Spacer(),
             const Divider(height: 1, color: AppColors.borderSubtle),
 
-            // Footer con Precio y Botón Degradado
+            // Footer con Precio Ceñido
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
                       'Bs. ${item.precio}',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: AppColors.primary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(6),
+                      color: AppColors.primaryDark,
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text('Detalles', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: const Text('Ver', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

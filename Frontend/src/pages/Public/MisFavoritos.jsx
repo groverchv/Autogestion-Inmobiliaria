@@ -33,10 +33,10 @@ const MisFavoritos = () => {
   };
 
   const estadoColors = {
-    disponible: { bg: '#dcfce7', color: '#15803d' },
-    ocupado: { bg: '#fee2e2', color: '#dc2626' },
-    mantenimiento: { bg: '#fef3c7', color: '#d97706' },
-    reservado: { bg: '#dbeafe', color: '#2563eb' },
+    disponible: { bg: 'rgba(16,185,129,0.12)', color: '#4ade80' },
+    ocupado: { bg: 'rgba(239,68,68,0.12)', color: '#f87171' },
+    mantenimiento: { bg: 'rgba(251,191,36,0.12)', color: '#d97706' },
+    reservado: { bg: 'rgba(59,130,246,0.12)', color: '#60a5fa' },
   };
 
   return (

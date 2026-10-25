@@ -472,7 +472,7 @@ const AuditoriaCheckInOut = () => {
               <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#f8fafc' }}>
                 Bs. {Number(dictamenReciente.monto_garantia_base).toFixed(2)}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Monto total depositado</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>Monto total depositado</div>
             </div>
 
             <div style={{ background: '#090d16', padding: '16px', borderRadius: '12px', border: '1px solid #ef4444' }}>

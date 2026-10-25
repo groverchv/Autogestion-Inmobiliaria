@@ -309,11 +309,18 @@
   }
 }
 
-/* Grid */
+/* Grid de Propiedades: 3 columnas elegantes y proporcionadas */
 .propiedades-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .propiedades-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
 }
 
 /* Card */
@@ -334,8 +341,8 @@
 /* Card Image */
 .propiedad-card__image {
   position: relative;
-  height: 180px;
-  background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-card));
+  height: 220px;
+  background: #0f172a;
   overflow: hidden;
 }
 
@@ -343,6 +350,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.propiedad-card:hover .propiedad-card__image img {
+  transform: scale(1.05);
 }
 
 .propiedad-card__placeholder {
@@ -480,7 +492,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -494,7 +506,7 @@
 }
 
 .propiedad-card__fav-btn--active {
-  background: #fee2e2;
+  background: rgba(239,68,68,0.12);
   color: #ef4444 !important;
 }
 
