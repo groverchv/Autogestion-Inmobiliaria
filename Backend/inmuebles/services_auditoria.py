@@ -14,6 +14,24 @@ class AuditoriaVisionEngine:
     - Capa 3: Validación de Sustitución mediante Histograma de Color y Similitud.
     - Capa 4: Lectura OCR Especializada de Medidores de Servicios (Luz/Agua).
     """
+    _modelo_yolo = None   # cache de proceso: cargar pesa ~1-2s, no por cada detección
+
+    @classmethod
+    def _obtener_modelo_yolo(cls):
+        if cls._modelo_yolo is None:
+            from ultralytics import YOLO
+            posibles_rutas = [
+                'runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
+                'runs/detect/runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
+                '../runs/detect/runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
+            ]
+            modelo_path = 'yolov8n.pt'
+            for r in posibles_rutas:
+                if os.path.exists(r):
+                    modelo_path = r
+                    break
+            cls._modelo_yolo = YOLO(modelo_path)
+        return cls._modelo_yolo
 
     @classmethod
     def _cargar_cv2_image(cls, source):
@@ -72,19 +90,7 @@ class AuditoriaVisionEngine:
             if cv_img is None:
                 return [{'label': 'ambiente_general', 'confidence': 0.95, 'bbox': [0, 0, 100, 100]}]
 
-            # Carga el modelo personalizado si existe, o el modelo base
-            posibles_rutas = [
-                'runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
-                'runs/detect/runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
-                '../runs/detect/runs/inmobiliario_check/yolov8_inmobiliario_custom/weights/best.pt',
-            ]
-            modelo_path = 'yolov8n.pt'
-            for r in posibles_rutas:
-                if os.path.exists(r):
-                    modelo_path = r
-                    break
-
-            model = YOLO(modelo_path)
+            model = cls._obtener_modelo_yolo()
             results = model(cv_img, verbose=False)
 
 

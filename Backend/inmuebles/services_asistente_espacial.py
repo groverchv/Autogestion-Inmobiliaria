@@ -12,9 +12,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_VISION_MODEL = getattr(
-    settings, 'GROQ_VISION_MODEL', 'meta-llama/llama-4-scout-17b-16e-instruct'
-)
+GROQ_VISION_MODEL = getattr(settings, 'GROQ_VISION_MODEL', '')
 
 class AsistenteEspacialEngine:
     """
@@ -34,9 +32,20 @@ class AsistenteEspacialEngine:
     @classmethod
     def _url_a_base64(cls, url: str) -> Optional[str]:
         """Descarga una imagen (URL http o ruta de media local) y la devuelve
-        en base64 JPEG reducida para el modelo de visión."""
+        en base64 JPEG reducida para el modelo de visión. El resultado se
+        cachea 1h por URL: el mismo panorama se reusa en todas las
+        preguntas visuales sin volver a descargarlo."""
         if not url:
             return None
+        import hashlib
+        from django.core.cache import cache
+        clave = 'pano_b64:' + hashlib.sha1(url.encode()).hexdigest()
+        try:
+            cacheado = cache.get(clave)
+            if cacheado is not None:
+                return cacheado or None
+        except Exception:
+            pass
         try:
             from PIL import Image
 
@@ -58,7 +67,12 @@ class AsistenteEspacialEngine:
             img.thumbnail((1568, 1568))
             buf = BytesIO()
             img.save(buf, 'JPEG', quality=82)
-            return base64.b64encode(buf.getvalue()).decode('ascii')
+            b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+            try:
+                cache.set(clave, b64, 3600)
+            except Exception:
+                pass
+            return b64
         except Exception as e:
             logger.warning('No se pudo cargar imagen para visión (%s): %s', url, e)
             return None
@@ -73,6 +87,10 @@ class AsistenteEspacialEngine:
         max_tokens: int,
     ) -> Optional[str]:
         """Llamada OpenAI-compatible (Groq / LM Studio / cualquier endpoint)."""
+        from .services_llm import marcar_proveedor_caido, proveedor_activo
+        nombre = 'groq' if 'groq' in url else ('local' if api_key is None else url)
+        if not proveedor_activo(nombre):
+            return None
         headers = {"Content-Type": "application/json"}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -86,14 +104,17 @@ class AsistenteEspacialEngine:
                     "max_tokens": max_tokens,
                 },
                 headers=headers,
-                timeout=30,
+                timeout=10 if nombre != 'local' else 6,
             )
             if resp.status_code != 200:
                 logger.warning('%s respondió %s: %s', url, resp.status_code, resp.text[:200])
+                if resp.status_code in (429, 500, 502, 503, 504):
+                    marcar_proveedor_caido(nombre)
                 return None
             return resp.json()['choices'][0]['message']['content'].strip()
         except Exception as e:
             logger.warning('Error llamando a %s: %s', url, e)
+            marcar_proveedor_caido(nombre)
             return None
 
     @classmethod
@@ -108,7 +129,8 @@ class AsistenteEspacialEngine:
         Soporta texto + imagen inline; con img_b64=None funciona como LLM
         de solo texto."""
         api_key = getattr(settings, 'GEMINI_API_KEY', '')
-        if not api_key:
+        from .services_llm import marcar_proveedor_caido, proveedor_activo
+        if not api_key or not proveedor_activo('gemini'):
             return None
         model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
         url = (
@@ -135,10 +157,12 @@ class AsistenteEspacialEngine:
                     },
                 },
                 headers={"Content-Type": "application/json"},
-                timeout=30,
+                timeout=12,
             )
             if resp.status_code != 200:
                 logger.warning('Gemini respondió %s: %s', resp.status_code, resp.text[:200])
+                if resp.status_code in (429, 500, 502, 503, 504):
+                    marcar_proveedor_caido('gemini')
                 return None
             data = resp.json()
             candidatos = data.get('candidates') or []
@@ -149,13 +173,14 @@ class AsistenteEspacialEngine:
             return texto or None
         except Exception as e:
             logger.warning('Error llamando a Gemini: %s', e)
+            marcar_proveedor_caido('gemini')
             return None
 
     @classmethod
     def _proveedores_vision(cls) -> list:
         """Cadena OpenAI-compatible de respaldo: Groq -> VLM local (LM Studio)."""
         proveedores = []
-        if getattr(settings, 'GROQ_API_KEY', ''):
+        if getattr(settings, 'GROQ_API_KEY', '') and GROQ_VISION_MODEL:
             proveedores.append((GROQ_API_URL, settings.GROQ_API_KEY, GROQ_VISION_MODEL))
         local_url = getattr(settings, 'LOCAL_AI_URL', '')
         if local_url:
@@ -553,6 +578,11 @@ class AsistenteEspacialEngine:
                     'confianza': obj.get('confianza', 'media'),
                     'respuesta': respuesta,
                     'nota': 'Estimación visual sobre la imagen real, no una medición calibrada.',
+                    # La vista gira hacia el objeto medido
+                    'camara_360': {
+                        'yaw': obj['yaw'],
+                        'pitch': obj['pitch'],
+                    },
                     'ar_overlay': {
                         'elemento': nombre,
                         'panorama_id': getattr(pano, 'id', None),

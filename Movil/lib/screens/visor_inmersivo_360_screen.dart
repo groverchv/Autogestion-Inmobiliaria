@@ -74,6 +74,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   // toque sobre un objeto detectado)
   Map<String, dynamic>? _arOverlay;
   Timer? _arOverlayTimer;
+  bool _recargaCotasHecha = false;
   bool _midiendo = false;
   final List<Offset> _puntosMedir = [];
   Size? _imgSize;
@@ -152,6 +153,15 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
           }
         }
       });
+      // Si no hay cotas todavía, el análisis espacial puede estar
+      // corriendo en background: reintentar una vez a los ~18s.
+      final cotas = data['cotas_ar'];
+      if ((cotas is! List || cotas.isEmpty) && !_recargaCotasHecha) {
+        _recargaCotasHecha = true;
+        _arOverlayTimer = Timer(const Duration(seconds: 18), () {
+          if (mounted) _cargarDatosMetaverso();
+        });
+      }
     }
   }
 

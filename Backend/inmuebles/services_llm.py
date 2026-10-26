@@ -15,12 +15,34 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-DEFAULT_TEXT_MODEL = 'llama-3.1-8b-instant'
+DEFAULT_TEXT_MODEL = 'openai/gpt-oss-20b'
+
+# Circuit breaker: si un proveedor devuelve 429 o no responde, se marca
+# caído por un rato y las llamadas siguientes pasan directo al siguiente
+# en la cadena (evita que cada consulta pague el timeout del caído).
+_PROVIDER_COOLDOWN_S = 300
+
+
+def proveedor_activo(nombre: str) -> bool:
+    try:
+        from django.core.cache import cache
+        return not cache.get(f'llm_down:{nombre}')
+    except Exception:
+        return True
+
+
+def marcar_proveedor_caido(nombre: str) -> None:
+    try:
+        from django.core.cache import cache
+        cache.set(f'llm_down:{nombre}', True, _PROVIDER_COOLDOWN_S)
+        logger.warning('Proveedor LLM %s marcado caído por %ss', nombre, _PROVIDER_COOLDOWN_S)
+    except Exception:
+        pass
 
 
 def _gemini(messages: list, max_tokens: int, temperature: float) -> Optional[str]:
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
+    if not api_key or not proveedor_activo('gemini'):
         return None
     model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
     url = (
@@ -53,10 +75,12 @@ def _gemini(messages: list, max_tokens: int, temperature: float) -> Optional[str
                 },
             },
             headers={'Content-Type': 'application/json'},
-            timeout=40,
+            timeout=12,
         )
         if resp.status_code != 200:
             logger.warning('Gemini respondió %s: %s', resp.status_code, resp.text[:200])
+            if resp.status_code in (429, 500, 502, 503, 504):
+                marcar_proveedor_caido('gemini')
             return None
         candidatos = resp.json().get('candidates') or []
         if not candidatos:
@@ -66,11 +90,23 @@ def _gemini(messages: list, max_tokens: int, temperature: float) -> Optional[str
         return texto or None
     except Exception as e:
         logger.warning('Error llamando a Gemini: %s', e)
+        marcar_proveedor_caido('gemini')
         return None
+
+
+def _nombre_proveedor(url: str) -> str:
+    if 'groq' in url:
+        return 'groq'
+    if 'gemini' in url or 'googleapis' in url:
+        return 'gemini'
+    return 'local'
 
 
 def _openai_compatible(url: str, api_key: Optional[str], model: str,
                        messages: list, max_tokens: int, temperature: float) -> Optional[str]:
+    nombre = _nombre_proveedor(url)
+    if not proveedor_activo(nombre):
+        return None
     headers = {'Content-Type': 'application/json'}
     if api_key:
         headers['Authorization'] = f'Bearer {api_key}'
@@ -84,14 +120,17 @@ def _openai_compatible(url: str, api_key: Optional[str], model: str,
                 'max_tokens': max_tokens,
             },
             headers=headers,
-            timeout=40,
+            timeout=10 if nombre != 'local' else 6,
         )
         if resp.status_code != 200:
             logger.warning('%s respondió %s: %s', url, resp.status_code, resp.text[:200])
+            if resp.status_code in (429, 500, 502, 503, 504):
+                marcar_proveedor_caido(nombre)
             return None
         return resp.json()['choices'][0]['message']['content'].strip()
     except Exception as e:
         logger.warning('Error llamando a %s: %s', url, e)
+        marcar_proveedor_caido(nombre)
         return None
 
 

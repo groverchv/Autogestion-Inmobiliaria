@@ -38,6 +38,7 @@ import './ModalRecorrido3D.css';
 const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   const viewerRef = useRef(null);
   const viewerInstanceRef = useRef(null);
+  const reintentoRef = useRef(false);
 
   // Estados de datos
   const [metaData, setMetaData] = useState(null);
@@ -213,6 +214,14 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
           setSugerencias(data.sugerencias);
         } else if (primerPano?.sugerencias?.length > 0) {
           setSugerencias(primerPano.sugerencias);
+        }
+        // Si aún no hay cotas, el análisis espacial puede estar corriendo
+        // en background: reintentar una vez a los ~18s sin recargar.
+        if ((!data?.cotas_ar || data.cotas_ar.length === 0) && !reintentoRef.current) {
+          reintentoRef.current = true;
+          setTimeout(() => {
+            if (!cancelado) cargarMetaverso();
+          }, 18000);
         }
       } catch (e) {
         console.error('Error cargando metaverso-datos:', e);

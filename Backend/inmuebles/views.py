@@ -1842,13 +1842,13 @@ class CalidadVidaViewSet(viewsets.ViewSet):
         # la posición cualitativa del análisis de visión como respaldo.
         # Sin análisis -> lista vacía, nunca dimensiones inventadas.
         from .services_medida_espacial import MedidaEspacialEngine
-        import threading
 
         _POS_A_YAW = {
             'izquierda': -60.0, 'centro-izquierda': -30.0, 'centro': 0.0,
             'centro-derecha': 30.0, 'derecha': 60.0,
         }
         cotas_ar = []
+        analisis_pendientes = False
         for p in panoramas_qs:
             analisis = getattr(p, 'analisis_visual', None) or {}
             objetos_3d = analisis.get('objetos_3d')
@@ -1877,10 +1877,8 @@ class CalidadVidaViewSet(viewsets.ViewSet):
             # Panorama sin objetos_3d: disparar análisis en background
             # (YOLO + profundidad tardan unos segundos) y servir el
             # respaldo cualitativo mientras tanto.
-            threading.Thread(
-                target=MedidaEspacialEngine.analizar_objetos_3d,
-                args=(p,), daemon=True,
-            ).start()
+            analisis_pendientes = True
+            MedidaEspacialEngine.encolar_analisis(p)
             for obj in analisis.get('objetos', []):
                 dim = obj.get('dimension_aprox')
                 if not dim:
@@ -1936,7 +1934,10 @@ class CalidadVidaViewSet(viewsets.ViewSet):
             'calidad_vida': calidad_vida,
             'pines_ar_barrio': pines_ar_barrio
         }
-        cache.set(cache_key, payload, 900)
+        # Mientras falte el análisis espacial de algún panorama, el payload
+        # se cachea poco tiempo para que las cotas aparezcan en seguida;
+        # cuando todo está analizado se usa el TTL largo normal.
+        cache.set(cache_key, payload, 30 if analisis_pendientes else 900)
         return Response(payload, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get', 'post'], url_path='estimar-precio-ml')
