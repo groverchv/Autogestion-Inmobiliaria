@@ -99,6 +99,10 @@ class Inmueble(models.Model):
         verbose_name = 'Inmueble'
         verbose_name_plural = 'Inmuebles'
         ordering = ['-creado']
+        indexes = [
+            models.Index(fields=['estado'], name='inm_estado_idx'),
+            models.Index(fields=['propietario', 'estado'], name='inm_prop_estado_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         if self.largo is not None and self.ancho is not None:
@@ -131,6 +135,11 @@ class Multimedia(models.Model):
     )
     archivo = models.CharField(max_length=500, help_text='URL de Cloudinary o ruta')
     descripcion = models.CharField(max_length=200, blank=True)
+    analisis_visual = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='Análisis de visión IA cacheado del panorama (objetos y descripción reales detectados)',
+    )
     principal = models.BooleanField(default=False)
     orden = models.PositiveIntegerField(default=0, help_text="Orden de visualización")
     subido = models.DateTimeField(auto_now_add=True)
@@ -140,6 +149,9 @@ class Multimedia(models.Model):
         verbose_name = 'Multimedia'
         verbose_name_plural = 'Multimedia'
         ordering = ['orden', '-principal', '-subido']
+        indexes = [
+            models.Index(fields=['inmueble', 'tipo'], name='mult_inm_tipo_idx'),
+        ]
 
     def __str__(self):
         return f'{self.tipo} — {self.inmueble.titulo}'
@@ -252,6 +264,9 @@ class Publicacion(models.Model):
         verbose_name = 'Publicación'
         verbose_name_plural = 'Publicaciones'
         ordering = ['-creado']
+        indexes = [
+            models.Index(fields=['estado', 'tipo_oferta'], name='pub_estado_tipo_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         # Si esta publicación se activa, debemos desactivar cualquier otra activa para este inmueble
@@ -388,6 +403,9 @@ class Contrato(models.Model):
         verbose_name = 'Contrato'
         verbose_name_plural = 'Contratos'
         ordering = ['-creado']
+        indexes = [
+            models.Index(fields=['inmueble', 'estado'], name='con_inm_estado_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -534,6 +552,10 @@ class Cita(models.Model):
         verbose_name    = 'Cita'
         verbose_name_plural = 'Citas'
         ordering        = ['-fecha', '-hora_inicio']
+        indexes = [
+            models.Index(fields=['propietario', 'fecha'], name='cita_prop_fecha_idx'),
+            models.Index(fields=['cliente', 'fecha'], name='cita_cli_fecha_idx'),
+        ]
         unique_together = ('inmueble', 'fecha', 'hora_inicio')
 
     def __str__(self):
@@ -689,6 +711,9 @@ class AccesoRecorrido360(models.Model):
         verbose_name = 'Acceso a Recorrido 360°'
         verbose_name_plural = 'Accesos a Recorridos 360°'
         ordering = ['-creado']
+        indexes = [
+            models.Index(fields=['inmueble', 'activo'], name='acc360_inm_act_idx'),
+        ]
 
     @property
     def es_valido(self) -> bool:

@@ -542,13 +542,15 @@ class ApiService {
     required String consulta,
     int? inmuebleId,
     String? fotoUrl,
+    int? panoramaId,
   }) async {
     final token = await getToken();
     final Map<String, dynamic> bodyData = {
       'consulta': consulta,
     };
     if (inmuebleId != null) bodyData['inmueble'] = inmuebleId;
-    if (fotoUrl != null) bodyData['foto_360_url'] = fotoUrl;
+    if (fotoUrl != null && fotoUrl.isNotEmpty) bodyData['foto_360_url'] = fotoUrl;
+    if (panoramaId != null) bodyData['panorama_id'] = panoramaId;
 
     try {
       final response = await http.post(

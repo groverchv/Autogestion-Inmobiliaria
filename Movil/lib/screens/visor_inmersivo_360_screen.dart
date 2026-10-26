@@ -49,8 +49,16 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   List<dynamic> _pasosTour = [];
   Timer? _tourTimer;
   String _locucionActual = '';
+  String? _fuenteRespuesta;
   bool _procesandoNLP = false;
   late FlutterTts _flutterTts;
+
+  static const Map<String, String> _fuenteLabels = {
+    'vision_ia': 'Según la imagen que estás viendo',
+    'datos_propiedad': 'Dato registrado de la propiedad',
+    'estimacion': 'Estimación aproximada',
+    'medicion_estimada': 'Estimación aproximada',
+  };
 
   // Reconocimiento de voz real (STT)
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -408,9 +416,23 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                       const Icon(Icons.record_voice_over, color: Color(0xFF38BDF8), size: 22),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          _locucionActual,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.35, fontWeight: FontWeight.w500),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _locucionActual,
+                              style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.35, fontWeight: FontWeight.w500),
+                            ),
+                            if (_fuenteRespuesta != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: Text(
+                                  _fuenteRespuesta!,
+                                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontStyle: FontStyle.italic),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -522,6 +544,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   Future<void> _consultarAsistente(String consulta) async {
     setState(() {
       _procesandoNLP = true;
+      _fuenteRespuesta = null;
       _locucionActual = 'Analizando tu pregunta: "$consulta"...';
     });
 
@@ -529,10 +552,14 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     final res = await api.consultarAsistenteEspacial(
       consulta: consulta,
       inmuebleId: widget.inmuebleId,
+      fotoUrl: _panoramaActualUrl,
+      panoramaId: _panoramaActualId,
     );
 
     if (res != null && mounted) {
-      final String respuestaTexto = res['respuesta'] ?? 'Medición registrada.';
+      final String respuestaTexto =
+          res['respuesta'] ?? 'No pude obtener una respuesta. Intenta de nuevo.';
+      final String? fuente = _fuenteLabels[res['fuente'] as String?];
 
       // Si la IA nos devuelve orientación de cámara hacia el objeto consultado, rotamos la vista 360°
       if (res['camara_360'] != null) {
@@ -546,6 +573,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
       setState(() {
         _procesandoNLP = false;
         _locucionActual = respuestaTexto;
+        _fuenteRespuesta = fuente;
       });
 
       // Decir la respuesta en voz alta a través de los altavoces / auriculares
@@ -556,6 +584,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
         if (mounted && _locucionActual == respuestaTexto) {
           setState(() {
             _locucionActual = '';
+            _fuenteRespuesta = null;
           });
         }
       });

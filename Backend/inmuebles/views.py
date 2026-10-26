@@ -1634,13 +1634,19 @@ class AsistenteEspacialViewSet(viewsets.ViewSet):
             try:
                 inmueble = Inmueble.objects.get(id=inmueble_id)
             except Inmueble.DoesNotExist:
-                pass
+                return Response({'error': 'Inmueble no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         if not inmueble:
-            inmueble = Inmueble.objects.first()
+            return Response({'error': 'Debes indicar el inmueble sobre el que preguntas.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        foto_360_url = request.data.get('foto_360_url')
-        resultado = AsistenteEspacialEngine.procesar_consulta(texto, inmueble, foto_360_url=foto_360_url)
+        resultado = AsistenteEspacialEngine.procesar_consulta(
+            texto,
+            inmueble,
+            foto_360_url=request.data.get('foto_360_url'),
+            panorama_id=request.data.get('panorama_id'),
+            yaw=request.data.get('yaw'),
+            pitch=request.data.get('pitch'),
+        )
         return Response(resultado, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='iniciar-tour')
@@ -1651,13 +1657,16 @@ class AsistenteEspacialViewSet(viewsets.ViewSet):
             try:
                 inmueble = Inmueble.objects.get(id=inmueble_id)
             except Inmueble.DoesNotExist:
-                pass
+                return Response({'error': 'Inmueble no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         if not inmueble:
-            inmueble = Inmueble.objects.first()
+            return Response({'error': 'Debes indicar el inmueble del recorrido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        foto_360_url = request.data.get('foto_360_url')
-        tour_data = AsistenteEspacialEngine.generar_tour_narrado(inmueble, foto_360_url=foto_360_url)
+        tour_data = AsistenteEspacialEngine.generar_tour_narrado(
+            inmueble,
+            foto_360_url=request.data.get('foto_360_url'),
+            usar_vision=True,
+        )
         return Response(tour_data, status=status.HTTP_200_OK)
 
 
@@ -1744,13 +1753,34 @@ class CalidadVidaViewSet(viewsets.ViewSet):
             tour_narrado = []
 
 
-        # 3. Cotas y Dimensiones de Realidad Aumentada
-        cotas_ar = [
-            {'elemento': 'Puerta de Acceso', 'yaw': 180.0, 'pitch': -5.0, 'ancho': 0.90, 'alto': 2.10, 'cota': '0.90m x 2.10m'},
-            {'elemento': 'Ventanal Panorámico', 'yaw': -35.0, 'pitch': 3.0, 'ancho': 4.50, 'alto': 2.20, 'cota': '4.50m x 2.20m (Luz Natural)'},
-            {'elemento': 'Área Social Living', 'yaw': 75.0, 'pitch': -10.0, 'largo': 2.20, 'ancho': 0.90, 'cota': '2.20m x 0.90m (Sofá Principal)'},
-            {'elemento': 'Altura de Techo', 'yaw': 0.0, 'pitch': 45.0, 'alto': 2.60, 'cota': '2.60m de altura libre'}
-        ]
+        # 3. Cotas de Realidad Aumentada: solo objetos realmente detectados
+        # por visión en los panoramas (analisis_visual cacheado), marcadas
+        # siempre como estimación. Sin análisis -> lista vacía, nunca
+        # dimensiones inventadas.
+        _POS_A_YAW = {
+            'izquierda': -60.0, 'centro-izquierda': -30.0, 'centro': 0.0,
+            'centro-derecha': 30.0, 'derecha': 60.0,
+        }
+        cotas_ar = []
+        for p in panoramas_qs:
+            analisis = getattr(p, 'analisis_visual', None)
+            if not analisis:
+                continue
+            for obj in analisis.get('objetos', []):
+                dim = obj.get('dimension_aprox')
+                if not dim:
+                    continue
+                cotas_ar.append({
+                    'elemento': obj.get('nombre', 'Objeto'),
+                    'panorama_id': p.id,
+                    'yaw': _POS_A_YAW.get((obj.get('posicion') or 'centro').lower(), 0.0),
+                    'pitch': 0.0,
+                    'cota': f"{dim} (aprox.)",
+                    'estimado': True,
+                })
+            if len(cotas_ar) >= 8:
+                break
+        cotas_ar = cotas_ar[:8]
 
         # 4. Calidad de Vida, Walk Score y Pines AR del Barrio
         lat = -17.7833
@@ -1831,21 +1861,69 @@ class CalidadVidaViewSet(viewsets.ViewSet):
         """
         from .services_depth_360 import DepthEstimation360Engine
         import numpy as np
+        import cv2
 
         u1 = float(request.data.get('u1', 0.2))
         v1 = float(request.data.get('v1', 0.5))
         u2 = float(request.data.get('u2', 0.5))
         v2 = float(request.data.get('v2', 0.5))
 
-        # Crear mapa de profundidad base para la escena (640x320)
-        dummy_img = np.full((320, 640, 3), 200, dtype=np.uint8)
-        depth_map = DepthEstimation360Engine.estimar_profundidad_esferica(dummy_img)
+        # La medición debe hacerse sobre la imagen real del panorama, no
+        # sobre una imagen de prueba. Sin panorama real -> error honesto.
+        inmueble_id = request.data.get('inmueble')
+        panorama_id = request.data.get('panorama_id')
+        foto_360_url = request.data.get('foto_360_url')
+
+        pano = None
+        if panorama_id:
+            pano = Multimedia.objects.filter(id=panorama_id, tipo='panorama360').first()
+        if pano is None and inmueble_id:
+            pano = Multimedia.objects.filter(
+                inmueble_id=inmueble_id, tipo='panorama360'
+            ).order_by('orden').first()
+
+        url = str(pano.archivo) if pano else foto_360_url
+        if not url:
+            return Response(
+                {'error': 'No hay un panorama 360° real para medir. La medición requiere la imagen del ambiente.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            if url.startswith('http://') or url.startswith('https://'):
+                import requests as _requests
+                img_bytes = _requests.get(url, timeout=15).content
+            else:
+                rel = url.lstrip('/')
+                if rel.startswith('media/'):
+                    rel = rel[len('media/'):]
+                from django.conf import settings as _settings
+                import os as _os
+                with open(_os.path.join(str(_settings.MEDIA_ROOT), rel), 'rb') as f:
+                    img_bytes = f.read()
+
+            arr = np.frombuffer(img_bytes, np.uint8)
+            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            if img is None:
+                raise ValueError('imagen no decodificable')
+        except Exception:
+            return Response(
+                {'error': 'No se pudo cargar la imagen 360° para medir.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Reducir para acelerar el cálculo de profundidad
+        img = cv2.resize(img, (640, 320))
+        depth_map = DepthEstimation360Engine.estimar_profundidad_esferica(img)
 
         medicion = DepthEstimation360Engine.medir_distancia_3d(
             depth_map,
             (u1, v1),
             (u2, v2)
         )
+        medicion['fuente'] = 'estimacion'
+        medicion['nota'] = 'Medición aproximada calculada sobre la imagen real; puede variar respecto a la medida física.'
+        medicion['panorama_id'] = pano.id if pano else None
         return Response(medicion, status=status.HTTP_200_OK)
 
 

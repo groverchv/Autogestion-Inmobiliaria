@@ -234,6 +234,8 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
 # ─── Groq (IA Generativa) ───────────────────────────────────
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+# Modelo con capacidad de visión para el asistente 360° (analiza panoramas reales)
+GROQ_VISION_MODEL = os.getenv('GROQ_VISION_MODEL', 'meta-llama/llama-4-scout-17b-16e-instruct')
 
 # ─── IA Local (LM Studio) ───────────────────────────────────
 LOCAL_AI_URL = os.getenv('LOCAL_AI_URL', 'http://192.168.56.1:1234/v1/chat/completions')

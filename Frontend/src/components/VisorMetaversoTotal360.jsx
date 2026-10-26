@@ -53,10 +53,11 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   // Estados del Guía Turístico Virtual con Voz y NLP
   const [tourActivo, setTourActivo] = useState(false);
   const [pasoTourIndex, setPasoTourIndex] = useState(0);
-  const [locucionActual, setLocucionActual] = useState('Bienvenido al Metaverso Inmobiliario 360°. Toca el micrófono para hablar conmigo.');
+  const [locucionActual, setLocucionActual] = useState('Bienvenido al recorrido virtual. Toca el micrófono para preguntarme lo que quieras.');
   const [audioVozActivo, setAudioVozActivo] = useState(true);
   const [escuchandoVoz, setEscuchandoVoz] = useState(false);
   const [procesandoNLP, setProcesandoNLP] = useState(false);
+  const [fuenteRespuesta, setFuenteRespuesta] = useState(null);
 
   const audioFondoRef = useRef(null);
   const tourTimerRef = useRef(null);
@@ -102,20 +103,42 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   }, [audioVozActivo]);
 
   // ─── Reconocimiento de Voz Espacial y NLP (STT) ──────────────────────────
+  const FUENTE_LABEL = {
+    vision_ia: 'Según la imagen que estás viendo',
+    datos_propiedad: 'Dato registrado de la propiedad',
+    estimacion: 'Estimación aproximada',
+    no_determinado: null,
+  };
+
   const procesarConsultaVoz = useCallback(async (transcripcion) => {
     if (!transcripcion || transcripcion.trim().length === 0) return;
     setProcesandoNLP(true);
+    setFuenteRespuesta(null);
     setLocucionActual(`Analizando con IA: "${transcripcion}"...`);
 
     try {
+      let yawActual = null;
+      let pitchActual = null;
+      try {
+        if (viewerInstanceRef.current?.getYaw) {
+          yawActual = viewerInstanceRef.current.getYaw();
+          pitchActual = viewerInstanceRef.current.getPitch();
+        }
+      } catch {}
+
       const res = await api.post('/inmuebles/asistente-espacial/consultar/', {
         consulta: transcripcion,
-        inmueble_id: inmuebleId
+        inmueble: inmuebleId,
+        foto_360_url: escenaActiva?.archivo || null,
+        panorama_id: typeof escenaActiva?.id === 'number' ? escenaActiva.id : null,
+        yaw: yawActual,
+        pitch: pitchActual,
       });
 
       const data = res.data;
       if (data && data.respuesta) {
         setLocucionActual(data.respuesta);
+        setFuenteRespuesta(FUENTE_LABEL[data.fuente] || null);
 
         // Si la IA nos devuelve orientación de cámara hacia el objeto
         if (data.camara_360 && viewerInstanceRef.current?.lookAt) {
@@ -130,18 +153,17 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
       }
     } catch (e) {
       console.error("Error en consulta espacial NLP:", e);
-      const fallback = "He recibido tu consulta. Puedes preguntarme por medidas de puertas, ventanas, o consultar el precio y comodidades.";
+      const fallback = "No pude procesar tu consulta en este momento. Intenta de nuevo o pregúntame por el precio y los datos de la propiedad.";
       setLocucionActual(fallback);
       hablarEnVozAlta(fallback);
     } finally {
       setProcesandoNLP(false);
     }
-  }, [inmuebleId, hablarEnVozAlta]);
+  }, [inmuebleId, escenaActiva, hablarEnVozAlta]);
 
   // ─── Carga de Datos del Metaverso (Endpoint Consolidado <50ms) ────────────
   useEffect(() => {
     let cancelado = false;
-    const panoramaFallback = { id: 'demo', archivo: '/pano_prueba.png', descripcion: 'Ambiente de demostración', orden: 0, hotspots: [] };
 
     const cargarMetaverso = async () => {
       try {
@@ -151,12 +173,12 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
         if (cancelado) return;
         const data = res.data;
         setMetaData(data);
-        setEscenaActiva(data?.panoramas?.length > 0 ? data.panoramas[0] : panoramaFallback);
+        setEscenaActiva(data?.panoramas?.length > 0 ? data.panoramas[0] : null);
       } catch (e) {
         console.error('Error cargando metaverso-datos:', e);
         if (cancelado) return;
-        setMetaData({ titulo: 'Recorrido Inmobiliario Total' });
-        setEscenaActiva(panoramaFallback);
+        setMetaData({ titulo: 'Recorrido Inmobiliario' });
+        setEscenaActiva(null);
       } finally {
         if (!cancelado) setLoading(false);
       }
@@ -217,11 +239,11 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
     if (!recognitionRef.current) {
       // Fallback para navegadores sin SpeechRecognition nativo
       const ejemplos = [
-        '¿Cuánto mide la puerta?',
-        '¿Cuánto mide el ventanal?',
-        '¿Cuánto es de largo el living?',
-        '¿Cabe un sofá de 2 metros?',
-        '¿Cuál es el precio y comodidades?'
+        '¿Qué se ve en esta habitación?',
+        '¿Cuál es el precio?',
+        '¿Cuántos dormitorios tiene?',
+        '¿Qué muebles hay aquí?',
+        '¿Cuánto mide la puerta?'
       ];
       const consulta = ejemplos[Math.floor(Math.random() * ejemplos.length)];
       procesarConsultaVoz(consulta);
@@ -358,19 +380,38 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   }, [hablarEnVozAlta, metaData, escenaActiva]);
 
 
-  const toggleTourNarrado = () => {
+  const toggleTourNarrado = async () => {
     if (tourActivo) {
       clearTimeout(tourTimerRef.current);
       window.speechSynthesis?.cancel();
       restaurarMusica();
       setTourActivo(false);
-      setLocucionActual("Tour pausado. Continúa navegando a tu ritmo.");
+      setLocucionActual("Recorrido pausado. Continúa navegando a tu ritmo.");
+      return;
+    }
+
+    // Pedir el tour al backend: analiza las imágenes reales y cachea el
+    // análisis; si falla, usamos el tour básico ya cargado.
+    setLocucionActual("Preparando el recorrido guiado...");
+    let pasos = [];
+    try {
+      const res = await api.post('/inmuebles/asistente-espacial/iniciar-tour/', {
+        inmueble: inmuebleId,
+        foto_360_url: escenaActiva?.archivo || null,
+      });
+      pasos = res.data?.pasos || [];
+    } catch (e) {
+      console.error('Error obteniendo tour:', e);
+    }
+    if (pasos.length === 0) {
+      pasos = metaData?.tour_narrado?.pasos || [];
+    }
+
+    if (pasos.length > 0) {
+      setTourActivo(true);
+      ejecutarPasoTour(pasos, 0);
     } else {
-      const pasos = metaData?.tour_narrado?.pasos || [];
-      if (pasos.length > 0) {
-        setTourActivo(true);
-        ejecutarPasoTour(pasos, 0);
-      }
+      setLocucionActual("Esta propiedad aún no tiene ambientes para recorrer.");
     }
   };
 
@@ -379,15 +420,15 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
       <div className="modal-recorrido__loader">
         <div className="modal-recorrido__loader-card">
           <div className="modal-recorrido__spinner"></div>
-          <h3>Cargando Metaverso Espacial 360° + RA...</h3>
-          <p>Sincronizando modelos, cotas métricas y entorno urbano</p>
+          <h3>Preparando el recorrido virtual...</h3>
+          <p>Cargando las fotos 360° de la propiedad</p>
         </div>
       </div>
     );
   }
 
-  const walkScore = metaData?.calidad_vida?.walk_score || 85;
-  const clasificacion = metaData?.calidad_vida?.clasificacion || "Muy Caminable";
+  const walkScore = metaData?.calidad_vida?.walk_score;
+  const clasificacion = metaData?.calidad_vida?.clasificacion;
 
   return (
     <div
@@ -427,20 +468,22 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
         }}>
           <div>
             <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Spatial Hub 360° + RA
+              Recorrido virtual
             </span>
             <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#fff', fontWeight: 700 }}>
-              {metaData?.titulo || 'Recorrido Inmobiliario Total'}
+              {metaData?.titulo || 'Recorrido de la propiedad'}
             </h3>
           </div>
 
-          <div style={{ borderLeft: '1px solid #334155', paddingLeft: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Footprints size={16} color="#10b981" />
-            <div>
-              <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#10b981' }}>{walkScore}/100</span>
-              <span style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8' }}>{clasificacion}</span>
+          {walkScore != null && (
+            <div style={{ borderLeft: '1px solid #334155', paddingLeft: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Footprints size={16} color="#10b981" />
+              <div>
+                <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#10b981' }}>{walkScore}/100</span>
+                <span style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8' }}>{clasificacion}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Botón Salir */}
@@ -468,6 +511,22 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
       {/* ─── Contenedor del Visor 360° ─── */}
       <div ref={viewerRef} style={{ width: '100vw', height: '100vh' }} id="metaverso-pannellum-viewer" />
 
+      {/* Estado vacío honesto: la propiedad no tiene panoramas reales */}
+      {!escenaActiva && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '14px',
+          background: '#090d16', zIndex: 5, padding: '24px', textAlign: 'center'
+        }}>
+          <Eye size={40} color="#475569" />
+          <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.1rem' }}>Esta propiedad aún no tiene recorrido 360°</h3>
+          <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem', maxWidth: '420px', lineHeight: 1.5 }}>
+            Cuando el propietario suba fotos panorámicas podrás recorrer cada ambiente desde aquí.
+            Mientras tanto, puedes preguntarme por el precio, los dormitorios y los datos de la publicación.
+          </p>
+        </div>
+      )}
+
       {/* ─── Banner de Locución y Guía Virtual con Voz ─── */}
       {capaGuiaVoz && (
         <div style={{
@@ -493,10 +552,15 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
               <Volume2 size={20} />
             </div>
             <div>
-              <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>GUÍA TURÍSTICO EN TIEMPO REAL</span>
+              <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>Tu guía del recorrido</span>
               <p style={{ margin: 0, fontSize: '0.88rem', color: '#f8fafc', fontWeight: 500, lineHeight: '1.4' }}>
                 {locucionActual}
               </p>
+              {fuenteRespuesta && (
+                <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                  {fuenteRespuesta}
+                </span>
+              )}
             </div>
           </div>
 
@@ -518,7 +582,7 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
               }}
             >
               {tourActivo ? <Pause size={16} /> : <Play size={16} />}
-              <span>{tourActivo ? 'Pausar Tour' : 'Iniciar Tour Narrado'}</span>
+              <span>{tourActivo ? 'Pausar recorrido' : 'Iniciar recorrido guiado'}</span>
             </button>
 
             <button
