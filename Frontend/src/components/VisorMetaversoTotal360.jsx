@@ -14,7 +14,6 @@ import {
   Maximize2, 
   Minimize2,
   Box,
-  MapPin,
   HelpCircle,
   Radio,
   Mic,
@@ -47,7 +46,6 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
 
   // Capas activas de Realidad Aumentada (HUD)
   const [capaCotasAR, setCapaCotasAR] = useState(true);
-  const [capaPinesBarrioAR, setCapaPinesBarrioAR] = useState(true);
   const [capaGuiaVoz, setCapaGuiaVoz] = useState(true);
 
   // Estados del Guía Turístico Virtual con Voz y NLP
@@ -332,21 +330,8 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
       });
     }
 
-    // Añadir Pines AR del Barrio si está activado
-    if (capaPinesBarrioAR && metaData.pines_ar_barrio) {
-      metaData.pines_ar_barrio.forEach(p => {
-        hotspots.push({
-          pitch: p.pitch,
-          yaw: p.yaw,
-          type: 'info',
-          text: `[Entorno] ${p.nombre} a ${p.distancia_m}m (~${p.minutos_a_pie} min a pie)`,
-          createTooltipFunc: (div) => {
-            div.className = 'pnlm-barrio-ar-pin';
-            div.innerHTML = `<div class="barrio-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> <span>${p.nombre} (<strong>${p.distancia_m}m / ~${p.minutos_a_pie} min</strong>)</span></div>`;
-          }
-        });
-      });
-    }
+    // Los pines del barrio no se pintan sobre el panorama: el usuario
+    // consulta los servicios cercanos preguntándole al asistente.
 
     try {
       const viewer = window.pannellum.viewer(viewerRef.current, {
@@ -374,7 +359,7 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
         viewerInstanceRef.current = null;
       }
     };
-  }, [loading, metaData, escenaActiva, capaCotasAR, capaPinesBarrioAR]);
+  }, [loading, metaData, escenaActiva, capaCotasAR]);
 
   // ─── Ejecutar Tour Narrado Cinemático Dinámico ─────────────────────────────
   const ejecutarPasoTour = useCallback((pasos, index) => {
@@ -711,26 +696,8 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
           <span>Medidas (aprox.)</span>
         </button>
 
-        {/* Toggle Pines Barrio AR */}
-        <button
-          onClick={() => setCapaPinesBarrioAR(!capaPinesBarrioAR)}
-          style={{
-            background: capaPinesBarrioAR ? 'rgba(16,185,129,0.2)' : 'transparent',
-            border: `1px solid ${capaPinesBarrioAR ? '#10b981' : 'transparent'}`,
-            color: capaPinesBarrioAR ? '#10b981' : '#94a3b8',
-            padding: '6px 12px',
-            borderRadius: '16px',
-            fontSize: '0.78rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <MapPin size={14} />
-          <span>¿Qué hay cerca?</span>
-        </button>
+        {/* Los nombres del barrio ya no se pintan sobre el panorama;
+            el asistente los responde por texto/voz cuando se pregunta */}
 
         {/* Selector de Habitaciones si hay más de 1 */}
         {metaData?.panoramas && metaData.panoramas.length > 1 && (

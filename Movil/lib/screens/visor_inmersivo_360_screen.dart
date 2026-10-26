@@ -40,7 +40,6 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
 
   // Capas de Realidad Aumentada (HUD)
   bool _mostrarCotasAR = true;
-  bool _mostrarPinesBarrioAR = true;
   Map<String, dynamic>? _metaversoDatos;
 
   // Estados del Guía Turístico Virtual con Voz
@@ -457,11 +456,6 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
             onPressed: () => setState(() => _mostrarCotasAR = !_mostrarCotasAR),
           ),
           IconButton(
-            icon: Icon(_mostrarPinesBarrioAR ? Icons.place : Icons.place_outlined, color: _mostrarPinesBarrioAR ? const Color(0xFF38BDF8) : Colors.grey),
-            tooltip: 'Capa Entorno Urbano AR',
-            onPressed: () => setState(() => _mostrarPinesBarrioAR = !_mostrarPinesBarrioAR),
-          ),
-          IconButton(
             icon: Icon(_gyroEnabled ? Icons.screen_rotation : Icons.screen_lock_rotation, color: Colors.white),
             tooltip: 'Giroscopio / Sensores',
             onPressed: () => setState(() => _gyroEnabled = !_gyroEnabled),
@@ -862,18 +856,6 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
           pitch: c['pitch'],
           icon: Icons.straighten,
           label: '${c['elemento']}: ${c['cota']}',
-        );
-      }
-    }
-
-    // Pines del entorno urbano (POIs reales del barrio)
-    if (_mostrarPinesBarrioAR && _metaversoDatos?['pines_ar_barrio'] != null) {
-      for (final p in (_metaversoDatos!['pines_ar_barrio'] as List)) {
-        addPin(
-          yaw: p['yaw'],
-          pitch: p['pitch'],
-          icon: Icons.place,
-          label: '${p['nombre']} · ${p['distancia_m']}m (~${p['minutos_a_pie']} min a pie)',
         );
       }
     }
