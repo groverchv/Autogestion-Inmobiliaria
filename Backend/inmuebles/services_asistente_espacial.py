@@ -97,8 +97,60 @@ class AsistenteEspacialEngine:
             return None
 
     @classmethod
+    def _llamar_gemini(
+        cls,
+        sistema: str,
+        prompt_usuario: str,
+        img_b64: Optional[str] = None,
+        max_tokens: int = 250,
+    ) -> Optional[str]:
+        """Llamada a la API nativa de Gemini (generateContent).
+        Soporta texto + imagen inline; con img_b64=None funciona como LLM
+        de solo texto."""
+        api_key = getattr(settings, 'GEMINI_API_KEY', '')
+        if not api_key:
+            return None
+        model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
+        url = (
+            f'https://generativelanguage.googleapis.com/v1beta/models/'
+            f'{model}:generateContent?key={api_key}'
+        )
+        parts = [{"text": prompt_usuario}]
+        if img_b64:
+            parts.append({
+                "inline_data": {"mime_type": "image/jpeg", "data": img_b64},
+            })
+        try:
+            resp = requests.post(
+                url,
+                json={
+                    "system_instruction": {"parts": [{"text": sistema}]},
+                    "contents": [{"parts": parts}],
+                    "generationConfig": {
+                        "maxOutputTokens": max_tokens,
+                        "temperature": 0.2,
+                    },
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=30,
+            )
+            if resp.status_code != 200:
+                logger.warning('Gemini respondió %s: %s', resp.status_code, resp.text[:200])
+                return None
+            data = resp.json()
+            candidatos = data.get('candidates') or []
+            if not candidatos:
+                return None
+            partes = (candidatos[0].get('content') or {}).get('parts') or []
+            texto = ''.join(p.get('text', '') for p in partes).strip()
+            return texto or None
+        except Exception as e:
+            logger.warning('Error llamando a Gemini: %s', e)
+            return None
+
+    @classmethod
     def _proveedores_vision(cls) -> list:
-        """Cadena de proveedores de visión: Groq -> VLM local (LM Studio)."""
+        """Cadena OpenAI-compatible de respaldo: Groq -> VLM local (LM Studio)."""
         proveedores = []
         if getattr(settings, 'GROQ_API_KEY', ''):
             proveedores.append((GROQ_API_URL, settings.GROQ_API_KEY, GROQ_VISION_MODEL))
@@ -138,6 +190,11 @@ class AsistenteEspacialEngine:
                 "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
             })
 
+        # Cadena de visión: Gemini -> Groq -> VLM local (LM Studio)
+        texto = cls._llamar_gemini(sistema, prompt_usuario, img_b64, max_tokens)
+        if texto:
+            return texto
+
         messages = [
             {"role": "system", "content": sistema},
             {"role": "user", "content": content},
@@ -151,7 +208,10 @@ class AsistenteEspacialEngine:
 
     @classmethod
     def _texto_groq(cls, prompt_usuario: str, sistema: str, max_tokens: int = 60) -> Optional[str]:
-        """LLM de solo texto (clasificador de intención). Groq -> local."""
+        """LLM de solo texto (clasificador de intención). Gemini -> Groq -> local."""
+        texto = cls._llamar_gemini(sistema, prompt_usuario, None, max_tokens)
+        if texto:
+            return texto
         proveedores = []
         if getattr(settings, 'GROQ_API_KEY', ''):
             proveedores.append((GROQ_API_URL, settings.GROQ_API_KEY, 'llama-3.3-70b-versatile'))
@@ -332,7 +392,7 @@ class AsistenteEspacialEngine:
             })
 
         # ── 0b. Navegación a un ambiente (hotspots reales) ────────────────
-        if any(k in t for k in ('llevame', 'llévame', 'muestrame', 'muéstrame', 'ir a', 've a', 'vamos a')):
+        if re.search(r'\b(?:ll[eé]vame|mu[eé]strame)\b', t) or re.search(r'\b(?:ir|ve|vamos)\s+a\b', t):
             destino = cls._buscar_hotspot_destino(pano, t)
             if destino:
                 return _con_sugerencias({

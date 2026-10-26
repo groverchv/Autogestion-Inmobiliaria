@@ -139,6 +139,17 @@ class AsistenteEspacialTestCase(TestCase):
 
     # ── Nunca hay afirmaciones fabricadas ────────────────────────────────
 
+    @patch.object(AsistenteEspacialEngine, '_llamar_chat', return_value=None)
+    @patch.object(AsistenteEspacialEngine, '_llamar_gemini', return_value='Veo una mesa de centro.')
+    @patch.object(AsistenteEspacialEngine, '_url_a_base64', return_value='aW1hZ2Vu')
+    def test_gemini_es_primer_proveedor_de_vision(self, _img, mock_gemini, _chat):
+        r = AsistenteEspacialEngine.procesar_consulta(
+            '¿qué se ve aquí?', self.inmueble, foto_360_url='https://ejemplo.com/pano_sala.jpg'
+        )
+        self.assertEqual(r['fuente'], 'vision_ia')
+        self.assertIn('mesa de centro', r['respuesta'])
+        mock_gemini.assert_called_once()
+
     @patch.object(AsistenteEspacialEngine, '_vision_groq', return_value=None)
     @patch.object(AsistenteEspacialEngine, '_url_a_base64', return_value='aW1hZ2Vu')
     def test_vision_caida_no_inventa_objetos(self, _img, _vision):
