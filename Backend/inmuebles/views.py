@@ -229,6 +229,103 @@ class MultimediaViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(media)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['post'], url_path='stitch-360',
+            parser_classes=[MultiPartParser, FormParser])
+    def stitch_360(self, request):
+        """
+        Une N fotos capturadas en secuencia en una panorámica real usando
+        OpenCV Stitcher (detección de features, homografía y blending).
+        Reemplaza la concatenación lado-a-lado del cliente que dejaba
+        costuras duras y bordes duplicados.
+        """
+        import io
+        import cloudinary
+        import cloudinary.uploader
+        import numpy as np
+        import cv2
+        from django.conf import settings
+
+        inmueble_id = request.data.get('inmueble')
+        files = request.FILES.getlist('fotos')
+        if not inmueble_id or len(files) < 2:
+            return Response(
+                {'error': 'Se requieren el inmueble y al menos 2 fotos.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not Inmueble.objects.filter(id=inmueble_id).exists():
+            return Response({'error': 'Inmueble no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        imagenes = []
+        for f in files:
+            try:
+                arr = np.frombuffer(f.read(), np.uint8)
+                img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+                if img is None:
+                    continue
+                h, w = img.shape[:2]
+                if h > 900:  # limitar tamaño para acelerar el stitching
+                    img = cv2.resize(img, (int(w * 900 / h), 900))
+                # cv2.Stitcher aborta a nivel nativo con arrays no
+                # contiguos; forzar contigüidad evita tumbar el worker.
+                imagenes.append(np.ascontiguousarray(img))
+            except Exception:
+                continue
+
+        if len(imagenes) < 2:
+            return Response(
+                {'error': 'No se pudieron decodificar las fotos.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
+            resultado, pano = stitcher.stitch(imagenes)
+        except Exception:
+            resultado, pano = cv2.Stitcher_ERR_NEED_MORE_IMGS, None
+
+        if resultado != cv2.Stitcher_OK or pano is None:
+            return Response(
+                {
+                    'error': 'El stitching automático no pudo unir las fotos. Intenta capturar con más traslape entre tomas.',
+                    'codigo_stitch': int(resultado),
+                },
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+
+        ok, buf = cv2.imencode('.jpg', pano, [int(cv2.IMWRITE_JPEG_QUALITY), 88])
+        if not ok:
+            return Response({'error': 'No se pudo codificar la panorámica.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        cloudinary.config(
+            cloud_name=settings.CLOUDINARY_STORAGE['CLOUD_NAME'],
+            api_key=settings.CLOUDINARY_STORAGE['API_KEY'],
+            api_secret=settings.CLOUDINARY_STORAGE['API_SECRET'],
+        )
+        upload = cloudinary.uploader.upload(
+            io.BytesIO(buf.tobytes()), resource_type='image',
+        )
+        url = upload.get('secure_url')
+        if not url:
+            return Response({'error': 'No se pudo subir la panorámica.'},
+                            status=status.HTTP_502_BAD_GATEWAY)
+
+        ultimo_orden = Multimedia.objects.filter(
+            inmueble_id=inmueble_id, tipo='panorama360',
+        ).order_by('-orden').values_list('orden', flat=True).first() or 0
+
+        media = Multimedia.objects.create(
+            inmueble_id=inmueble_id,
+            tipo='panorama360',
+            principal=False,
+            archivo=url,
+            descripcion=request.data.get('descripcion', 'Recorrido 360°'),
+            orden=ultimo_orden + 1,
+        )
+        serializer = self.get_serializer(media)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class HotspotViewSet(viewsets.ModelViewSet):
     """CRUD para puntos de transición (hotspots) entre panoramas."""

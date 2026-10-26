@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -23,22 +25,32 @@ class _Captura360ScreenState extends State<Captura360Screen> {
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   StreamSubscription<GyroscopeEvent>? _gyroSubscription;
+  StreamSubscription<AccelerometerEvent>? _accelSubscription;
+  StreamSubscription<MagnetometerEvent>? _magSubscription;
 
   // Modos de captura: 16 tomas estándar o 32 tomas esféricas (con inclinación vertical)
   int _modoTomas = 16; // 16 o 32
   int _puntosCompletados = 0;
   final List<Uint8List> _capturas = [];
   
-  // Orientación en tiempo real por giroscopio
+  // Orientación en tiempo real: giroscopio (reactivo) corregido con
+  // acelerómetro (pitch absoluto por gravedad) y magnetómetro (rumbo
+  // absoluto) — sin referencia absoluta el yaw deriva en segundos.
   double _currentYaw = 0.0;   // Ángulo horizontal en grados [0 - 360]
   double _currentPitch = 0.0; // Inclinación vertical en grados [-90 a +90]
   double _targetYaw = 0.0;
   double _targetPitch = 0.0;
+  double _accelPitch = 0.0;
+  double _accelX = 0.0, _accelY = 0.0, _accelZ = 0.0;
+  double _magYaw = 0.0;
+  bool _magDisponible = false;
+  bool _accelDisponible = false;
   
   bool _isCapturing = false;
   bool _isStitching = false;
   bool _isUploading = false;
   Uint8List? _panoramicResult;
+  String? _panoServidorUrl;
   String? _statusMessage;
 
   @override
@@ -67,15 +79,59 @@ class _Captura360ScreenState extends State<Captura360Screen> {
         if (mounted) setState(() {});
       }
 
+      // Pitch absoluto por gravedad (no deriva): inclinación del borde
+      // superior del móvil hacia adelante/atrás en modo retrato.
+      _accelSubscription = accelerometerEventStream().listen((event) {
+        _accelX = event.x;
+        _accelY = event.y;
+        _accelZ = event.z;
+        final roll = math.atan2(event.y, event.z);
+        _accelPitch =
+            math.atan2(-event.x, event.y * math.sin(roll) + event.z * math.cos(roll)) *
+                180.0 /
+                math.pi;
+        _accelDisponible = true;
+      });
+
+      // Rumbo absoluto por magnetómetro con compensación de inclinación
+      // (heading de brújula en grados 0-360).
+      _magSubscription = magnetometerEventStream().listen((event) {
+        final roll = math.atan2(_accelY, _accelZ);
+        final pitchC = math.atan2(
+          -_accelX,
+          _accelY * math.sin(roll) + _accelZ * math.cos(roll),
+        );
+        final xh = event.x * math.cos(pitchC) + event.z * math.sin(pitchC);
+        final yh = event.x * math.sin(roll) * math.sin(pitchC) +
+            event.y * math.cos(roll) -
+            event.z * math.sin(roll) * math.cos(pitchC);
+        if (xh == 0 && yh == 0) return;
+        var heading = math.atan2(-yh, xh) * 180.0 / math.pi;
+        if (heading < 0) heading += 360.0;
+        _magYaw = heading;
+        _magDisponible = true;
+      });
+
       _gyroSubscription = gyroscopeEventStream().listen((GyroscopeEvent event) {
         final double deltaYaw = event.y * (180.0 / 3.14159) * 0.02;
         final double deltaPitch = event.x * (180.0 / 3.14159) * 0.02;
         if (mounted) {
           setState(() {
-            _currentYaw = (_currentYaw + deltaYaw) % 360.0;
+            _currentYaw += deltaYaw;
+            // Filtro complementario: corrección suave hacia el rumbo
+            // magnético absoluto para eliminar la deriva del giroscopio.
+            if (_magDisponible) {
+              final err = ((_magYaw - _currentYaw + 540.0) % 360.0) - 180.0;
+              _currentYaw += err * 0.03;
+            }
+            _currentYaw = _currentYaw % 360.0;
             if (_currentYaw < 0) _currentYaw += 360.0;
 
-            _currentPitch = (_currentPitch + deltaPitch).clamp(-75.0, 75.0);
+            _currentPitch += deltaPitch;
+            if (_accelDisponible) {
+              _currentPitch = 0.95 * _currentPitch + 0.05 * _accelPitch;
+            }
+            _currentPitch = _currentPitch.clamp(-75.0, 75.0);
           });
         }
       });
@@ -87,6 +143,8 @@ class _Captura360ScreenState extends State<Captura360Screen> {
   @override
   void dispose() {
     _gyroSubscription?.cancel();
+    _accelSubscription?.cancel();
+    _magSubscription?.cancel();
     _cameraController?.dispose();
     super.dispose();
   }
@@ -112,7 +170,15 @@ class _Captura360ScreenState extends State<Captura360Screen> {
 
     try {
       final XFile photo = await _cameraController!.takePicture();
-      final bytes = await photo.readAsBytes();
+      var bytes = await photo.readAsBytes();
+      // Downscale a 900px de alto: reduce RAM (32 tomas) y el upload
+      // al backend sin afectar la calidad visible del resultado.
+      final decoded = img.decodeImage(bytes);
+      if (decoded != null && decoded.height > 900) {
+        bytes = Uint8List.fromList(
+          img.encodeJpg(img.copyResize(decoded, height: 900), quality: 85),
+        );
+      }
       _capturas.add(bytes);
 
       setState(() {
@@ -155,14 +221,43 @@ class _Captura360ScreenState extends State<Captura360Screen> {
   Future<void> _procesarPanoramica() async {
     setState(() {
       _isStitching = true;
-      _statusMessage = 'Uniendo $_modoTomas tomas con algoritmo esférico...';
+      _statusMessage = 'Uniendo $_modoTomas tomas con stitching real...';
     });
 
+    // 1) Stitching real en el backend (OpenCV: homografía + blending)
     try {
-      final panorama = await ImageStitcherService.stitchSphericalPanoramas(
-        _capturas,
-        columns: _modoTomas == 32 ? 16 : 16,
-        rows: _modoTomas == 32 ? 2 : 1,
+      final api = context.read<AuthProvider>().apiService;
+      final res = await api.stitchPanorama360(
+        inmuebleId: widget.inmueble.id,
+        captures: _capturas,
+        descripcion: 'Recorrido 360 - ${widget.inmueble.titulo}',
+      );
+      if (!mounted) return;
+      if (res != null && res['archivo'] != null) {
+        setState(() {
+          _panoServidorUrl = res['archivo'].toString();
+          _isStitching = false;
+          _statusMessage = null;
+        });
+        return;
+      }
+      setState(() {
+        _statusMessage =
+            'El servidor no pudo unirlas; uniendo en el dispositivo...';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = 'Sin conexión al servidor; uniendo localmente...';
+      });
+    }
+
+    // 2) Fallback: stitcher local de concatenación en un isolate
+    //    (fuera del hilo de UI; inferior al stitching real de OpenCV)
+    try {
+      final panorama = await compute(
+        stitchSphericalIsolate,
+        {'imgs': _capturas, 'columns': 16, 'rows': _modoTomas == 32 ? 3 : 1},
       );
       if (!mounted) return;
       setState(() {
@@ -233,13 +328,14 @@ class _Captura360ScreenState extends State<Captura360Screen> {
       _targetPitch = 0.0;
       _capturas.clear();
       _panoramicResult = null;
+      _panoServidorUrl = null;
       _statusMessage = null;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_panoramicResult != null) {
+    if (_panoramicResult != null || _panoServidorUrl != null) {
       return _buildVistaPreviaResult();
     }
 
@@ -480,13 +576,20 @@ class _Captura360ScreenState extends State<Captura360Screen> {
             child: Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.memory(
-                  _panoramicResult!,
-                  fit: BoxFit.contain,
-                ),
+                child: _panoServidorUrl != null
+                    ? Image.network(_panoServidorUrl!, fit: BoxFit.contain)
+                    : Image.memory(_panoramicResult!, fit: BoxFit.contain),
               ),
             ),
           ),
+          if (_panoServidorUrl != null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 4),
+              child: Text(
+                'Unida con stitching real (OpenCV) y publicada',
+                style: TextStyle(color: Color(0xFF10B981), fontSize: 12),
+              ),
+            ),
           Container(
             padding: const EdgeInsets.all(20),
             color: const Color(0xFF1E293B),
@@ -505,14 +608,19 @@ class _Captura360ScreenState extends State<Captura360Screen> {
                 const SizedBox(width: 14),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _isUploading ? null : _subirAlBackend,
+                    onPressed: _panoServidorUrl != null
+                        ? () => Navigator.of(context).pop()
+                        : (_isUploading ? null : _subirAlBackend),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0284C7),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: _isUploading
                         ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Guardar y Publicar 360°', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        : Text(
+                            _panoServidorUrl != null ? 'Listo' : 'Guardar y Publicar 360°',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
                   ),
                 ),
               ],

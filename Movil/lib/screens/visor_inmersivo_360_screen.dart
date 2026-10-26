@@ -1081,63 +1081,47 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
 
 
   Widget _buildVRDualView() {
-
-    final alignX = (_yaw / math.pi).clamp(-1.0, 1.0);
+    // Pseudo-estéreo: cada ojo mira un sector ligeramente distinto del
+    // panorama (separación ~4°) para simular la envolvente de un visor
+    // Cardboard sobre la imagen equirectangular plana.
+    const double eyeOffset = 0.07; // radianes de yaw por ojo
+    final alignXL = ((_yaw - eyeOffset) / math.pi).clamp(-1.0, 1.0);
+    final alignXR = ((_yaw + eyeOffset) / math.pi).clamp(-1.0, 1.0);
     final alignY = _pitch.clamp(-1.0, 1.0);
+
+    Widget ojo(double alignX) => Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Transform(
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    // ignore: deprecated_member_use
+                    ..scale(_fov, _fov, 1.0),
+                  alignment: Alignment.center,
+                  child: Image.network(
+                    _panoramaActualUrl.isNotEmpty
+                        ? _panoramaActualUrl
+                        : widget.panoramaUrl,
+                    fit: BoxFit.cover,
+                    alignment: Alignment(alignX, alignY),
+                  ),
+                ),
+              ),
+              const Center(
+                child: Icon(Icons.add, color: Colors.white38, size: 24),
+              ),
+            ],
+          ),
+        );
 
     return Stack(
       children: [
         Row(
           children: [
-            // Ojo Izquierdo
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Transform(
-                      transform: Matrix4.identity()
-                        ..setEntry(3, 2, 0.001)
-                        // ignore: deprecated_member_use
-                        ..scale(_fov, _fov, 1.0),
-                      alignment: Alignment.center,
-                      child: Image.network(
-                        widget.panoramaUrl,
-                        fit: BoxFit.cover,
-                        alignment: Alignment(alignX, alignY),
-                      ),
-                    ),
-                  ),
-                  const Center(
-                    child: Icon(Icons.add, color: Colors.white38, size: 24),
-                  ),
-                ],
-              ),
-            ),
+            ojo(alignXL),
             Container(width: 2, color: Colors.white24),
-            // Ojo Derecho
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Transform(
-                      transform: Matrix4.identity()
-                        ..setEntry(3, 2, 0.001)
-                        // ignore: deprecated_member_use
-                        ..scale(_fov, _fov, 1.0),
-                      alignment: Alignment.center,
-                      child: Image.network(
-                        widget.panoramaUrl,
-                        fit: BoxFit.cover,
-                        alignment: Alignment(alignX, alignY),
-                      ),
-                    ),
-                  ),
-                  const Center(
-                    child: Icon(Icons.add, color: Colors.white38, size: 24),
-                  ),
-                ],
-              ),
-            ),
+            ojo(alignXR),
           ],
         ),
 

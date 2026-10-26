@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
@@ -664,6 +665,49 @@ class ApiService {
     return null;
   }
 
+  // ─── Stitching 360° real en el backend (OpenCV Stitcher) ────────────────
+  /// Envía las tomas crudas al servidor, que las une con homografía +
+  /// blending y crea la Multimedia panorama360. Devuelve el registro
+  /// creado, {'error': ...} si el stitching falló, o null si hay error
+  /// de red (el cliente puede caer al stitcher local como fallback).
+  Future<Map<String, dynamic>?> stitchPanorama360({
+    required int inmuebleId,
+    required List<Uint8List> captures,
+    String descripcion = 'Recorrido 360°',
+  }) async {
+    final token = await getToken();
+    try {
+      final uri = Uri.parse('$_baseUrl/inmuebles/multimedia/stitch-360/');
+      final request = http.MultipartRequest('POST', uri);
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.fields['inmueble'] = inmuebleId.toString();
+      request.fields['descripcion'] = descripcion;
+      for (int i = 0; i < captures.length; i++) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'fotos',
+            captures[i],
+            filename: 'toma_$i.jpg',
+          ),
+        );
+      }
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return decoded is Map<String, dynamic> ? decoded : null;
+      }
+      if (decoded is Map<String, dynamic>) {
+        return {'error': decoded['error'] ?? 'Error del servidor'};
+      }
+      return {'error': 'Error del servidor (${response.statusCode})'};
+    } catch (e) {
+      return null; // sin conexión -> fallback local
+    }
+  }
+
   Future<bool> uploadPanorama360({
     required int inmuebleId,
     required List<int> imageBytes,
@@ -674,7 +718,7 @@ class ApiService {
       inmuebleId: inmuebleId,
       fileBytes: imageBytes,
       filename: filename,
-      tipo: 'panorama_360',
+      tipo: 'panorama360',
       descripcion: titulo,
     );
     return res != null;
