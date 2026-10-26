@@ -50,6 +50,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   Timer? _tourTimer;
   String _locucionActual = '';
   String? _fuenteRespuesta;
+  String? _notaRespuesta;
   List<String> _sugerencias = [];
   bool _procesandoNLP = false;
   late FlutterTts _flutterTts;
@@ -440,6 +441,14 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                                   style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontStyle: FontStyle.italic),
                                 ),
                               ),
+                            if (_notaRespuesta != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  _notaRespuesta!,
+                                  style: const TextStyle(color: Color(0xFFFBBF24), fontSize: 10, fontStyle: FontStyle.italic),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -553,6 +562,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     setState(() {
       _procesandoNLP = true;
       _fuenteRespuesta = null;
+      _notaRespuesta = null;
       _locucionActual = 'Analizando tu pregunta: "$consulta"...';
     });
 
@@ -578,17 +588,41 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
         _animarCamaraHacia(targetYaw: targetYaw, targetPitch: targetPitch, targetFov: 1.15);
       }
 
+      // Movimiento relativo de cámara decidido por el orquestador ("gira a la derecha")
+      if (res['camara_relativa'] != null) {
+        final rel = res['camara_relativa'] as Map<String, dynamic>;
+        final dyaw = (rel['dyaw'] as num? ?? 0).toDouble() * math.pi / 180.0;
+        final dpitch = (rel['dpitch'] as num? ?? 0).toDouble() / 45.0;
+        setState(() {
+          _yaw += dyaw;
+          if (_yaw > math.pi) _yaw -= 2 * math.pi;
+          if (_yaw < -math.pi) _yaw += 2 * math.pi;
+          _pitch = (_pitch + dpitch).clamp(-1.0, 1.0);
+          if (rel['zoom'] == 'in') _fov = (_fov * 1.3).clamp(0.6, 2.5);
+          if (rel['zoom'] == 'out') _fov = (_fov / 1.3).clamp(0.6, 2.5);
+        });
+      }
+
       setState(() {
         _procesandoNLP = false;
         _locucionActual = respuestaTexto;
         _fuenteRespuesta = fuente;
+        _notaRespuesta = res['nota'] as String?;
         if (res['sugerencias'] is List && (res['sugerencias'] as List).isNotEmpty) {
           _sugerencias = (res['sugerencias'] as List).map((e) => e.toString()).toList();
         }
       });
 
       // Decir la respuesta en voz alta a través de los altavoces / auriculares
-      _hablarEnVozAlta(respuestaTexto);
+      _hablarEnVozAlta(respuestaTexto + (res['nota'] != null ? ' ${res['nota']}' : ''));
+
+      // Acciones de negocio: "quiero visitarlo" cierra el visor y vuelve a la
+      // ficha, donde está el botón de Pedir visita.
+      if (res['accion'] is Map && res['accion']['tipo'] == 'cerrar_visor') {
+        Timer(const Duration(milliseconds: 2600), () {
+          if (mounted) Navigator.of(context).maybePop();
+        });
+      }
 
       // Auto-ocultar el banner de locución después de 9 segundos
       Timer(const Duration(seconds: 9), () {
@@ -596,6 +630,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
           setState(() {
             _locucionActual = '';
             _fuenteRespuesta = null;
+            _notaRespuesta = null;
           });
         }
       });
