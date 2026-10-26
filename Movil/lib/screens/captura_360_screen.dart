@@ -53,6 +53,12 @@ class _Captura360ScreenState extends State<Captura360Screen> {
   String? _panoServidorUrl;
   String? _statusMessage;
 
+  // Captura automática: la foto se dispara sola al mantener la mira
+  // alineada ~700 ms (el botón manual sigue disponible).
+  bool _capturaAuto = true;
+  DateTime? _alineadoDesde;
+  static const _esperaAutoMs = 700;
+
   @override
   void initState() {
     super.initState();
@@ -133,6 +139,7 @@ class _Captura360ScreenState extends State<Captura360Screen> {
             }
             _currentPitch = _currentPitch.clamp(-75.0, 75.0);
           });
+          _verificarCapturaAutomatica();
         }
       });
     } catch (e) {
@@ -147,6 +154,34 @@ class _Captura360ScreenState extends State<Captura360Screen> {
     _magSubscription?.cancel();
     _cameraController?.dispose();
     super.dispose();
+  }
+
+  // Dispara la foto sola cuando la mira está alineada y estable.
+  void _verificarCapturaAutomatica() {
+    if (!_capturaAuto ||
+        _isCapturing ||
+        _isStitching ||
+        _puntosCompletados >= _modoTomas ||
+        _capturas.length >= _modoTomas) {
+      _alineadoDesde = null;
+      return;
+    }
+    if (!_estaAlineado()) {
+      _alineadoDesde = null;
+      return;
+    }
+    final ahora = DateTime.now();
+    _alineadoDesde ??= ahora;
+    if (ahora.difference(_alineadoDesde!).inMilliseconds >= _esperaAutoMs) {
+      _alineadoDesde = null;
+      _capturarPuntoActual();
+    }
+  }
+
+  bool _estaAlineado() {
+    double diffYaw = (_targetYaw - _currentYaw).abs();
+    if (diffYaw > 180) diffYaw = 360 - diffYaw;
+    return diffYaw < 8.0 && (_targetPitch - _currentPitch).abs() < 10.0;
   }
 
   void _cambiarModoTomas(int tomas) {
@@ -339,13 +374,7 @@ class _Captura360ScreenState extends State<Captura360Screen> {
       return _buildVistaPreviaResult();
     }
 
-    // Diferencia angular hacia el objetivo
-    double diffYaw = (_targetYaw - _currentYaw).abs();
-    if (diffYaw > 180) diffYaw = 360 - diffYaw;
-    final bool isAlineadoHorizontal = diffYaw < 8.0;
-    
-    final bool isAlineadoVertical = (_targetPitch - _currentPitch).abs() < 10.0;
-    final bool isAlineado = isAlineadoHorizontal && isAlineadoVertical;
+    final bool isAlineado = _estaAlineado();
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -396,14 +425,16 @@ class _Captura360ScreenState extends State<Captura360Screen> {
                       ),
                     ),
                     if (_capturas.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: DropdownButton<int>(
+                      Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: DropdownButton<int>(
                           value: _modoTomas,
                           dropdownColor: const Color(0xFF1E293B),
                           underline: const SizedBox(),
@@ -417,6 +448,40 @@ class _Captura360ScreenState extends State<Captura360Screen> {
                             if (val != null) _cambiarModoTomas(val);
                           },
                         ),
+                          ),
+                          const SizedBox(height: 6),
+                          // Toggle captura automática al alinearse
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _capturaAuto = !_capturaAuto),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _capturaAuto
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.25)
+                                    : Colors.black54,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _capturaAuto
+                                      ? const Color(0xFF10B981)
+                                      : Colors.white24,
+                                ),
+                              ),
+                              child: Text(
+                                _capturaAuto ? 'AUTO' : 'MANUAL',
+                                style: TextStyle(
+                                  color: _capturaAuto
+                                      ? const Color(0xFF10B981)
+                                      : Colors.white70,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       )
                     else
                       IconButton(
@@ -484,7 +549,9 @@ class _Captura360ScreenState extends State<Captura360Screen> {
                   ),
                   child: Text(
                     isAlineado
-                        ? '¡Perfecto! Mantén firme y captura'
+                        ? (_capturaAuto
+                            ? '¡Perfecto! Mantén firme, capturando...'
+                            : '¡Perfecto! Mantén firme y captura')
                         : (_targetPitch > 10
                             ? 'Inclina hacia ARRIBA (Techo)'
                             : (_targetPitch < -10

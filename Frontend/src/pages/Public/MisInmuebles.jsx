@@ -56,6 +56,9 @@ const MisInmuebles = () => {
   const [preview360, setPreview360] = useState([]);
   const [existing360, setExisting360] = useState([]);
   const [meta360, setMeta360] = useState([]); // [{piso: '', habitacion: ''}, ...]
+  // Stitching real: fotos sueltas de UN ambiente -> panorámica en el servidor
+  const [fotosStitch, setFotosStitch] = useState([]);
+  const [metaStitch, setMetaStitch] = useState({ piso: '', habitacion: '' });
   const [existingMusica, setExistingMusica] = useState(null);
   const [archivoMusica, setArchivoMusica] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({ uploading: false, message: '', current: 0, total: 0 });
@@ -410,6 +413,36 @@ const MisInmuebles = () => {
     setMeta360(prev => prev.filter((_, i) => i !== indexToRemove));
   };
 
+  // Fotos sueltas para stitching real en el servidor (OpenCV). No se
+  // valida proporción 2:1 porque son tomas parciales, no panorámicas.
+  const handleFotosStitchChange = async (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    if (selectedFiles.length === 0) return;
+    setUploadProgress({ uploading: true, message: 'Optimizando fotos para stitching...', current: 0, total: selectedFiles.length });
+    const procesadas = [];
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      setUploadProgress(prev => ({ ...prev, current: i + 1 }));
+      try {
+        const blob = await imageCompression(file, {
+          maxSizeMB: 1.2,
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+          initialQuality: 0.85,
+        });
+        procesadas.push(new File([blob], file.name, { type: file.type }));
+      } catch {
+        procesadas.push(file);
+      }
+    }
+    setUploadProgress({ uploading: false, message: '', current: 0, total: 0 });
+    setFotosStitch(prev => [...prev, ...procesadas]);
+  };
+
+  const removeFotoStitch = (indexToRemove) => {
+    setFotosStitch(prev => prev.filter((_, i) => i !== indexToRemove));
+  };
+
   const handleEdit = async (inm) => {
     try {
       setLoading(true);
@@ -446,6 +479,8 @@ const MisInmuebles = () => {
       setArchivos360([]);
       setPreview360([]);
       setMeta360([]);
+      setFotosStitch([]);
+      setMetaStitch({ piso: '', habitacion: '' });
       setMediaToDelete([]);
       setShowModal(true);
     } catch (err) {
@@ -547,6 +582,25 @@ const MisInmuebles = () => {
         setUploadProgress({ uploading: false, message: '', current: 0, total: 0 });
       }
 
+      // Stitching real en el servidor: fotos sueltas -> panorámica OpenCV
+      if (fotosStitch.length >= 2) {
+        setUploadProgress({ uploading: true, message: `Uniendo ${fotosStitch.length} fotos en panorámica 360°...`, current: 1, total: 1 });
+        const stitchForm = new FormData();
+        stitchForm.append('inmueble', nuevoInmuebleId);
+        fotosStitch.forEach(f => stitchForm.append('fotos', f));
+        const descStitch = `${metaStitch.piso.trim()} | ${metaStitch.habitacion.trim()}`.replace(/^\s*\|\s*|\s*\|\s*$/g, '');
+        stitchForm.append('descripcion', descStitch || 'Recorrido 360°');
+        try {
+          await api.post('/inmuebles/multimedia/stitch-360/', stitchForm, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        } catch (err) {
+          const msgErr = err.response?.data?.error || err.message;
+          alert(`No se pudieron unir las fotos en panorámica: ${msgErr}\n\nIntenta con tomas con más traslape entre ellas.`);
+        }
+        setUploadProgress({ uploading: false, message: '', current: 0, total: 0 });
+      }
+
       // Subir archivo de música si se ha seleccionado uno nuevo
       if (archivoMusica) {
         if (existingMusica) {
@@ -587,6 +641,8 @@ const MisInmuebles = () => {
       setArchivos360([]);
       setPreview360([]);
       setMeta360([]);
+      setFotosStitch([]);
+      setMetaStitch({ piso: '', habitacion: '' });
       fetchData(); // Recargar
       showAlert({
         title: editingId ? '¡Propiedad actualizada!' : '¡Propiedad publicada!',
@@ -1334,6 +1390,78 @@ const MisInmuebles = () => {
                       marginBottom: '16px'
                     }}
                   />
+
+                  {/* Unir fotos sueltas en panorámica (stitching real del servidor) */}
+                  <div style={{
+                    border: '1px dashed rgba(56, 189, 248, 0.4)',
+                    borderRadius: '10px',
+                    padding: '14px',
+                    marginBottom: '16px',
+                    background: 'rgba(56, 189, 248, 0.04)'
+                  }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text)', margin: '0 0 6px', fontWeight: 600 }}>
+                      ¿No tienes una panorámica lista?
+                    </p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '0 0 10px', lineHeight: 1.4 }}>
+                      Selecciona <strong>varias fotos de un mismo ambiente</strong> tomadas girando en el mismo punto (con traslape entre ellas). El servidor las unirá automáticamente en una panorámica 360°.
+                    </p>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleFotosStitchChange}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-border, rgba(148,163,184,0.3))',
+                        background: 'var(--color-surface)',
+                        cursor: 'pointer',
+                        fontSize: '0.82rem',
+                        marginBottom: '10px'
+                      }}
+                    />
+                    {fotosStitch.length > 0 && (
+                      <div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                          {fotosStitch.map((f, i) => (
+                            <span key={i} style={{
+                              fontSize: '0.72rem', background: 'var(--color-surface)',
+                              border: '1px solid rgba(56,189,248,0.4)', borderRadius: '6px',
+                              padding: '3px 8px', color: 'var(--color-text-secondary)',
+                              display: 'inline-flex', alignItems: 'center', gap: '6px'
+                            }}>
+                              {i + 1}. {f.name.slice(0, 18)}{f.name.length > 18 ? '…' : ''}
+                              <button type="button" onClick={() => removeFotoStitch(i)}
+                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 0, fontSize: '0.9rem', lineHeight: 1 }}>×</button>
+                            </span>
+                          ))}
+                        </div>
+                        {fotosStitch.length < 2 && (
+                          <p style={{ fontSize: '0.78rem', color: '#fbbf24', margin: '0 0 8px' }}>
+                            Necesitas al menos 2 fotos para unir.
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <input
+                            type="text"
+                            placeholder="Piso (ej: Piso 1)"
+                            value={metaStitch.piso}
+                            onChange={(e) => setMetaStitch(prev => ({ ...prev, piso: e.target.value }))}
+                            style={{ flex: 1, padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--color-border, rgba(148,163,184,0.3))', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.82rem' }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Ambiente (ej: Sala)"
+                            value={metaStitch.habitacion}
+                            onChange={(e) => setMetaStitch(prev => ({ ...prev, habitacion: e.target.value }))}
+                            style={{ flex: 1, padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--color-border, rgba(148,163,184,0.3))', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.82rem' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Previews de nuevos panoramas con edición de metadatos */}
                   {preview360.length > 0 && (
