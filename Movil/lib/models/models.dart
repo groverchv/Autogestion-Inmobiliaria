@@ -116,7 +116,9 @@ class Inmueble {
     String? img = json['imagen_principal'];
     List<Multimedia> galeriaList = [];
     if (json['multimedia'] != null && (json['multimedia'] as List).isNotEmpty) {
-      galeriaList = (json['multimedia'] as List).map((m) => Multimedia.fromJson(m)).toList();
+      galeriaList = (json['multimedia'] as List)
+          .map((m) => Multimedia.fromJson(m))
+          .toList();
       img ??= galeriaList.first.archivoUrl;
     }
 
@@ -129,7 +131,9 @@ class Inmueble {
       ciudadStr = dirMap['ciudad'] ?? '';
       zonaStr = dirMap['zona'] ?? '';
       final calle = dirMap['calle'] ?? '';
-      direccionStr = '$ciudadStr${zonaStr.isNotEmpty ? ', $zonaStr' : ''}${calle.isNotEmpty ? ' ($calle)' : ''}'.trim();
+      direccionStr =
+          '$ciudadStr${zonaStr.isNotEmpty ? ', $zonaStr' : ''}${calle.isNotEmpty ? ' ($calle)' : ''}'
+              .trim();
     } else if (json['direccion'] is String) {
       direccionStr = json['direccion'];
       ciudadStr = json['ciudad'] ?? '';
@@ -141,7 +145,9 @@ class Inmueble {
       precioFormatted = precioFormatted.replaceAll(',', '.');
     }
     final num? p = num.tryParse(precioFormatted);
-    final String precioFinal = p != null ? p.toStringAsFixed(0) : precioFormatted;
+    final String precioFinal = p != null
+        ? p.toStringAsFixed(0)
+        : precioFormatted;
 
     double superficieVal = 0.0;
     if (json['superficie'] != null) {
@@ -176,7 +182,9 @@ class Inmueble {
       propId = json['propietario'];
     } else if (json['propietario'] is Map) {
       propId = json['propietario']['id'];
-      propNombre ??= '${json['propietario']['first_name'] ?? ''} ${json['propietario']['last_name'] ?? ''}'.trim();
+      propNombre ??=
+          '${json['propietario']['first_name'] ?? ''} ${json['propietario']['last_name'] ?? ''}'
+              .trim();
     }
 
     return Inmueble(
@@ -188,7 +196,9 @@ class Inmueble {
       precio: precioFinal,
       ciudad: ciudadStr,
       zona: zonaStr,
-      direccionCompleta: direccionStr.isNotEmpty ? direccionStr : 'Ubicación no especificada',
+      direccionCompleta: direccionStr.isNotEmpty
+          ? direccionStr
+          : 'Ubicación no especificada',
       estado: (json['estado'] ?? 'disponible').toString().toUpperCase(),
       habitaciones: habVal,
       banos: banosVal,
@@ -199,7 +209,9 @@ class Inmueble {
       mascotasPermitidas: json['mascotas_permitidas'] == true,
       imagenPrincipal: img,
       galeria: galeriaList,
-      propietario: json['propietario'] is Map ? Usuario.fromJson(json['propietario']) : null,
+      propietario: json['propietario'] is Map
+          ? Usuario.fromJson(json['propietario'])
+          : null,
       propietarioId: propId,
       propietarioNombre: propNombre,
       isFavorito: json['is_favorito'] == true,
@@ -242,12 +254,14 @@ class Contrato {
     return Contrato(
       id: json['id'] ?? 0,
       codigo: json['codigo'] ?? 'CTR-${json['id']}',
-      tipoNombre: json['tipo_contrato_nombre'] ?? json['tipo_nombre'] ?? 'Contrato',
+      tipoNombre:
+          json['tipo_contrato_nombre'] ?? json['tipo_nombre'] ?? 'Contrato',
       estado: (json['estado'] ?? 'pendiente').toString().toUpperCase(),
       fechaInicio: json['fecha_inicio'] ?? '',
       fechaFin: json['fecha_fin'] ?? '',
       monto: json['monto']?.toString() ?? '0.00',
-      tituloInmueble: json['inmueble_titulo'] ?? json['inmueble']?['titulo'] ?? 'Inmueble',
+      tituloInmueble:
+          json['inmueble_titulo'] ?? json['inmueble']?['titulo'] ?? 'Inmueble',
       clienteNombre: json['cliente_nombre'],
       propietarioNombre: json['propietario_nombre'],
       firmadoPropietario: json['firmado_propietario'] == true,
@@ -283,7 +297,10 @@ class Pago {
       tipoPago: json['tipo_pago_nombre'] ?? json['tipo_pago'] ?? 'General',
       estado: (json['estado'] ?? 'completado').toString().toUpperCase(),
       fechaPago: json['fecha_pago'] ?? json['creado'] ?? '',
-      concepto: json['concepto'] ?? json['descripcion'] ?? 'Pago de servicios inmobiliarios',
+      concepto:
+          json['concepto'] ??
+          json['descripcion'] ??
+          'Pago de servicios inmobiliarios',
       comprobanteUrl: json['comprobante'],
     );
   }
@@ -314,8 +331,10 @@ class Cita {
       fecha: json['fecha'] ?? '',
       hora: json['hora'] ?? '',
       estado: (json['estado'] ?? 'pendiente').toString().toUpperCase(),
-      tituloInmueble: json['inmueble_titulo'] ?? json['inmueble']?['titulo'] ?? 'Inmueble',
-      solicitanteNombre: json['cliente_nombre'] ?? json['usuario_nombre'] ?? 'Usuario',
+      tituloInmueble:
+          json['inmueble_titulo'] ?? json['inmueble']?['titulo'] ?? 'Inmueble',
+      solicitanteNombre:
+          json['cliente_nombre'] ?? json['usuario_nombre'] ?? 'Usuario',
       notas: json['notas'] ?? json['motivo'] ?? '',
     );
   }
@@ -329,6 +348,8 @@ class ChatItem {
   final String ultimoMensaje;
   final String ultimaFecha;
   final int noLeidos;
+  final int? inmuebleId;
+  final String? inmuebleTitulo;
 
   ChatItem({
     required this.id,
@@ -338,14 +359,20 @@ class ChatItem {
     required this.ultimoMensaje,
     required this.ultimaFecha,
     required this.noLeidos,
+    this.inmuebleId,
+    this.inmuebleTitulo,
   });
 
   factory ChatItem.fromJson(Map<String, dynamic> json, int currentUserId) {
     final dynamic p1Raw = json['participante1'];
     final dynamic p2Raw = json['participante2'];
 
-    final int p1Id = p1Raw is Map ? (p1Raw['id'] ?? 0) : (p1Raw is int ? p1Raw : int.tryParse(p1Raw?.toString() ?? '0') ?? 0);
-    final int p2Id = p2Raw is Map ? (p2Raw['id'] ?? 0) : (p2Raw is int ? p2Raw : int.tryParse(p2Raw?.toString() ?? '0') ?? 0);
+    final int p1Id = p1Raw is Map
+        ? (p1Raw['id'] ?? 0)
+        : (p1Raw is int ? p1Raw : int.tryParse(p1Raw?.toString() ?? '0') ?? 0);
+    final int p2Id = p2Raw is Map
+        ? (p2Raw['id'] ?? 0)
+        : (p2Raw is int ? p2Raw : int.tryParse(p2Raw?.toString() ?? '0') ?? 0);
 
     final bool soyP1 = p1Id == currentUserId;
     final int otherId = soyP1 ? p2Id : p1Id;
@@ -357,15 +384,25 @@ class ChatItem {
     if (otherName.trim().isEmpty) {
       final other = soyP1 ? p2Raw : p1Raw;
       if (other is Map) {
-        otherName = '${other['first_name'] ?? ''} ${other['last_name'] ?? ''}'.trim();
+        otherName = '${other['first_name'] ?? ''} ${other['last_name'] ?? ''}'
+            .trim();
         if (otherName.isEmpty) otherName = other['email'] ?? '';
       }
     }
 
     if (otherName.trim().isEmpty) {
-      final otherEmail = soyP1 ? (json['participante2_email'] ?? '') : (json['participante1_email'] ?? '');
+      final otherEmail = soyP1
+          ? (json['participante2_email'] ?? '')
+          : (json['participante1_email'] ?? '');
       otherName = otherEmail.isNotEmpty ? otherEmail : 'Propietario / Usuario';
     }
+
+    final dynamic inmuebleRaw = json['inmueble'];
+    final int? inmuebleId = inmuebleRaw is Map
+        ? (inmuebleRaw['id'] as num?)?.toInt()
+        : (inmuebleRaw is int
+              ? inmuebleRaw
+              : int.tryParse(inmuebleRaw?.toString() ?? ''));
 
     return ChatItem(
       id: json['id'] ?? 0,
@@ -373,8 +410,11 @@ class ChatItem {
       otroUsuarioNombre: otherName.trim(),
       otroUsuarioFoto: json['otro_usuario_foto'],
       ultimoMensaje: json['ultimo_mensaje']?['contenido'] ?? '',
-      ultimaFecha: json['ultimo_mensaje']?['creado'] ?? json['actualizado'] ?? '',
+      ultimaFecha:
+          json['ultimo_mensaje']?['creado'] ?? json['actualizado'] ?? '',
       noLeidos: json['no_leidos'] ?? 0,
+      inmuebleId: inmuebleId,
+      inmuebleTitulo: json['inmueble_titulo'],
     );
   }
 }
@@ -397,7 +437,9 @@ class MensajeItem {
   factory MensajeItem.fromJson(Map<String, dynamic> json) {
     return MensajeItem(
       id: json['id'] ?? 0,
-      remitenteId: json['remitente'] is Map ? json['remitente']['id'] : (json['remitente'] ?? 0),
+      remitenteId: json['remitente'] is Map
+          ? json['remitente']['id']
+          : (json['remitente'] ?? 0),
       contenido: json['contenido'] ?? '',
       fecha: json['creado'] ?? '',
       leido: json['leido'] == true,

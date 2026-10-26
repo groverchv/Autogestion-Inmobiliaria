@@ -9,6 +9,7 @@ import 'mis_favoritos_screen.dart';
 import 'mis_contratos_screen.dart';
 import 'mis_pagos_screen.dart';
 import 'mis_notificaciones_screen.dart';
+import 'finanzas_propietario_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -59,32 +60,79 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Propiedades',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.home_work_outlined, color: AppColors.primary),
-              title: const Text('Mis propiedades', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.home_work_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'Mis propiedades',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _currentIndex = 3);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.calendar_today_outlined, color: AppColors.primary),
-              title: const Text('Mis visitas', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AppColors.success,
+              ),
+              title: const Text(
+                'Mis finanzas',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const MiAgendaScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FinanzasPropietarioScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.favorite_border, color: AppColors.error),
-              title: const Text('Mis favoritos', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'Mis visitas',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const MisFavoritosScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MiAgendaScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.favorite_border,
+                color: AppColors.error,
+              ),
+              title: const Text(
+                'Mis favoritos',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MisFavoritosScreen()),
+                );
               },
             ),
           ],
@@ -124,32 +172,62 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Mi actividad',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.description_outlined, color: AppColors.success),
-              title: const Text('Mis contratos', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.description_outlined,
+                color: AppColors.success,
+              ),
+              title: const Text(
+                'Mis contratos',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _currentIndex = 4);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.payments_outlined, color: AppColors.primary),
-              title: const Text('Mis pagos', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.payments_outlined,
+                color: AppColors.primary,
+              ),
+              title: const Text(
+                'Mis pagos',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const MisPagosScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MisPagosScreen()),
+                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.notifications_none, color: Color(0xFFFBBF24)),
-              title: const Text('Mis avisos', style: TextStyle(color: AppColors.textPrimary)),
+              leading: const Icon(
+                Icons.notifications_none,
+                color: Color(0xFFFBBF24),
+              ),
+              title: const Text(
+                'Mis avisos',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const MisNotificacionesScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MisNotificacionesScreen(),
+                  ),
+                );
               },
             ),
           ],
@@ -175,7 +253,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               children: [
                 // Cabecera Principal de Marca
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   alignment: Alignment.centerLeft,
                   child: Row(
                     children: [
@@ -186,15 +267,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           width: 28,
                           height: 28,
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.primaryGradient,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Icon(Icons.domain, color: Colors.white, size: 18),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.primaryGradient,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.domain,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -216,9 +302,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      _buildTopTabItem(0, Icons.storefront_outlined, Icons.storefront, 'Catálogo'),
-                      _buildTopTabItem(1, Icons.chat_bubble_outline, Icons.chat_bubble, 'Mensajes'),
-                      _buildTopTabItem(2, Icons.person_outline, Icons.person, 'Mi Perfil'),
+                      _buildTopTabItem(
+                        0,
+                        Icons.storefront_outlined,
+                        Icons.storefront,
+                        'Catálogo',
+                      ),
+                      _buildTopTabItem(
+                        1,
+                        Icons.chat_bubble_outline,
+                        Icons.chat_bubble,
+                        'Mensajes',
+                      ),
+                      _buildTopTabItem(
+                        2,
+                        Icons.person_outline,
+                        Icons.person,
+                        'Mi Perfil',
+                      ),
                     ],
                   ),
                 ),
@@ -229,10 +330,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
 
       // ─── Pantalla Activa ───
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
 
       // ─── Barra Inferior con Fondo Oscuro (Propiedades, Trámites) ───
       bottomNavigationBar: Container(
@@ -270,14 +368,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ],
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.textMuted,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTopTabItem(int index, IconData unselectedIcon, IconData selectedIcon, String label) {
+  Widget _buildTopTabItem(
+    int index,
+    IconData unselectedIcon,
+    IconData selectedIcon,
+    String label,
+  ) {
     final isSelected = _currentIndex == index;
 
     return Expanded(
@@ -306,7 +415,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
+                  color: isSelected
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
                 ),
               ),
             ],

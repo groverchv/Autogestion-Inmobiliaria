@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
+import 'contrato_detalle_screen.dart';
 
 class MisContratosScreen extends StatefulWidget {
   const MisContratosScreen({super.key});
@@ -61,16 +62,26 @@ class _MisContratosScreenState extends State<MisContratosScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
     if (_errorMessage != null) {
-      return Center(child: Text('Error: $_errorMessage', style: const TextStyle(color: AppColors.error)));
+      return Center(
+        child: Text(
+          'Error: $_errorMessage',
+          style: const TextStyle(color: AppColors.error),
+        ),
+      );
     }
 
     if (_contratos.isEmpty) {
       return const Center(
-        child: Text('No tienes contratos registrados actualmente.', style: TextStyle(color: AppColors.textSecondary)),
+        child: Text(
+          'No tienes contratos registrados actualmente.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
       );
     }
 
@@ -80,62 +91,109 @@ class _MisContratosScreenState extends State<MisContratosScreen> {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = _contratos[index];
-        final bool isActivo = item.estado.contains('ACTIVO') || item.estado.contains('FIRMADO');
+        final bool isActivo =
+            item.estado.contains('ACTIVO') || item.estado.contains('FIRMADO');
+        final int currentUserId = context.read<AuthProvider>().user?.id ?? 0;
 
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: AppColors.darkCardGradient,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderSubtle),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () async {
+            final recargar = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ContratoDetalleScreen(
+                  contratoId: item.id,
+                  currentUserId: currentUserId,
+                ),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Contrato #${item.id}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: (isActivo ? AppColors.success : AppColors.warning).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: isActivo ? AppColors.success : AppColors.warning),
+            );
+            if (recargar == true) _cargarContratos();
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: AppColors.darkCardGradient,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderSubtle),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Contrato #${item.id}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                    child: Text(
-                      item.estado,
-                      style: TextStyle(color: isActivo ? AppColors.success : AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            (isActivo ? AppColors.success : AppColors.warning)
+                                .withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isActivo
+                              ? AppColors.success
+                              : AppColors.warning,
+                        ),
+                      ),
+                      child: Text(
+                        item.estado,
+                        style: TextStyle(
+                          color: isActivo
+                              ? AppColors.success
+                              : AppColors.warning,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Inmueble: ${item.tituloInmueble}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Inmueble: ${item.tituloInmueble}',
-                style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Monto: ${item.monto}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Vigencia: ${item.fechaInicio} al ${item.fechaFin}',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              ),
-            ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Monto: ${item.monto}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Vigencia: ${item.fechaInicio} al ${item.fechaFin}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

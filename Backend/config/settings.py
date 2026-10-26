@@ -236,6 +236,8 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 # Modelo con capacidad de visión para el asistente 360° (analiza panoramas reales)
 GROQ_VISION_MODEL = os.getenv('GROQ_VISION_MODEL', 'meta-llama/llama-4-scout-17b-16e-instruct')
+# Modelo de texto de Groq (respaldo de la cadena LLM; 'llama-3.3-70b-versatile' fue retirado por Groq)
+GROQ_TEXT_MODEL = os.getenv('GROQ_TEXT_MODEL', 'llama-3.1-8b-instant')
 
 # ─── Google Gemini API ──────────────────────────────────────
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')

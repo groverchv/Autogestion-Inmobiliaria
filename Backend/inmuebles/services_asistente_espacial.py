@@ -129,6 +129,9 @@ class AsistenteEspacialEngine:
                     "generationConfig": {
                         "maxOutputTokens": max_tokens,
                         "temperature": 0.2,
+                        # Sin esto, gemini-2.5-flash gasta el budget en "thinking"
+                        # interno y las respuestas salen cortadas.
+                        "thinkingConfig": {"thinkingBudget": 0},
                     },
                 },
                 headers={"Content-Type": "application/json"},
@@ -214,7 +217,7 @@ class AsistenteEspacialEngine:
             return texto
         proveedores = []
         if getattr(settings, 'GROQ_API_KEY', ''):
-            proveedores.append((GROQ_API_URL, settings.GROQ_API_KEY, 'llama-3.3-70b-versatile'))
+            proveedores.append((GROQ_API_URL, settings.GROQ_API_KEY, getattr(settings, 'GROQ_TEXT_MODEL', 'llama-3.1-8b-instant')))
         local_url = getattr(settings, 'LOCAL_AI_URL', '')
         if local_url:
             proveedores.append((local_url, None, getattr(settings, 'LOCAL_AI_MODEL', 'local-llm')))

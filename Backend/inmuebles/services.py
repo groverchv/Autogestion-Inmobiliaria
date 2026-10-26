@@ -153,31 +153,18 @@ El cliente ha solicitado específicamente las siguientes condiciones adicionales
 Por ejemplo: si el cliente pide "cláusula de renovación de 7 meses", debes redactar formalmente en la sección CLÁUSULAS ESPECIALES o DURACIÓN un texto legal que estipule la posibilidad de renovación por un período de 7 meses adicionales con las condiciones pertinentes.
 """
 
-    # 3. Llamar a la API de Groq
-    api_key = settings.GROQ_API_KEY
-    if not api_key:
-        raise Exception("La API Key de Groq no está configurada en el servidor.")
-    headers_req = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
+    # 3. Generar el texto del contrato con la cadena LLM (Gemini -> Groq -> local)
+    from .services_llm import llm_chat
+    texto_contrato = llm_chat(
+        [
             {"role": "system", "content": "Eres un Abogado Inmobiliario Boliviano experto en redacción de contratos. Tu objetivo es generar contratos legales precisos, formales y completos."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.5,
-        "max_tokens": 4096
-    }
-
-    try:
-        resp = requests.post(GROQ_API_URL, json=payload, headers=headers_req, timeout=60)
-        resp.raise_for_status()
-        texto_contrato = resp.json()['choices'][0]['message']['content']
-    except Exception as e:
-        error_msg = str(e)
-        raise Exception(f"Error al generar contrato con Groq: {error_msg}")
+        max_tokens=4096,
+        temperature=0.5,
+    )
+    if not texto_contrato:
+        raise Exception("El servicio de IA no está disponible en este momento.")
 
     # Limpiar markdown residual
     texto_contrato = texto_contrato.replace('**', '').replace('##', '').replace('# ', '').replace('#', '')
@@ -422,32 +409,15 @@ TU ROL:
 - NO inventes datos que no estén en el contrato
 - Cuando sugieras cláusulas, formúlalas de manera que puedan copiarse directamente al contrato"""
 
-    api_key = settings.GROQ_API_KEY
-    if not api_key:
-        raise Exception("API Key de Groq no configurada.")
-
-    headers_req = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
     # Construir messages: system + historial completo
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(historial)
 
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": messages,
-        "temperature": 0.6,
-        "max_tokens": 1024,
-    }
-
-    try:
-        resp = requests.post(GROQ_API_URL, json=payload, headers=headers_req, timeout=30)
-        resp.raise_for_status()
-        return resp.json()['choices'][0]['message']['content']
-    except Exception as e:
-        raise Exception(f"Error al contactar al asistente IA: {e}")
+    from .services_llm import llm_chat
+    respuesta = llm_chat(messages, max_tokens=1024, temperature=0.6)
+    if not respuesta:
+        raise Exception("El asistente legal no está disponible en este momento.")
+    return respuesta
 
 
 def _analizar_titulo_heuristico(texto: str, propietario_nombre: str) -> dict:
@@ -671,9 +641,13 @@ def verificar_titulo_con_ia(inmueble_id: int, archivo_url: str, usuario, file_by
     verificacion.save()
 
 
-    # 3. Analizar con Groq (o heurístico local si no hay API key configurada)
-    api_key = settings.GROQ_API_KEY
-    if not api_key:
+    # 3. Analizar con IA (cadena Gemini -> Groq -> local; heurístico si no hay proveedor)
+    hay_proveedor_ia = (
+        getattr(settings, 'GROQ_API_KEY', '')
+        or getattr(settings, 'GEMINI_API_KEY', '')
+        or getattr(settings, 'LOCAL_AI_URL', '')
+    )
+    if not hay_proveedor_ia:
         resultado_json = _analizar_titulo_heuristico(texto_extraido, inmueble.propietario.get_full_name() if inmueble.propietario else '')
         fuente_analisis = 'Análisis heurístico local (API Key de Groq no configurada)'
         return _aplicar_resultado_verificacion(verificacion, resultado_json, inmueble, fuente_analisis)
@@ -734,24 +708,19 @@ El JSON de respuesta debe tener EXACTAMENTE esta estructura:
 Retorna ÚNICAMENTE el objeto JSON crudo. Sin comentarios, sin explicaciones, sin bloques ```json```.
 """
 
-    headers_req = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {"role": "system", "content": "Eres un Abogado Registral Boliviano experto. Analizas títulos de propiedad y retornas un objeto JSON estructurado con la evaluación legal."},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.1,
-        "max_tokens": 1500
-    }
-
     try:
-        resp = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers_req, timeout=60)
-        resp.raise_for_status()
-        content = resp.json()['choices'][0]['message']['content'].strip()
+        from .services_llm import llm_chat
+        content = llm_chat(
+            [
+                {"role": "system", "content": "Eres un Abogado Registral Boliviano experto. Analizas títulos de propiedad y retornas un objeto JSON estructurado con la evaluación legal."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1500,
+            temperature=0.1,
+        ) or ''
+        if not content:
+            raise ValueError('Ningún proveedor de IA respondió')
+        content = content.strip()
 
         # Limpiar markdown
         if content.startswith("```json"):
@@ -763,7 +732,7 @@ Retorna ÚNICAMENTE el objeto JSON crudo. Sin comentarios, sin explicaciones, si
         content = content.strip()
 
         resultado_json = json.loads(content)
-        fuente_analisis = 'IA (Groq LLaMA 3.3 70B)'
+        fuente_analisis = 'IA (asistente legal)'
     except Exception as err:
         print(f"Error procesando análisis legal de Groq: {err}")
         # Fallback offline: análisis por reglas sobre el texto OCR
@@ -839,8 +808,7 @@ def crear_contrato_con_ia(propietario, datos: dict, historial_chat: list):
     incluye_servicios_ia = datos.get('incluye_servicios', '')
 
     if historial_chat and len(historial_chat) > 1:
-        api_key = settings.GROQ_API_KEY
-        if api_key:
+        if getattr(settings, 'GROQ_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', ''):
             conversacion_texto = '\n'.join(
                 f"{'Propietario' if m['role'] == 'user' else 'Abogado IA'}: {m['content']}"
                 for m in historial_chat
@@ -868,22 +836,17 @@ Devuelve un JSON con exactamente estas claves (solo el JSON puro, sin bloques de
 Responde SOLO el JSON."""
 
             try:
-                headers_req = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
-                payload = {
-                    "model": "llama-3.3-70b-versatile",
-                    "messages": [
+                from .services_llm import llm_chat
+                content = llm_chat(
+                    [
                         {"role": "system", "content": "Eres un asistente legal boliviano. Extrae condiciones contractuales de conversaciones y responde solo con JSON puro."},
                         {"role": "user", "content": prompt_extraccion}
                     ],
-                    "temperature": 0.2,
-                    "max_tokens": 1024
-                }
-                resp = requests.post(GROQ_API_URL, json=payload, headers=headers_req, timeout=30)
-                resp.raise_for_status()
-                content = resp.json()['choices'][0]['message']['content'].strip()
+                    max_tokens=1024,
+                ) or ''
+                if not content:
+                    raise ValueError('Ningún proveedor de IA respondió')
+                content = content.strip()
                 # Limpiar markdown residual
                 for prefix in ["```json", "```"]:
                     if content.startswith(prefix):
@@ -1016,8 +979,7 @@ def editar_contrato_con_ia(contrato, propietario, datos: dict, historial_chat: l
 
     # Extraer si hay historial
     if historial_chat and len(historial_chat) > 1:
-        api_key = settings.GROQ_API_KEY
-        if api_key:
+        if getattr(settings, 'GROQ_API_KEY', '') or getattr(settings, 'GEMINI_API_KEY', ''):
             conversacion_texto = '\n'.join(
                 f"{'Propietario' if m['role'] == 'user' else 'Abogado IA'}: {m['content']}"
                 for m in historial_chat
@@ -1045,22 +1007,17 @@ Devuelve un JSON con exactamente estas claves (solo el JSON puro, sin bloques de
 Responde SOLO el JSON."""
 
             try:
-                headers_req = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
-                payload = {
-                    "model": "llama-3.3-70b-versatile",
-                    "messages": [
+                from .services_llm import llm_chat
+                content = llm_chat(
+                    [
                         {"role": "system", "content": "Eres un asistente legal boliviano. Extrae condiciones contractuales de conversaciones y responde solo con JSON puro."},
                         {"role": "user", "content": prompt_extraccion}
                     ],
-                    "temperature": 0.2,
-                    "max_tokens": 1024
-                }
-                resp = requests.post(GROQ_API_URL, json=payload, headers=headers_req, timeout=30)
-                resp.raise_for_status()
-                content = resp.json()['choices'][0]['message']['content'].strip()
+                    max_tokens=1024,
+                ) or ''
+                if not content:
+                    raise ValueError('Ningún proveedor de IA respondió')
+                content = content.strip()
                 for prefix in ["```json", "```"]:
                     if content.startswith(prefix):
                         content = content[len(prefix):]

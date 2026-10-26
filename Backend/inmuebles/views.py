@@ -596,10 +596,6 @@ class ContratoViewSet(viewsets.ModelViewSet):
             if not mensajes:
                 return Response({'error': 'Se requieren mensajes.'}, status=400)
 
-            api_key = settings.GROQ_API_KEY
-            if not api_key:
-                return Response({'error': 'API Key de Groq no configurada.'}, status=500)
-
             system_prompt = f"""Eres un abogado especialista en derecho inmobiliario boliviano con 20 años de experiencia.
 Estás ayudando a un PROPIETARIO a crear o editar un contrato para su inmueble.
 
@@ -637,22 +633,10 @@ TU ROL Y MEMORIA:
             messages = [{"role": "system", "content": system_prompt}]
             messages.extend(mensajes)
 
-            payload = {
-                "model": "llama-3.3-70b-versatile",
-                "messages": messages,
-                "temperature": 0.6,
-                "max_tokens": 800,
-            }
-            headers_req = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            resp = http_requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                json=payload, headers=headers_req, timeout=30
-            )
-            resp.raise_for_status()
-            respuesta = resp.json()['choices'][0]['message']['content']
+            from .services_llm import llm_chat
+            respuesta = llm_chat(messages, max_tokens=800, temperature=0.6)
+            if not respuesta:
+                return Response({'error': 'El asistente legal no está disponible en este momento.'}, status=503)
             return Response({'respuesta': respuesta})
 
         except Exception as e:

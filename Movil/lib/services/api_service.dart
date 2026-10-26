@@ -28,9 +28,9 @@ class ApiService {
   }
 
   Map<String, String> _headers(String? token) => {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    'Content-Type': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
   // ─── Autenticación & Perfil ──────────────────────────────────────────
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -49,7 +49,9 @@ class ApiService {
       }
       return data;
     } else {
-      throw Exception(data['detail'] ?? data['error'] ?? 'Credenciales incorrectas');
+      throw Exception(
+        data['detail'] ?? data['error'] ?? 'Credenciales incorrectas',
+      );
     }
   }
 
@@ -121,11 +123,16 @@ class ApiService {
   }
 
   // ─── Catálogo & Inmuebles ────────────────────────────────────────────
-  Future<List<Inmueble>> getCatalogo({String query = '', String tipoOferta = ''}) async {
+  Future<List<Inmueble>> getCatalogo({
+    String query = '',
+    String tipoOferta = '',
+  }) async {
     final token = await getToken();
     String url = '$_baseUrl/inmuebles/lista/?';
     if (query.isNotEmpty) url += 'search=$query&';
-    if (tipoOferta.isNotEmpty && tipoOferta != 'TODOS') url += 'publicaciones__tipo_oferta=${tipoOferta.toLowerCase()}&';
+    if (tipoOferta.isNotEmpty && tipoOferta != 'TODOS') {
+      url += 'publicaciones__tipo_oferta=${tipoOferta.toLowerCase()}&';
+    }
 
     final response = await http.get(Uri.parse(url), headers: _headers(token));
     if (response.statusCode == 200) {
@@ -207,7 +214,9 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
+      List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
       return results.map((item) {
         if (item['inmueble'] is Map) {
           return Inmueble.fromJson(item['inmueble']);
@@ -243,8 +252,12 @@ class ApiService {
     );
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
-      return results.map((t) => {'id': t['id'], 'nombre': t['nombre']?.toString() ?? ''}).toList();
+      final List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
+      return results
+          .map((t) => {'id': t['id'], 'nombre': t['nombre']?.toString() ?? ''})
+          .toList();
     }
     return [];
   }
@@ -260,7 +273,9 @@ class ApiService {
       final data = jsonDecode(utf8.decode(response.bodyBytes));
       return data['id'] as int;
     }
-    throw Exception('No se pudo publicar. Revisa los datos e intenta de nuevo.');
+    throw Exception(
+      'No se pudo publicar. Revisa los datos e intenta de nuevo.',
+    );
   }
 
   Future<void> crearPublicacion({
@@ -291,13 +306,20 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
+      List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
       return results.map((item) => Cita.fromJson(item)).toList();
     }
     return [];
   }
 
-  Future<bool> agendarCita({required int inmuebleId, required String fecha, required String hora, String notas = ''}) async {
+  Future<bool> agendarCita({
+    required int inmuebleId,
+    required String fecha,
+    required String hora,
+    String notas = '',
+  }) async {
     final token = await getToken();
     final response = await http.post(
       Uri.parse('$_baseUrl/inmuebles/citas/'),
@@ -322,10 +344,183 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
+      List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
       return results.map((item) => Contrato.fromJson(item)).toList();
     }
     return [];
+  }
+
+  /// Detalle completo de un contrato (cláusulas, partes, montos).
+  Future<Map<String, dynamic>?> getContratoDetalle(int contratoId) async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/inmuebles/contratos/$contratoId/'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  /// El inquilino acepta/firma el contrato que le fue enviado.
+  Future<Map<String, dynamic>> aceptarContrato(int contratoId) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/inmuebles/contratos/$contratoId/aceptar/'),
+      headers: _headers(token),
+    );
+    return {
+      'ok': response.statusCode == 200,
+      'error': response.statusCode == 200
+          ? null
+          : (jsonDecode(utf8.decode(response.bodyBytes))['error'] ??
+                'No se pudo firmar el contrato'),
+    };
+  }
+
+  /// El inquilino rechaza el contrato indicando el motivo.
+  Future<Map<String, dynamic>> rechazarContrato(
+    int contratoId,
+    String motivo,
+  ) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/inmuebles/contratos/$contratoId/rechazar/'),
+      headers: _headers(token),
+      body: jsonEncode({'motivo': motivo}),
+    );
+    return {
+      'ok': response.statusCode == 200,
+      'error': response.statusCode == 200
+          ? null
+          : (jsonDecode(utf8.decode(response.bodyBytes))['error'] ??
+                'No se pudo rechazar el contrato'),
+    };
+  }
+
+  /// Tipos de contrato disponibles (alquiler, venta, anticrético...).
+  Future<List<dynamic>> getTiposContrato() async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/inmuebles/tipos-contrato/'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      return decoded is Map && decoded.containsKey('results')
+          ? decoded['results'] as List
+          : (decoded is List ? decoded : []);
+    }
+    return [];
+  }
+
+  /// El propietario crea un contrato y lo envía al inquilino (estado 'enviado').
+  Future<Map<String, dynamic>> crearContrato(Map<String, dynamic> datos) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/inmuebles/contratos/crear-con-ia/'),
+      headers: _headers(token),
+      body: jsonEncode(datos),
+    );
+    final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    return {
+      'ok': response.statusCode == 201,
+      'error': response.statusCode == 201
+          ? null
+          : (decoded is Map ? (decoded['error'] ?? 'No se pudo crear el contrato') : 'No se pudo crear el contrato'),
+    };
+  }
+
+  /// Opiniones de usuarios sobre un inmueble.
+  Future<List<dynamic>> getResenas(int inmuebleId) async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/usuarios/resenas/?inmueble=$inmuebleId'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      return decoded is Map && decoded.containsKey('results')
+          ? decoded['results'] as List
+          : (decoded is List ? decoded : []);
+    }
+    return [];
+  }
+
+  /// Promedio y total de reseñas del inmueble.
+  Future<Map<String, dynamic>?> getPromedioResenas(int inmuebleId) async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/usuarios/resenas/promedio/$inmuebleId/'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  /// Publica una reseña (calificación 1-5 + comentario).
+  Future<Map<String, dynamic>> crearResena(int inmuebleId, int calificacion, String comentario) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/usuarios/resenas/'),
+      headers: _headers(token),
+      body: jsonEncode({'inmueble': inmuebleId, 'calificacion': calificacion, 'comentario': comentario}),
+    );
+    return {
+      'ok': response.statusCode == 200 || response.statusCode == 201,
+      'error': response.statusCode == 200 || response.statusCode == 201
+          ? null
+          : 'Ya calificaste este inmueble o hubo un error al enviar tu reseña.',
+    };
+  }
+
+  /// Balance financiero del propietario (KPIs + extracto de pagos).
+  Future<Map<String, dynamic>?> getReportesPropietario() async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/pagos/reportes/?personal=true'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  /// Transacciones Stripe donde el usuario es pagador o propietario.
+  Future<List<dynamic>> getTransacciones() async {
+    final token = await getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/pagos/transacciones/'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      return decoded is Map && decoded.containsKey('results')
+          ? decoded['results'] as List
+          : (decoded is List ? decoded : []);
+    }
+    return [];
+  }
+
+  /// Genera una URL de Stripe Checkout fresca para una transacción pendiente.
+  Future<String?> crearCheckoutUrlTransaccion(int transaccionId) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/pagos/transacciones/$transaccionId/checkout-url/'),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes))['checkout_url']
+          as String?;
+    }
+    return null;
   }
 
   Future<List<Pago>> getMisPagos() async {
@@ -337,7 +532,9 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
+      List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
       return results.map((item) => Pago.fromJson(item)).toList();
     }
     return [];
@@ -353,8 +550,12 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
-      return results.map((item) => ChatItem.fromJson(item, currentUserId)).toList();
+      List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
+      return results
+          .map((item) => ChatItem.fromJson(item, currentUserId))
+          .toList();
     }
     return [];
   }
@@ -368,21 +569,23 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
+      List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
       return results.map((item) => MensajeItem.fromJson(item)).toList();
     }
     return [];
   }
 
-  Future<bool> enviarMensaje({required int chatId, required String contenido}) async {
+  Future<bool> enviarMensaje({
+    required int chatId,
+    required String contenido,
+  }) async {
     final token = await getToken();
     final response = await http.post(
       Uri.parse('$_baseUrl/usuarios/mensajes/'),
       headers: _headers(token),
-      body: jsonEncode({
-        'chat': chatId,
-        'contenido': contenido,
-      }),
+      body: jsonEncode({'chat': chatId, 'contenido': contenido}),
     );
     return response.statusCode == 200 || response.statusCode == 201;
   }
@@ -392,9 +595,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$_baseUrl/usuarios/chats/'),
       headers: _headers(token),
-      body: jsonEncode({
-        'participante2': propietarioId,
-      }),
+      body: jsonEncode({'participante2': propietarioId}),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -414,7 +615,9 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      List results = decoded is Map && decoded.containsKey('results') ? decoded['results'] : (decoded is List ? decoded : []);
+      List results = decoded is Map && decoded.containsKey('results')
+          ? decoded['results']
+          : (decoded is List ? decoded : []);
       return results.map((item) => NotificacionItem.fromJson(item)).toList();
     }
     return [];
@@ -545,11 +748,11 @@ class ApiService {
     int? panoramaId,
   }) async {
     final token = await getToken();
-    final Map<String, dynamic> bodyData = {
-      'consulta': consulta,
-    };
+    final Map<String, dynamic> bodyData = {'consulta': consulta};
     if (inmuebleId != null) bodyData['inmueble'] = inmuebleId;
-    if (fotoUrl != null && fotoUrl.isNotEmpty) bodyData['foto_360_url'] = fotoUrl;
+    if (fotoUrl != null && fotoUrl.isNotEmpty) {
+      bodyData['foto_360_url'] = fotoUrl;
+    }
     if (panoramaId != null) bodyData['panorama_id'] = panoramaId;
 
     try {
@@ -572,9 +775,7 @@ class ApiService {
     String? fotoUrl,
   }) async {
     final token = await getToken();
-    final Map<String, dynamic> bodyData = {
-      'inmueble': inmuebleId,
-    };
+    final Map<String, dynamic> bodyData = {'inmueble': inmuebleId};
     if (fotoUrl != null) bodyData['foto_360_url'] = fotoUrl;
 
     try {
@@ -606,14 +807,11 @@ class ApiService {
         queryParams['lng'] = lng.toString();
       }
 
-      final uri = Uri.parse('$_baseUrl/inmuebles/calidad-vida/evaluar/').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$_baseUrl/inmuebles/calidad-vida/evaluar/',
+      ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: _headers(token),
-      );
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         return jsonDecode(utf8.decode(response.bodyBytes));
@@ -628,14 +826,11 @@ class ApiService {
   Future<Map<String, dynamic>?> obtenerDatosMetaverso(int inmuebleId) async {
     final token = await getToken();
     try {
-      final uri = Uri.parse('$_baseUrl/inmuebles/calidad-vida/metaverso-datos/').replace(
-        queryParameters: {'inmueble': inmuebleId.toString()},
-      );
+      final uri = Uri.parse(
+        '$_baseUrl/inmuebles/calidad-vida/metaverso-datos/',
+      ).replace(queryParameters: {'inmueble': inmuebleId.toString()});
 
-      final response = await http.get(
-        uri,
-        headers: _headers(token),
-      );
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         return jsonDecode(utf8.decode(response.bodyBytes));
@@ -646,7 +841,3 @@ class ApiService {
     return null;
   }
 }
-
-
-
-

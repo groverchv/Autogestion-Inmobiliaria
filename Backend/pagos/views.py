@@ -391,6 +391,62 @@ class TransaccionStripeViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response({'comprobante_url': None, 'mensaje': 'Comprobante no disponible'})
 
+    @action(detail=True, methods=['post'], url_path='checkout-url')
+    def checkout_url(self, request, pk=None):
+        """Re-emite una sesión de Stripe Checkout para una transacción pendiente.
+        Las URLs de checkout expiran a las 24 h; esto permite al pagador
+        (web o móvil) obtener un enlace fresco en cualquier momento."""
+        transaccion = self.get_object()
+        if transaccion.pagador != request.user:
+            return Response(
+                {'error': 'Solo el pagador puede generar el enlace de pago'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        if transaccion.estado != TransaccionStripe.EstadoTransaccion.PENDIENTE:
+            return Response(
+                {'error': 'Esta transacción ya no está pendiente de pago'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': transaccion.moneda,
+                        'product_data': {
+                            'name': transaccion.contrato.inmueble.titulo,
+                            'description': transaccion.descripcion or '',
+                        },
+                        'unit_amount': int(transaccion.monto * 100),
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=f'{settings.FRONTEND_URL}/pago-exitoso?session_id={{CHECKOUT_SESSION_ID}}',
+                cancel_url=f'{settings.FRONTEND_URL}/pago-cancelado?session_id={{CHECKOUT_SESSION_ID}}',
+                metadata={
+                    'contrato_id': str(transaccion.contrato_id),
+                    'pagador_id': str(transaccion.pagador_id),
+                    'propietario_id': str(transaccion.propietario_id),
+                    'tipo_operacion': transaccion.tipo_operacion,
+                    'chat_id': str(transaccion.chat_id) if transaccion.chat_id else '',
+                },
+            )
+            # La sesión anterior queda abandonada; la transacción apunta a la nueva
+            transaccion.stripe_session_id = session.id
+            transaccion.save(update_fields=['stripe_session_id', 'actualizado'])
+            return Response({
+                'checkout_url': session.url,
+                'session_id': session.id,
+                'transaccion_id': transaccion.id,
+            })
+        except stripe.error.StripeError as e:
+            return Response(
+                {'error': f'Error de Stripe: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class ContratosParaPagoView(APIView):
     """
