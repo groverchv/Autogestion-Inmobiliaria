@@ -68,6 +68,12 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   bool _sttDisponible = false;
   bool _escuchando = false;
 
+  // Medidor táctil: dos puntos sobre la imagen -> distancia estimada (backend)
+  bool _modoMedir = false;
+  bool _midiendo = false;
+  final List<Offset> _puntosMedir = [];
+  Size? _imgSize;
+
   // Controlador de Animación para giros cinemáticos suaves
   late AnimationController _animController;
   Animation<double>? _yawAnimation;
@@ -78,6 +84,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   void initState() {
     super.initState();
     _panoramaActualUrl = widget.panoramaUrl;
+    _resolverDimensionesPanorama();
     _cargarDatosMetaverso();
 
     _flutterTts = FlutterTts();
@@ -97,7 +104,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
       });
 
     _gyroSub = gyroscopeEventStream().listen((event) {
-      if (_gyroEnabled && !_tourActivo && mounted) {
+      if (_gyroEnabled && !_tourActivo && !_modoMedir && mounted) {
         setState(() {
           _yaw += event.y * 0.03;
           if (_yaw > math.pi) _yaw -= 2 * math.pi;
@@ -192,6 +199,107 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     });
   }
 
+  // Dimensiones reales del panorama para mapear toques a coordenadas (u, v)
+  void _resolverDimensionesPanorama() {
+    _imgSize = null;
+    if (_panoramaActualUrl.isEmpty) return;
+    final provider = NetworkImage(_panoramaActualUrl);
+    provider.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener((info, _) {
+        if (mounted) {
+          _imgSize = Size(
+            info.image.width.toDouble(),
+            info.image.height.toDouble(),
+          );
+        }
+      }),
+    );
+  }
+
+  // ─── Medidor táctil: toque de pantalla -> (u, v) del panorama equirectangular ───
+  Offset _puntoAUv(Offset p, Size view) {
+    final w = view.width;
+    final h = view.height;
+    // Fallback a proporción equirectangular 2:1 si la imagen aún no resolvió
+    final iw = _imgSize?.width ?? (2 * h);
+    final ih = _imgSize?.height ?? h;
+    final s = math.max(w / iw, h / ih); // BoxFit.cover
+    final rw = iw * s;
+    final rh = ih * s;
+    final ax = (_yaw / math.pi).clamp(-1.0, 1.0);
+    final ay = _pitch.clamp(-1.0, 1.0);
+    final ox = (ax + 1) / 2 * (w - rw);
+    final oy = (ay + 1) / 2 * (h - rh);
+    // Deshacer el zoom (Transform.scale con alignment center)
+    final qx = w / 2 + (p.dx - w / 2) / _fov;
+    final qy = h / 2 + (p.dy - h / 2) / _fov;
+    return Offset(
+      ((qx - ox) / rw).clamp(0.0, 1.0),
+      ((qy - oy) / rh).clamp(0.0, 1.0),
+    );
+  }
+
+  void _registrarPuntoMedicion(Offset localPos, Size viewSize) {
+    if (_midiendo || _puntosMedir.length >= 2) return;
+    setState(() => _puntosMedir.add(localPos));
+    if (_puntosMedir.length == 2) _ejecutarMedicion(viewSize);
+  }
+
+  Future<void> _ejecutarMedicion(Size viewSize) async {
+    final uv1 = _puntoAUv(_puntosMedir[0], viewSize);
+    final uv2 = _puntoAUv(_puntosMedir[1], viewSize);
+    setState(() {
+      _midiendo = true;
+      _fuenteRespuesta = null;
+      _notaRespuesta = null;
+      _locucionActual = 'Midiendo distancia sobre la imagen...';
+    });
+
+    final api = context.read<AuthProvider>().apiService;
+    final res = await api.medirDistancia3d(
+      u1: uv1.dx,
+      v1: uv1.dy,
+      u2: uv2.dx,
+      v2: uv2.dy,
+      inmuebleId: widget.inmuebleId,
+      panoramaId: _panoramaActualId,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _midiendo = false;
+      if (res != null && res['distancia_metros'] != null) {
+        _locucionActual =
+            'Distancia estimada: ${res['medida_formateada'] ?? '${res['distancia_metros']} m'}';
+        _fuenteRespuesta = _fuenteLabels['estimacion'];
+        _notaRespuesta = res['nota'] as String?;
+      } else {
+        _locucionActual =
+            res?['error']?.toString() ?? 'No se pudo medir en esta imagen.';
+        _fuenteRespuesta = null;
+        _notaRespuesta = null;
+      }
+    });
+
+    if (res != null && res['medida_formateada'] != null) {
+      _hablarEnVozAlta(
+        'La distancia estimada es ${res['medida_formateada']}. ${res['nota'] ?? ''}',
+      );
+    }
+  }
+
+  void _alternarModoMedir() {
+    setState(() {
+      _modoMedir = !_modoMedir;
+      _puntosMedir.clear();
+      if (_modoMedir) {
+        _locucionActual = 'Toca dos puntos de la imagen para medir la distancia.';
+        _fuenteRespuesta = null;
+        _notaRespuesta = null;
+      }
+    });
+  }
+
   Future<void> _initTts() async {
     try {
       await _flutterTts.setLanguage('es-ES');
@@ -250,6 +358,8 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
       if (targetPano != null && targetPano['archivo'] != null) {
         _panoramaActualUrl = targetPano['archivo'];
         _panoramaActualId = targetPano['id'];
+        _puntosMedir.clear();
+        _resolverDimensionesPanorama();
       }
     }
 
@@ -306,6 +416,14 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
             },
           ),
           IconButton(
+            icon: Icon(
+              Icons.square_foot,
+              color: _modoMedir ? const Color(0xFF38BDF8) : Colors.grey,
+            ),
+            tooltip: 'Medir distancia (toca dos puntos)',
+            onPressed: _alternarModoMedir,
+          ),
+          IconButton(
             icon: Icon(_mostrarCotasAR ? Icons.straighten : Icons.straighten_outlined, color: _mostrarCotasAR ? const Color(0xFF38BDF8) : Colors.grey),
             tooltip: 'Capa Cotas en RA',
             onPressed: () => setState(() => _mostrarCotasAR = !_mostrarCotasAR),
@@ -328,11 +446,20 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
         ],
       ),
 
-      body: GestureDetector(
-        // Scale maneja tanto paneo (focalPointDelta) como zoom (scale) simultáneamente
-        onScaleUpdate: (details) {
-          if (_tourActivo) _detenerTourVirtual();
-          setState(() {
+      body: LayoutBuilder(
+        builder: (context, constraints) => GestureDetector(
+          // En modo medir los toques registran puntos; el paneo queda pausado
+          onTapUp: _modoMedir
+              ? (d) => _registrarPuntoMedicion(
+                    d.localPosition,
+                    Size(constraints.maxWidth, constraints.maxHeight),
+                  )
+              : null,
+          // Scale maneja tanto paneo (focalPointDelta) como zoom (scale) simultáneamente
+          onScaleUpdate: (details) {
+            if (_modoMedir) return;
+            if (_tourActivo) _detenerTourVirtual();
+            setState(() {
             if (details.scale == 1.0) {
               _yaw -= details.focalPointDelta.dx * 0.005;
               if (_yaw > math.pi) _yaw -= 2 * math.pi;
@@ -457,7 +584,59 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                 ),
               ),
 
+            // ─── Marcadores del medidor táctil ───
+            if (_modoMedir || _puntosMedir.isNotEmpty) ...[
+              if (_puntosMedir.length == 2)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _LineaMedicionPainter(
+                        _puntosMedir[0],
+                        _puntosMedir[1],
+                      ),
+                    ),
+                  ),
+                ),
+              ..._puntosMedir.asMap().entries.map(
+                (e) => Positioned(
+                  left: e.value.dx - 11,
+                  top: e.value.dy - 11,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF38BDF8),
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${e.key + 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (_midiendo)
+                const Positioned(
+                  bottom: 200,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
+                  ),
+                ),
+            ],
+
           ],
+        ),
         ),
       ),
     );
@@ -705,6 +884,8 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                           setState(() {
                             _panoramaActualUrl = p['archivo'];
                             _panoramaActualId = p['id'];
+                            _puntosMedir.clear();
+                            _resolverDimensionesPanorama();
                             if (p['sugerencias'] is List &&
                                 (p['sugerencias'] as List).isNotEmpty) {
                               _sugerencias = (p['sugerencias'] as List)
@@ -900,4 +1081,23 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
       ],
     );
   }
+}
+
+// Línea entre los dos puntos del medidor táctil
+class _LineaMedicionPainter extends CustomPainter {
+  final Offset a;
+  final Offset b;
+  _LineaMedicionPainter(this.a, this.b);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF38BDF8)
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(a, b, paint);
+  }
+
+  @override
+  bool shouldRepaint(_LineaMedicionPainter old) => old.a != a || old.b != b;
 }

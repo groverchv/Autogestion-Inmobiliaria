@@ -793,6 +793,40 @@ class ApiService {
     return null;
   }
 
+  // ─── Medidor táctil 3D sobre el panorama real ────────────────────────────
+  Future<Map<String, dynamic>?> medirDistancia3d({
+    required double u1,
+    required double v1,
+    required double u2,
+    required double v2,
+    int? inmuebleId,
+    int? panoramaId,
+  }) async {
+    final token = await getToken();
+    final Map<String, dynamic> bodyData = {
+      'u1': u1,
+      'v1': v1,
+      'u2': u2,
+      'v2': v2,
+    };
+    if (inmuebleId != null) bodyData['inmueble'] = inmuebleId;
+    if (panoramaId != null) bodyData['panorama_id'] = panoramaId;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/inmuebles/calidad-vida/medir-distancia-3d/'),
+        headers: _headers(token),
+        body: jsonEncode(bodyData),
+      );
+      if (response.statusCode == 200 || response.statusCode == 400) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      // Ignorar errores de red
+    }
+    return null;
+  }
+
   // ─── Índice de Calidad de Vida y Walk Score ──────────────────────────────
   Future<Map<String, dynamic>?> obtenerIndiceCalidadVida({
     required int inmuebleId,
