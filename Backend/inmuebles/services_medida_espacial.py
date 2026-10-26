@@ -45,10 +45,13 @@ class MedidaEspacialEngine:
         'person': 'Persona', 'dog': 'Perro', 'cat': 'Gato',
         'car': 'Vehículo', 'bicycle': 'Bicicleta', 'motorcycle': 'Motocicleta',
         'table': 'Mesa', 'door': 'Puerta', 'window': 'Ventana',
+        'whiteboard': 'Pizarra', 'blackboard': 'Pizarra', 'board': 'Pizarra',
     }
 
     # Sustantivos de consulta → tokens a buscar en el nombre del objeto
     _SINONIMOS_OBJETO = {
+        'pizarra': ['pizarra', 'pizarrón', 'pizarron', 'whiteboard', 'blackboard', 'board'],
+        'pizarron': ['pizarra', 'pizarrón', 'pizarron', 'whiteboard', 'blackboard'],
         'mesa': ['mesa', 'table'],
         'cama': ['cama', 'bed'],
         'silla': ['silla', 'chair', 'sillón', 'sillon'],
@@ -80,6 +83,23 @@ class MedidaEspacialEngine:
         'laptop': ['laptop', 'portátil', 'portatil', 'computadora'],
         'aire': ['aire', 'acondicionado', 'ac', 'split'],
         'ventilador': ['ventilador', 'fan'],
+        'persona': ['persona', 'person', 'gente', 'personas'],
+        'gente': ['persona', 'person', 'gente', 'personas'],
+        'mochila': ['mochila', 'backpack'],
+        'maleta': ['maleta', 'suitcase'],
+        'bicicleta': ['bicicleta', 'bici', 'bicycle'],
+        'vehiculo': ['vehículo', 'vehiculo', 'car', 'auto', 'coche'],
+        'auto': ['vehículo', 'vehiculo', 'car', 'auto', 'coche'],
+        'perro': ['perro', 'dog'],
+        'gato': ['gato', 'cat'],
+        'taza': ['taza', 'cup', 'vaso'],
+        'vaso': ['taza', 'cup', 'vaso'],
+        'botella': ['botella', 'bottle'],
+        'libro': ['libro', 'book'],
+        'portatil': ['portátil', 'portatil', 'laptop', 'computadora'],
+        'teclado': ['teclado', 'keyboard'],
+        'raton': ['ratón', 'raton', 'mouse'],
+        'banca': ['banca', 'bench'],
     }
 
     # ──────────────────── Detección de objetos (px) ────────────────────
@@ -534,16 +554,48 @@ class MedidaEspacialEngine:
             return None
         if not objetos:
             return None
+        return next(iter(cls.buscar_objetos(panorama, texto)), None)
+
+    @staticmethod
+    def _singular(tok: str) -> str:
+        """'sillas'->'silla', 'televisores'->'televisor', 'mesas'->'mesa'."""
+        if tok.endswith('es') and len(tok) > 4:
+            return tok[:-2]
+        if tok.endswith('s') and len(tok) > 3:
+            return tok[:-1]
+        return tok
+
+    @classmethod
+    def objetos_cache(cls, panorama: Any):
+        """objetos_3d cacheados del panorama.
+        None = aún no analizado (dispara el análisis en background);
+        [] = analizado sin objetos detectados."""
+        analisis = getattr(panorama, 'analisis_visual', None) or {}
+        objetos = analisis.get('objetos_3d')
+        if objetos is None:
+            cls.encolar_analisis(panorama)
+            return None
+        return objetos
+
+    @classmethod
+    def buscar_objetos(cls, panorama: Any, texto: str) -> List[Dict[str, Any]]:
+        """Todos los objetos cotizados cuyo nombre responde al sustantivo
+        de la consulta (acepta plurales). [] si no hay coincidencia."""
+        objetos = cls.objetos_cache(panorama)
+        if objetos is None:
+            return []
         t = cls._norm_txt(texto)
-        tokens = set(t.split())
+        tokens = {cls._singular(tok) for tok in t.split()}
         for sust, sinon in cls._SINONIMOS_OBJETO.items():
             if sust in tokens:
-                for o in objetos:
-                    nombre = cls._norm_txt(str(o.get('nombre') or ''))
-                    if any(s in nombre for s in sinon):
-                        return o
-        for o in objetos:  # match directo por nombre
-            nombre = cls._norm_txt(str(o.get('nombre') or ''))
-            if nombre and nombre in t:
-                return o
-        return None
+                hits = [
+                    o for o in objetos
+                    if any(s in cls._norm_txt(str(o.get('nombre') or '')) for s in sinon)
+                ]
+                if hits:
+                    return hits
+        return [
+            o for o in objetos
+            if cls._norm_txt(str(o.get('nombre') or '')) and
+               cls._norm_txt(str(o.get('nombre') or '')) in t
+        ]

@@ -142,28 +142,52 @@ class AsistenteEspacialEngine:
             parts.append({
                 "inline_data": {"mime_type": "image/jpeg", "data": img_b64},
             })
+        # Parámetros de generación compatibles
+        generation_config = {
+            "maxOutputTokens": max_tokens,
+            "temperature": 0.2,
+        }
+        # Solo gemini-2.5-flash soporta thinkingBudget: 0
+        if '2.5' in model:
+            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+
         try:
             resp = requests.post(
                 url,
                 json={
                     "system_instruction": {"parts": [{"text": sistema}]},
                     "contents": [{"parts": parts}],
-                    "generationConfig": {
-                        "maxOutputTokens": max_tokens,
-                        "temperature": 0.2,
-                        # Sin esto, gemini-2.5-flash gasta el budget en "thinking"
-                        # interno y las respuestas salen cortadas.
-                        "thinkingConfig": {"thinkingBudget": 0},
-                    },
+                    "generationConfig": generation_config,
                 },
                 headers={"Content-Type": "application/json"},
                 timeout=12,
             )
             if resp.status_code != 200:
-                logger.warning('Gemini respondió %s: %s', resp.status_code, resp.text[:200])
-                if resp.status_code in (429, 500, 502, 503, 504):
+                logger.warning('Gemini (%s) respondió %s: %s', model, resp.status_code, resp.text[:300])
+                # Si falló por modelo o parámetro (ej: 404 o 400), intentar gemini-1.5-flash
+                if resp.status_code in (400, 404) and model != 'gemini-1.5-flash':
+                    url_alt = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}'
+                    resp_alt = requests.post(
+                        url_alt,
+                        json={
+                            "system_instruction": {"parts": [{"text": sistema}]},
+                            "contents": [{"parts": parts}],
+                            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2},
+                        },
+                        headers={"Content-Type": "application/json"},
+                        timeout=12,
+                    )
+                    if resp_alt.status_code == 200:
+                        resp = resp_alt
+                    else:
+                        logger.warning('Gemini fallback 1.5 respondió %s: %s', resp_alt.status_code, resp_alt.text[:300])
+                        return None
+                elif resp.status_code in (429, 500, 502, 503, 504):
                     marcar_proveedor_caido('gemini')
-                return None
+                    return None
+                else:
+                    return None
+
             data = resp.json()
             candidatos = data.get('candidates') or []
             if not candidatos:
@@ -172,7 +196,7 @@ class AsistenteEspacialEngine:
             texto = ''.join(p.get('text', '') for p in partes).strip()
             return texto or None
         except Exception as e:
-            logger.warning('Error llamando a Gemini: %s', e)
+            logger.warning('Error llamando a Gemini (%s): %s', model, e)
             marcar_proveedor_caido('gemini')
             return None
 
@@ -375,6 +399,98 @@ class AsistenteEspacialEngine:
             partes.append(f"Tipo: {tipo}.")
         return ' '.join(partes)
 
+    @staticmethod
+    def _direccion_relativa(obj_yaw, cam_yaw) -> str:
+        """Dirección del objeto respecto a donde mira el usuario."""
+        if obj_yaw is None or cam_yaw is None:
+            return ''
+        rel = ((float(obj_yaw) - float(cam_yaw) + 540.0) % 360.0) - 180.0
+        if abs(rel) < 35.0:
+            return 'frente a ti'
+        if 35.0 <= rel <= 145.0:
+            return 'a tu derecha'
+        if -145.0 <= rel <= -35.0:
+            return 'a tu izquierda'
+        return 'detrás de ti'
+
+    @classmethod
+    def _analisis_color_luz(cls, pano) -> str:
+        """Colores dominantes e iluminación de la foto real con OpenCV.
+        Devuelve texto honesto o '' si no se pudo analizar."""
+        try:
+            import cv2
+            import numpy as np
+            from .services_auditoria import AuditoriaVisionEngine
+            img = AuditoriaVisionEngine._cargar_cv2_image(str(getattr(pano, 'archivo', '') or ''))
+            if img is None:
+                return ''
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+            brillo = float(hsv[..., 2].mean())
+            sat = float(hsv[..., 1].mean())
+            if brillo < 60:
+                luz = 'bastante oscura'
+            elif brillo < 120:
+                luz = 'con iluminación media'
+            else:
+                luz = 'bien iluminada'
+            # Colores dominantes: kmeans sobre la imagen reducida
+            small = cv2.resize(img, (64, 32)).reshape(-1, 3).astype(np.float32)
+            _, labels, centers = cv2.kmeans(
+                small, 3, None,
+                (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0),
+                3, cv2.KMEANS_PP_CENTERS)
+            orden = np.argsort(np.bincount(labels.flatten()))[::-1]
+            nombres = []
+            for i in orden:
+                n = cls._nombre_color(centers[i])
+                if n and n not in nombres:
+                    nombres.append(n)
+            tonos = ' y '.join(nombres[:2]) if nombres else 'tonos neutros'
+            viveza = 'apagados' if sat < 60 else ('naturales' if sat < 130 else 'intensos')
+            return (
+                f"La foto se ve {luz}, con tonos dominantes {tonos} "
+                f"de saturación {viveza}. Es un análisis automático de la imagen real."
+            )
+        except Exception:
+            return ''
+
+    @staticmethod
+    def _nombre_color(bgr) -> str:
+        """Nombre aproximado de un color BGR (para describir la foto)."""
+        try:
+            import cv2
+            import numpy as np
+            h, s, v = cv2.cvtColor(
+                np.uint8([[bgr]]), cv2.COLOR_BGR2HSV)[0, 0]
+            h, s, v = int(h), int(s), int(v)
+            if v < 45:
+                return 'negro'
+            if s < 35:
+                return 'blanco' if v > 175 else 'gris'
+            if h < 10 or h >= 170:
+                return 'rojo'
+            if h < 22:
+                return 'naranja/marrón'
+            if h < 35:
+                return 'amarillo'
+            if h < 85:
+                return 'verde'
+            if h < 130:
+                return 'azul'
+            return 'violeta'
+        except Exception:
+            return ''
+
+    @staticmethod
+    def _plural(nombre: str) -> str:
+        """'Silla'->'sillas', 'Portátil'->'portátiles', 'Televisor'->'televisores'."""
+        n = nombre.lower()
+        if n.endswith(('l', 'r', 'z', 'd')):
+            return n + 'es'
+        if n.endswith('s'):
+            return n
+        return n + 's'
+
     # ───────────────────────── Consulta principal ─────────────────────────
 
     @classmethod
@@ -469,7 +585,10 @@ class AsistenteEspacialEngine:
             })
 
         # ── 2. Características registradas ────────────────────────────────
-        if any(k in t for k in ('habitacion', 'dormitorio', 'cuarto', 'baño', 'bano', 'mascota', 'garaje', 'parqueo', 'piscina', 'amoblado', 'amueblado')):
+        # Preguntas sobre contenido/apariencia de la foto ("qué muebles hay",
+        # "de qué color") NO son datos de la ficha: se guardan para la visión.
+        es_visual = any(k in t for k in ('mueble', 'objeto', 'color', 'que hay', 'qué hay', 'que se ve', 'qué se ve', 'que ves', 'qué ves', 'que tiene', 'qué tiene'))
+        if not es_visual and any(k in t for k in ('habitacion', 'dormitorio', 'cuarto', 'baño', 'bano', 'mascota', 'garaje', 'parqueo', 'piscina', 'amoblado', 'amueblado')):
             if not inmueble_obj:
                 return cls._sin_inmueble()
             # Solo campos que realmente existen en la ficha. Mascotas y
@@ -598,6 +717,109 @@ class AsistenteEspacialEngine:
                     },
                 })
 
+        # ── 4c. Objetos detectados en la foto (contar / hay / qué hay) ──
+        # Responde desde objetos_3d (YOLO real, ya cacheado): instantáneo,
+        # sin depender de proveedores de visión externos.
+        es_conteo = any(k in t for k in ('cuantas', 'cuantos', 'cuántas', 'cuántos', 'numero de', 'número de', 'cantidad de'))
+        es_listado = any(k in t for k in ('que hay', 'qué hay', 'que objetos', 'qué objetos', 'que muebles', 'qué muebles', 'que ves', 'qué ves', 'que se ve', 'qué se ve', 'que tiene', 'qué tiene', 'que hay aqui', 'qué hay aquí'))
+        es_presencia = bool(re.search(r'\b(hay|habia|había|se ve|ves)\b', t)) and not es_listado
+        if (es_conteo or es_listado or es_presencia) and pano is not None:
+            try:
+                from .services_medida_espacial import MedidaEspacialEngine
+                objetos = MedidaEspacialEngine.objetos_cache(pano)
+            except Exception:
+                objetos = []
+            # None = panorama aún sin analizar: el análisis ya quedó
+            # encolado en background y la pregunta cae a visión, que
+            # responde ya si hay proveedor disponible.
+            if objetos is not None and es_listado and not es_conteo:
+                if objetos:
+                    from collections import Counter
+                    conteo = Counter(str(o.get('nombre') or 'Objeto') for o in objetos)
+                    detalle = ", ".join(
+                        f"{n} {nombre.lower() if n == 1 else cls._plural(nombre)}"
+                        for nombre, n in conteo.most_common())
+                    respuesta = (
+                        f"En esta vista detecto: {detalle}. "
+                        "Detección automática sobre la foto 360°; puedo pasar por alto objetos pequeños u ocultos."
+                    )
+                else:
+                    respuesta = "No detecté objetos identificables en esta foto 360°. Puedo responderte sobre los datos registrados de la propiedad."
+                return _con_sugerencias({
+                    'tipo': 'objetos_detectados',
+                    'fuente': 'deteccion_espacial',
+                    'confianza': 'media',
+                    'respuesta': respuesta,
+                })
+            hits = MedidaEspacialEngine.buscar_objetos(pano, t) if objetos else []
+            if hits:
+                n = len(hits)
+                o = hits[0]
+                nombre = str(o.get('nombre') or 'Objeto')
+                plural = cls._plural(nombre)
+                direccion = cls._direccion_relativa(o.get('yaw'), yaw)
+                dist = o.get('distancia_m')
+                detalle_dir = (f" {direccion}" if direccion else '') + (f", a unos ~{dist} m de ti" if dist else '')
+                if es_conteo:
+                    respuesta = (
+                        f"Veo {n} {nombre.lower() if n == 1 else plural} en esta vista. "
+                        "Conteo automático sobre la foto 360°."
+                    )
+                else:
+                    respuesta = (
+                        f"Sí, hay {n} {nombre.lower() if n == 1 else plural}{detalle_dir}."
+                        if n >= 1 else ''
+                    )
+                return _con_sugerencias({
+                    'tipo': 'presencia_objeto' if not es_conteo else 'conteo_objetos',
+                    'fuente': 'deteccion_espacial',
+                    'confianza': o.get('confianza', 'media'),
+                    'respuesta': respuesta,
+                    'nota': 'Detección automática sobre la imagen real.',
+                    # En presencia de un solo objeto, encender su cota y
+                    # girar la vista hacia él (efecto lentes inteligentes).
+                    'camara_360': None if es_conteo else {
+                        'yaw': o['yaw'], 'pitch': o['pitch'],
+                    },
+                    'ar_overlay': None if es_conteo else {
+                        'elemento': nombre,
+                        'panorama_id': getattr(pano, 'id', None),
+                        'yaw': o['yaw'], 'pitch': o['pitch'],
+                        'yaw0': o['yaw0'], 'yaw1': o['yaw1'],
+                        'pitch0': o['pitch0'], 'pitch1': o['pitch1'],
+                        'span_yaw': o['span_yaw'], 'span_pitch': o['span_pitch'],
+                        'valor': f"~{o.get('ancho_m', '')} m" if o.get('ancho_m') else '',
+                        'tipo': 'vertical' if o['span_pitch'] > o['span_yaw'] * 1.6 else 'horizontal',
+                        'confianza': o.get('confianza', 'media'),
+                        'parcial': o.get('parcial', False),
+                        'duracion_s': 6,
+                    },
+                })
+            # El sustantivo no coincide con nada detectado: honesto, pero
+            # solo si el análisis ya existía (sin caché cae a visión, que
+            # puede ver lo que el detector no alcanzó).
+            if objetos is not None and (es_conteo or es_presencia):
+                return _con_sugerencias({
+                    'tipo': 'presencia_objeto',
+                    'fuente': 'deteccion_espacial',
+                    'confianza': 'media',
+                    'respuesta': "No detecté ese objeto en esta vista 360°; puede estar fuera del encuadre o ser demasiado pequeño para el detector.",
+                })
+
+        # ── 4d. Atributos simples de la imagen (color / iluminación) ──
+        # OpenCV local sobre la foto real: no requiere proveedores externos.
+        es_atributo = any(k in t for k in ('color', 'colores', 'de que color', 'de qué color', 'oscuro', 'oscura', 'claro', 'clara', 'iluminad', 'luz', 'luminoso', 'brillante'))
+        if es_atributo and pano is not None:
+            attr = cls._analisis_color_luz(pano)
+            if attr:
+                return _con_sugerencias({
+                    'tipo': 'atributo_imagen',
+                    'fuente': 'analisis_local',
+                    'confianza': 'media',
+                    'respuesta': attr,
+                    'nota': 'Análisis automático sobre la foto 360° real.',
+                })
+
         # ── 5. Pregunta visual -> visión sobre la imagen real ──────────────
         if pano is None and not pano_url:
             return _con_sugerencias({
@@ -626,10 +848,31 @@ class AsistenteEspacialEngine:
         respuesta = cls._vision_groq(prompt, img_b64)
 
         if not respuesta:
+            extra = ''
+            if pano is not None:
+                try:
+                    from .services_medida_espacial import MedidaEspacialEngine
+                    objetos = MedidaEspacialEngine.objetos_cache(pano) or []
+                except Exception:
+                    objetos = []
+                if objetos:
+                    from collections import Counter
+                    conteo = Counter(str(o.get('nombre') or 'Objeto') for o in objetos)
+                    detalle = ", ".join(
+                        f"{n} {nombre.lower() if n == 1 else cls._plural(nombre)}"
+                        for nombre, n in conteo.most_common())
+                    extra = (
+                        f" Lo que sí detecté en la foto: {detalle}. "
+                        "Puedes preguntarme cuánto miden o cuántos hay."
+                    )
             return _con_sugerencias({
                 'tipo': 'vision_no_disponible',
                 'fuente': 'no_determinado',
-                'respuesta': "No pude analizar la imagen en este momento. Puedo responderte sobre el precio, los ambientes y los datos registrados de la propiedad.",
+                'respuesta': (
+                    "El análisis visual detallado no está disponible ahora mismo "
+                    "(el servicio de visión externo alcanzó su límite de uso)." + extra +
+                    " También puedo responderte sobre el precio, los ambientes y los datos registrados."
+                ),
             })
 
         resultado = {

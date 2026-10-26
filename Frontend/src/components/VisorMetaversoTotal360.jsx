@@ -113,6 +113,10 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
     vision_ia: 'Según la imagen que estás viendo',
     datos_propiedad: 'Dato registrado de la propiedad',
     estimacion: 'Estimación aproximada',
+    medicion_estimada: 'Estimación aproximada sobre la foto',
+    deteccion_espacial: 'Detección automática en la foto',
+    analisis_local: 'Análisis automático de la imagen',
+    comando: null,
     no_determinado: null,
   };
 
