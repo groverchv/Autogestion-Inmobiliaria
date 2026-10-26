@@ -244,6 +244,11 @@ GROQ_TEXT_MODEL = os.getenv('GROQ_TEXT_MODEL', 'openai/gpt-oss-20b')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 # Modelo Gemini con visión para el asistente 360° (primer proveedor de la cadena)
 GEMINI_VISION_MODEL = os.getenv('GEMINI_VISION_MODEL', 'gemini-2.5-flash')
+# Modelos de respaldo si el principal agota cuota (cada uno tiene cuota propia)
+GEMINI_VISION_FALLBACK_MODELS = os.getenv(
+    'GEMINI_VISION_FALLBACK_MODELS',
+    'gemini-flash-lite-latest,gemini-3.5-flash-lite,gemini-3.5-flash',
+)
 
 # ─── IA Local (LM Studio) ───────────────────────────────────
 LOCAL_AI_URL = os.getenv('LOCAL_AI_URL', 'http://192.168.56.1:1234/v1/chat/completions')

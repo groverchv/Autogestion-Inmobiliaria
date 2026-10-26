@@ -40,15 +40,26 @@ def marcar_proveedor_caido(nombre: str) -> None:
         pass
 
 
+def _gemini_modelos() -> list:
+    """Cadena de modelos Gemini a probar en orden. El primero es el
+    configurado; los siguientes son respaldos con cuota independiente."""
+    principal = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
+    extra = getattr(
+        settings, 'GEMINI_VISION_FALLBACK_MODELS',
+        'gemini-flash-lite-latest,gemini-3.5-flash-lite,gemini-3.5-flash',
+    )
+    modelos = []
+    for m in f'{principal},{extra}'.split(','):
+        m = m.strip()
+        if m and m not in modelos:
+            modelos.append(m)
+    return modelos
+
+
 def _gemini(messages: list, max_tokens: int, temperature: float) -> Optional[str]:
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key or not proveedor_activo('gemini'):
         return None
-    model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
-    url = (
-        f'https://generativelanguage.googleapis.com/v1beta/models/'
-        f'{model}:generateContent?key={api_key}'
-    )
     sistema = '\n'.join(m['content'] for m in messages if m.get('role') == 'system')
     contents = [
         {
@@ -60,38 +71,58 @@ def _gemini(messages: list, max_tokens: int, temperature: float) -> Optional[str
     ]
     if not contents:
         return None
-    try:
-        resp = requests.post(
-            url,
-            json={
-                'system_instruction': {'parts': [{'text': sistema}]},
-                'contents': contents,
-                'generationConfig': {
-                    'maxOutputTokens': max_tokens,
-                    'temperature': temperature,
-                    # 2.5-flash gasta tokens en "thinking" interno; sin esto las
-                    # respuestas del asistente salen cortadas a mitad de frase.
-                    'thinkingConfig': {'thinkingBudget': 0},
-                },
-            },
-            headers={'Content-Type': 'application/json'},
-            timeout=12,
+    ultimo_error = None
+    for model in _gemini_modelos():
+        generation_config = {
+            'maxOutputTokens': max_tokens,
+            'temperature': temperature,
+        }
+        # Solo la familia 2.5 soporta thinkingBudget: 0
+        if '2.5' in model:
+            generation_config['thinkingConfig'] = {'thinkingBudget': 0}
+        url = (
+            f'https://generativelanguage.googleapis.com/v1beta/models/'
+            f'{model}:generateContent?key={api_key}'
         )
-        if resp.status_code != 200:
-            logger.warning('Gemini respondió %s: %s', resp.status_code, resp.text[:200])
-            if resp.status_code in (429, 500, 502, 503, 504):
-                marcar_proveedor_caido('gemini')
-            return None
-        candidatos = resp.json().get('candidates') or []
-        if not candidatos:
-            return None
-        partes = (candidatos[0].get('content') or {}).get('parts') or []
-        texto = ''.join(p.get('text', '') for p in partes).strip()
-        return texto or None
-    except Exception as e:
-        logger.warning('Error llamando a Gemini: %s', e)
-        marcar_proveedor_caido('gemini')
-        return None
+        try:
+            resp = requests.post(
+                url,
+                json={
+                    'system_instruction': {'parts': [{'text': sistema}]},
+                    'contents': contents,
+                    'generationConfig': generation_config,
+                },
+                headers={'Content-Type': 'application/json'},
+                timeout=12,
+            )
+        except Exception as e:
+            logger.warning('Error llamando a Gemini (%s): %s', model, e)
+            ultimo_error = e
+            continue
+        if resp.status_code == 200:
+            try:
+                candidatos = resp.json().get('candidates') or []
+                if not candidatos:
+                    ultimo_error = f'{model}: sin candidatos'
+                    continue
+                partes = (candidatos[0].get('content') or {}).get('parts') or []
+                texto = ''.join(p.get('text', '') for p in partes).strip()
+                if texto:
+                    return texto
+                ultimo_error = f'{model}: respuesta vacía'
+            except Exception as e:
+                logger.warning('Error parseando respuesta de Gemini (%s): %s', model, e)
+                ultimo_error = e
+            continue
+        logger.warning('Gemini (%s) respondió %s: %s', model, resp.status_code, resp.text[:200])
+        ultimo_error = f'{model}: HTTP {resp.status_code}'
+        continue
+
+    if ultimo_error is not None:
+        err = str(ultimo_error)
+        if any(c in err for c in ('429', '500', '502', '503', '504')) or not isinstance(ultimo_error, str):
+            marcar_proveedor_caido('gemini')
+    return None
 
 
 def _nombre_proveedor(url: str) -> str:

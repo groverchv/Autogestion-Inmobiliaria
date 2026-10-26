@@ -6,7 +6,6 @@ import '../providers/auth_provider.dart';
 import 'auditoria_camara_screen.dart';
 import 'captura_360_screen.dart';
 import 'mis_mensajes_screen.dart';
-import 'visor_3d_screen.dart';
 import 'visor_inmersivo_360_screen.dart';
 import '../widgets/calidad_vida_card.dart';
 import '../widgets/resenas_section.dart';
@@ -494,42 +493,6 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                           ),
                           const SizedBox(width: 10),
                         ],
-
-                        // Botón 3D / AR
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      Visor3DPlanoScreen(titulo: item.titulo),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.view_in_ar,
-                              size: 20,
-                              color: AppColors.primary,
-                            ),
-                            label: const Text(
-                              'Plano 3D & RA',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary),
-                              backgroundColor: AppColors.surface,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
 
                         // Botón Auditoría de Inmueble (Check-in / Check-out)
                         Expanded(

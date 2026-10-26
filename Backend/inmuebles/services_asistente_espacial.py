@@ -50,15 +50,28 @@ class AsistenteEspacialEngine:
             from PIL import Image
 
             if url.startswith('http://') or url.startswith('https://'):
-                resp = requests.get(url, timeout=15)
-                resp.raise_for_status()
-                raw = resp.content
+                # Si apunta a localhost o 127.0.0.1 intentar leer directamente de MEDIA_ROOT
+                if ('localhost' in url or '127.0.0.1' in url) and '/media/' in url:
+                    rel = url.split('/media/')[-1]
+                    local_path = os.path.join(str(settings.MEDIA_ROOT), rel.replace('/', os.sep))
+                    if os.path.exists(local_path):
+                        with open(local_path, 'rb') as f:
+                            raw = f.read()
+                    else:
+                        resp = requests.get(url, timeout=15)
+                        resp.raise_for_status()
+                        raw = resp.content
+                else:
+                    resp = requests.get(url, timeout=15)
+                    resp.raise_for_status()
+                    raw = resp.content
             else:
                 rel = url.lstrip('/')
                 if rel.startswith('media/'):
                     rel = rel[len('media/'):]
-                local_path = os.path.join(str(settings.MEDIA_ROOT), rel)
+                local_path = os.path.join(str(settings.MEDIA_ROOT), rel.replace('/', os.sep))
                 if not os.path.exists(local_path):
+                    logger.warning('Archivo media local no encontrado: %s', local_path)
                     return None
                 with open(local_path, 'rb') as f:
                     raw = f.read()
@@ -132,73 +145,82 @@ class AsistenteEspacialEngine:
         from .services_llm import marcar_proveedor_caido, proveedor_activo
         if not api_key or not proveedor_activo('gemini'):
             return None
-        model = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
-        url = (
-            f'https://generativelanguage.googleapis.com/v1beta/models/'
-            f'{model}:generateContent?key={api_key}'
+        # Cadena de modelos: el principal configurado + fallbacks conocidos.
+        # gemini-2.5-flash suele agotar su cuota gratuita; los -lite tienen
+        # cuota independiente y soportan visión.
+        principal = getattr(settings, 'GEMINI_VISION_MODEL', 'gemini-2.5-flash')
+        extra = getattr(
+            settings, 'GEMINI_VISION_FALLBACK_MODELS',
+            'gemini-flash-lite-latest,gemini-3.5-flash-lite,gemini-3.5-flash',
         )
+        modelos = []
+        for m in f'{principal},{extra}'.split(','):
+            m = m.strip()
+            if m and m not in modelos:
+                modelos.append(m)
+
         parts = [{"text": prompt_usuario}]
         if img_b64:
             parts.append({
                 "inline_data": {"mime_type": "image/jpeg", "data": img_b64},
             })
-        # Parámetros de generación compatibles
-        generation_config = {
-            "maxOutputTokens": max_tokens,
-            "temperature": 0.2,
-        }
-        # Solo gemini-2.5-flash soporta thinkingBudget: 0
-        if '2.5' in model:
-            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
 
-        try:
-            resp = requests.post(
-                url,
-                json={
-                    "system_instruction": {"parts": [{"text": sistema}]},
-                    "contents": [{"parts": parts}],
-                    "generationConfig": generation_config,
-                },
-                headers={"Content-Type": "application/json"},
-                timeout=12,
+        ultimo_error = None
+        for model in modelos:
+            generation_config = {
+                "maxOutputTokens": max_tokens,
+                "temperature": 0.2,
+            }
+            # Solo la familia 2.5 soporta thinkingBudget: 0
+            if '2.5' in model:
+                generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+            url = (
+                f'https://generativelanguage.googleapis.com/v1beta/models/'
+                f'{model}:generateContent?key={api_key}'
             )
-            if resp.status_code != 200:
-                logger.warning('Gemini (%s) respondió %s: %s', model, resp.status_code, resp.text[:300])
-                # Si falló por modelo o parámetro (ej: 404 o 400), intentar gemini-1.5-flash
-                if resp.status_code in (400, 404) and model != 'gemini-1.5-flash':
-                    url_alt = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}'
-                    resp_alt = requests.post(
-                        url_alt,
-                        json={
-                            "system_instruction": {"parts": [{"text": sistema}]},
-                            "contents": [{"parts": parts}],
-                            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2},
-                        },
-                        headers={"Content-Type": "application/json"},
-                        timeout=12,
-                    )
-                    if resp_alt.status_code == 200:
-                        resp = resp_alt
-                    else:
-                        logger.warning('Gemini fallback 1.5 respondió %s: %s', resp_alt.status_code, resp_alt.text[:300])
-                        return None
-                elif resp.status_code in (429, 500, 502, 503, 504):
-                    marcar_proveedor_caido('gemini')
-                    return None
-                else:
-                    return None
+            try:
+                resp = requests.post(
+                    url,
+                    json={
+                        "system_instruction": {"parts": [{"text": sistema}]},
+                        "contents": [{"parts": parts}],
+                        "generationConfig": generation_config,
+                    },
+                    headers={"Content-Type": "application/json"},
+                    timeout=12,
+                )
+            except Exception as e:
+                logger.warning('Error llamando a Gemini (%s): %s', model, e)
+                ultimo_error = e
+                continue
+            if resp.status_code == 200:
+                try:
+                    data = resp.json()
+                    candidatos = data.get('candidates') or []
+                    if not candidatos:
+                        ultimo_error = f'{model}: sin candidatos'
+                        continue
+                    partes = (candidatos[0].get('content') or {}).get('parts') or []
+                    texto = ''.join(p.get('text', '') for p in partes).strip()
+                    if texto:
+                        return texto
+                    ultimo_error = f'{model}: respuesta vacía'
+                except Exception as e:
+                    logger.warning('Error parseando respuesta de Gemini (%s): %s', model, e)
+                    ultimo_error = e
+                continue
+            logger.warning('Gemini (%s) respondió %s: %s', model, resp.status_code, resp.text[:300])
+            ultimo_error = f'{model}: HTTP {resp.status_code}'
+            # 400/404/429/5xx -> probar el siguiente modelo de la cadena
+            continue
 
-            data = resp.json()
-            candidatos = data.get('candidates') or []
-            if not candidatos:
-                return None
-            partes = (candidatos[0].get('content') or {}).get('parts') or []
-            texto = ''.join(p.get('text', '') for p in partes).strip()
-            return texto or None
-        except Exception as e:
-            logger.warning('Error llamando a Gemini (%s): %s', model, e)
-            marcar_proveedor_caido('gemini')
-            return None
+        # Todos los modelos fallaron: marcar el proveedor solo si fue por
+        # cuota/servidor (429/5xx/timeout), no por errores de parseo puntuales.
+        if ultimo_error is not None:
+            err = str(ultimo_error)
+            if any(c in err for c in ('429', '500', '502', '503', '504')) or not isinstance(ultimo_error, str):
+                marcar_proveedor_caido('gemini')
+        return None
 
     @classmethod
     def _proveedores_vision(cls) -> list:
@@ -398,6 +420,19 @@ class AsistenteEspacialEngine:
         if tipo:
             partes.append(f"Tipo: {tipo}.")
         return ' '.join(partes)
+
+    @classmethod
+    def _vision_disponible(cls) -> bool:
+        """True si algún proveedor de visión (Gemini/Groq/VLM local) no
+        está marcado caído por el circuit breaker."""
+        from .services_llm import proveedor_activo
+        if getattr(settings, 'GEMINI_API_KEY', '') and proveedor_activo('gemini'):
+            return True
+        for url, _key, _model in cls._proveedores_vision():
+            nombre = 'groq' if 'groq' in url else 'local'
+            if proveedor_activo(nombre):
+                return True
+        return False
 
     @staticmethod
     def _direccion_relativa(obj_yaw, cam_yaw) -> str:
@@ -729,27 +764,20 @@ class AsistenteEspacialEngine:
                 objetos = MedidaEspacialEngine.objetos_cache(pano)
             except Exception:
                 objetos = []
-            # None = panorama aún sin analizar: el análisis ya quedó
-            # encolado en background y la pregunta cae a visión, que
-            # responde ya si hay proveedor disponible.
-            if objetos is not None and es_listado and not es_conteo:
-                if objetos:
-                    from collections import Counter
-                    conteo = Counter(str(o.get('nombre') or 'Objeto') for o in objetos)
-                    detalle = ", ".join(
-                        f"{n} {nombre.lower() if n == 1 else cls._plural(nombre)}"
-                        for nombre, n in conteo.most_common())
-                    respuesta = (
-                        f"En esta vista detecto: {detalle}. "
-                        "Detección automática sobre la foto 360°; puedo pasar por alto objetos pequeños u ocultos."
-                    )
-                else:
-                    respuesta = "No detecté objetos identificables en esta foto 360°. Puedo responderte sobre los datos registrados de la propiedad."
+            if objetos and es_listado and not es_conteo:
+                from collections import Counter
+                conteo = Counter(str(o.get('nombre') or 'Objeto') for o in objetos)
+                detalle = ", ".join(
+                    f"{n} {nombre.lower() if n == 1 else cls._plural(nombre)}"
+                    for nombre, n in conteo.most_common())
                 return _con_sugerencias({
                     'tipo': 'objetos_detectados',
                     'fuente': 'deteccion_espacial',
                     'confianza': 'media',
-                    'respuesta': respuesta,
+                    'respuesta': (
+                        f"En esta vista detecto: {detalle}. "
+                        "Detección automática sobre la foto 360°; puedo pasar por alto objetos pequeños u ocultos."
+                    ),
                 })
             hits = MedidaEspacialEngine.buscar_objetos(pano, t) if objetos else []
             if hits:
@@ -795,15 +823,28 @@ class AsistenteEspacialEngine:
                         'duracion_s': 6,
                     },
                 })
-            # El sustantivo no coincide con nada detectado: honesto, pero
-            # solo si el análisis ya existía (sin caché cae a visión, que
-            # puede ver lo que el detector no alcanzó).
-            if objetos is not None and (es_conteo or es_presencia):
+            # Sin coincidencia en el caché (o análisis aún pendiente):
+            # si algún proveedor de visión está activo, la pregunta cae a
+            # la sección 5 para que un VLM verifique la imagen real. Si
+            # todos están caídos, respuesta honesta inmediata.
+            if not cls._vision_disponible():
+                if objetos is None:
+                    msg = ("Estoy analizando los objetos de esta foto por primera "
+                           "vez; me toma unos segundos. Vuelve a preguntarme en un momento.")
+                    tipo = 'objetos_detectados'
+                elif es_listado:
+                    msg = ("No detecté objetos identificables en esta foto 360°. "
+                           "Puedo responderte sobre los datos registrados de la propiedad.")
+                    tipo = 'objetos_detectados'
+                else:
+                    msg = ("No detecté ese objeto en esta vista 360°; puede estar "
+                           "fuera del encuadre o ser demasiado pequeño para el detector.")
+                    tipo = 'presencia_objeto'
                 return _con_sugerencias({
-                    'tipo': 'presencia_objeto',
+                    'tipo': tipo,
                     'fuente': 'deteccion_espacial',
                     'confianza': 'media',
-                    'respuesta': "No detecté ese objeto en esta vista 360°; puede estar fuera del encuadre o ser demasiado pequeño para el detector.",
+                    'respuesta': msg,
                 })
 
         # ── 4d. Atributos simples de la imagen (color / iluminación) ──
