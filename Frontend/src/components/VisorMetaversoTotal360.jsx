@@ -58,6 +58,8 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   const [escuchandoVoz, setEscuchandoVoz] = useState(false);
   const [procesandoNLP, setProcesandoNLP] = useState(false);
   const [fuenteRespuesta, setFuenteRespuesta] = useState(null);
+  const [sugerencias, setSugerencias] = useState([]);
+  const [accionSugerida, setAccionSugerida] = useState(null);
 
   const audioFondoRef = useRef(null);
   const tourTimerRef = useRef(null);
@@ -139,12 +141,32 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
       if (data && data.respuesta) {
         setLocucionActual(data.respuesta);
         setFuenteRespuesta(FUENTE_LABEL[data.fuente] || null);
+        setAccionSugerida(data.accion || null);
+        if (Array.isArray(data.sugerencias) && data.sugerencias.length > 0) {
+          setSugerencias(data.sugerencias);
+        }
 
         // Si la IA nos devuelve orientación de cámara hacia el objeto
         if (data.camara_360 && viewerInstanceRef.current?.lookAt) {
           const { yaw, pitch, hfov } = data.camara_360;
           try {
             viewerInstanceRef.current.lookAt(pitch, yaw, hfov || 90, 1000);
+          } catch {}
+        }
+
+        // Comandos de cámara relativos ("gira a la derecha", "acércate")
+        if (data.camara_relativa && viewerInstanceRef.current) {
+          const v = viewerInstanceRef.current;
+          try {
+            if (data.camara_relativa.zoom === 'in' && v.getHfov && v.setHfov) {
+              v.setHfov(Math.max(40, v.getHfov() - 30), 600);
+            } else if (data.camara_relativa.zoom === 'out' && v.getHfov && v.setHfov) {
+              v.setHfov(Math.min(120, v.getHfov() + 30), 600);
+            } else if (v.lookAt && v.getYaw && v.getPitch) {
+              const nuevoYaw = v.getYaw() + (data.camara_relativa.dyaw || 0);
+              const nuevoPitch = Math.max(-80, Math.min(80, v.getPitch() + (data.camara_relativa.dpitch || 0)));
+              v.lookAt(nuevoPitch, nuevoYaw, null, 800);
+            }
           } catch {}
         }
 
@@ -173,7 +195,13 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
         if (cancelado) return;
         const data = res.data;
         setMetaData(data);
-        setEscenaActiva(data?.panoramas?.length > 0 ? data.panoramas[0] : null);
+        const primerPano = data?.panoramas?.length > 0 ? data.panoramas[0] : null;
+        setEscenaActiva(primerPano);
+        if (Array.isArray(data?.sugerencias) && data.sugerencias.length > 0) {
+          setSugerencias(data.sugerencias);
+        } else if (primerPano?.sugerencias?.length > 0) {
+          setSugerencias(primerPano.sugerencias);
+        }
       } catch (e) {
         console.error('Error cargando metaverso-datos:', e);
         if (cancelado) return;
@@ -187,6 +215,13 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
     cargarMetaverso();
     return () => { cancelado = true; };
   }, [inmuebleId]);
+
+  // Sugerencias contextuales al cambiar de ambiente
+  useEffect(() => {
+    if (escenaActiva?.sugerencias?.length > 0) {
+      setSugerencias(escenaActiva.sugerencias);
+    }
+  }, [escenaActiva]);
 
   // Escape cierra el visor (accesibilidad por teclado)
   useEffect(() => {
@@ -561,6 +596,18 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
                   {fuenteRespuesta}
                 </span>
               )}
+              {accionSugerida && (
+                <button
+                  onClick={() => { setAccionSugerida(null); onClose?.(); }}
+                  style={{
+                    marginTop: '6px', background: '#0284c7', border: 'none', color: 'white',
+                    padding: '4px 12px', borderRadius: '10px', fontSize: '0.75rem',
+                    fontWeight: 'bold', cursor: 'pointer'
+                  }}
+                >
+                  {accionSugerida.etiqueta || 'Ir'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -599,6 +646,31 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
               {audioVozActivo ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
           </div>
+
+          {/* Sugerencias dinámicas según el contexto real del ambiente */}
+          {sugerencias.length > 0 && (
+            <div style={{ width: '100%', display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
+              {sugerencias.map((pregunta, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => procesarConsultaVoz(pregunta)}
+                  disabled={procesandoNLP}
+                  style={{
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    color: '#cbd5e1',
+                    padding: '4px 10px',
+                    borderRadius: '16px',
+                    fontSize: '0.74rem',
+                    cursor: procesandoNLP ? 'default' : 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {pregunta}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -636,7 +708,7 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
           }}
         >
           <Ruler size={14} />
-          <span>Cotas en RA</span>
+          <span>Medidas (aprox.)</span>
         </button>
 
         {/* Toggle Pines Barrio AR */}
@@ -657,7 +729,7 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
           }}
         >
           <MapPin size={14} />
-          <span>Entorno Urbano AR</span>
+          <span>¿Qué hay cerca?</span>
         </button>
 
         {/* Selector de Habitaciones si hay más de 1 */}

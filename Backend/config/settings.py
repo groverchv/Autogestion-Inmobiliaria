@@ -237,6 +237,9 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 # Modelo con capacidad de visión para el asistente 360° (analiza panoramas reales)
 GROQ_VISION_MODEL = os.getenv('GROQ_VISION_MODEL', 'meta-llama/llama-4-scout-17b-16e-instruct')
 
+# ─── Google Gemini API ──────────────────────────────────────
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
 # ─── IA Local (LM Studio) ───────────────────────────────────
 LOCAL_AI_URL = os.getenv('LOCAL_AI_URL', 'http://192.168.56.1:1234/v1/chat/completions')
 LOCAL_AI_MODEL = os.getenv('LOCAL_AI_MODEL', 'meta-llama-3.1-8b-instruct')

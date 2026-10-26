@@ -1743,7 +1743,9 @@ class CalidadVidaViewSet(viewsets.ViewSet):
                 'archivo': p.archivo.url if hasattr(p.archivo, 'url') else str(p.archivo),
                 'descripcion': p.descripcion or 'Ambiente 360°',
                 'orden': p.orden,
-                'hotspots': hotspots_list
+                'hotspots': hotspots_list,
+                # Chips de pregunta sugeridos según el contenido real del ambiente
+                'sugerencias': AsistenteEspacialEngine.generar_sugerencias(inmueble, p),
             })
 
         # 2. Tour y Guía Virtual con Voz
@@ -1814,6 +1816,7 @@ class CalidadVidaViewSet(viewsets.ViewSet):
             'direccion': str(inmueble.direccion) if inmueble.direccion else 'Zona Norte, Santa Cruz',
             'modelo_3d_url': inmueble.modelo_3d or '',
             'panoramas': panoramas_data,
+            'sugerencias': panoramas_data[0]['sugerencias'] if panoramas_data else AsistenteEspacialEngine.generar_sugerencias(inmueble, None),
             'tour_narrado': tour_narrado,
             'cotas_ar': cotas_ar,
             'calidad_vida': calidad_vida,

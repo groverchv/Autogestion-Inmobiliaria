@@ -50,12 +50,14 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   Timer? _tourTimer;
   String _locucionActual = '';
   String? _fuenteRespuesta;
+  List<String> _sugerencias = [];
   bool _procesandoNLP = false;
   late FlutterTts _flutterTts;
 
   static const Map<String, String> _fuenteLabels = {
     'vision_ia': 'Según la imagen que estás viendo',
     'datos_propiedad': 'Dato registrado de la propiedad',
+    'datos_barrio': 'Entorno estimado según ubicación',
     'estimacion': 'Estimación aproximada',
     'medicion_estimada': 'Estimación aproximada',
   };
@@ -123,11 +125,17 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     if (data != null && mounted) {
       setState(() {
         _metaversoDatos = data;
+        if (data['sugerencias'] is List && (data['sugerencias'] as List).isNotEmpty) {
+          _sugerencias = (data['sugerencias'] as List).map((e) => e.toString()).toList();
+        }
         if (data['panoramas'] != null && (data['panoramas'] as List).isNotEmpty) {
           final firstPano = (data['panoramas'] as List).first;
           if (firstPano['archivo'] != null && _panoramaActualUrl.isEmpty) {
             _panoramaActualUrl = firstPano['archivo'];
             _panoramaActualId = firstPano['id'];
+          }
+          if (firstPano['sugerencias'] is List && (firstPano['sugerencias'] as List).isNotEmpty) {
+            _sugerencias = (firstPano['sugerencias'] as List).map((e) => e.toString()).toList();
           }
         }
       });
@@ -574,6 +582,9 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
         _procesandoNLP = false;
         _locucionActual = respuestaTexto;
         _fuenteRespuesta = fuente;
+        if (res['sugerencias'] is List && (res['sugerencias'] as List).isNotEmpty) {
+          _sugerencias = (res['sugerencias'] as List).map((e) => e.toString()).toList();
+        }
       });
 
       // Decir la respuesta en voz alta a través de los altavoces / auriculares
@@ -659,9 +670,42 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                           setState(() {
                             _panoramaActualUrl = p['archivo'];
                             _panoramaActualId = p['id'];
+                            if (p['sugerencias'] is List &&
+                                (p['sugerencias'] as List).isNotEmpty) {
+                              _sugerencias = (p['sugerencias'] as List)
+                                  .map((e) => e.toString())
+                                  .toList();
+                            }
                           });
                         }
                       },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+
+        // ─── Sugerencias dinámicas de preguntas (contexto real) ───
+        if (_sugerencias.isNotEmpty)
+          Positioned(
+            bottom: 145,
+            left: 16,
+            right: 16,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _sugerencias.map<Widget>((s) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ActionChip(
+                      label: Text(
+                        s,
+                        style: const TextStyle(color: Colors.white, fontSize: 11),
+                      ),
+                      backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.9),
+                      side: const BorderSide(color: Color(0xFF38BDF8), width: 0.8),
+                      onPressed: _procesandoNLP ? null : () => _consultarAsistente(s),
                     ),
                   );
                 }).toList(),

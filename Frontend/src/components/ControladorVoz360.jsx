@@ -37,6 +37,8 @@ const ControladorVoz360 = ({
   const [ultimoComando, setUltimoComando] = useState('');
   const [mensajeEstado, setMensajeEstado] = useState('Presiona "Iniciar Tour Narrado" o habla al micrófono...');
   const [dimensionesActuales, setDimensionesActuales] = useState(null);
+  const [sugerencias, setSugerencias] = useState([]);
+  const [accionSugerida, setAccionSugerida] = useState(null);
 
   // Estados del Tour Narrado Automático
   const [tourActivo, setTourActivo] = useState(false);
@@ -98,6 +100,20 @@ const ControladorVoz360 = ({
 
     window.speechSynthesis.speak(utterance);
   }, [vozActiva]);
+
+  // ─── Sugerencias iniciales de preguntas (contexto real del inmueble) ─────
+  useEffect(() => {
+    if (!inmuebleId) return;
+    let cancelado = false;
+    api.get('/inmuebles/calidad-vida/metaverso-datos/', { params: { inmueble: inmuebleId } })
+      .then(res => {
+        if (cancelado) return;
+        const sugs = res.data?.sugerencias;
+        if (Array.isArray(sugs) && sugs.length > 0) setSugerencias(sugs);
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [inmuebleId]);
 
   // ─── Reconocimiento de Voz (STT) ──────────────────────────────────────────
   useEffect(() => {
@@ -265,6 +281,10 @@ const ControladorVoz360 = ({
       const data = res.data;
       setMensajeEstado(data.respuesta);
       setDimensionesActuales(data.dimensiones || null);
+      setAccionSugerida(data.accion || null);
+      if (Array.isArray(data.sugerencias) && data.sugerencias.length > 0) {
+        setSugerencias(data.sugerencias);
+      }
 
       hablarEnVozAlta(data.respuesta);
 
@@ -463,16 +483,13 @@ const ControladorVoz360 = ({
         )}
       </div>
 
-      {/* Sugerencias Rápidas de Preguntas */}
+      {/* Sugerencias dinámicas según el contexto real del ambiente */}
       <div style={{ marginTop: '12px', display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-        {[
-          '¿Cuánto mide la puerta?',
-          '¿Cuánto mide la ventana?',
-          '¿Cuánto es el largo del patio?',
-          '¿Cabe refrigerador de 90 cm?',
-          'Gira hacia la derecha',
-          'Enfoca el techo'
-        ].map((pregunta, idx) => (
+        {(sugerencias.length > 0 ? sugerencias : [
+          '¿Qué se ve en esta habitación?',
+          '¿Cuál es el precio?',
+          '¿Qué servicios hay cerca?'
+        ]).map((pregunta, idx) => (
           <button
             key={idx}
             onClick={() => procesarComandoDeVoz(pregunta)}
@@ -511,6 +528,18 @@ const ControladorVoz360 = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc', fontSize: '0.88rem', flex: 1 }}>
           <Volume2 size={18} color="#38bdf8" />
           <span>{mensajeEstado}</span>
+          {accionSugerida && (
+            <button
+              onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setAccionSugerida(null); }}
+              style={{
+                marginLeft: '8px', background: '#0284c7', border: 'none', color: 'white',
+                padding: '4px 12px', borderRadius: '10px', fontSize: '0.78rem',
+                fontWeight: 'bold', cursor: 'pointer'
+              }}
+            >
+              {accionSugerida.etiqueta || 'Ir'}
+            </button>
+          )}
         </div>
 
         {dimensionesActuales && (

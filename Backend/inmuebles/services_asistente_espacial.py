@@ -64,6 +64,50 @@ class AsistenteEspacialEngine:
             return None
 
     @classmethod
+    def _llamar_chat(
+        cls,
+        url: str,
+        api_key: Optional[str],
+        model: str,
+        messages: list,
+        max_tokens: int,
+    ) -> Optional[str]:
+        """Llamada OpenAI-compatible (Groq / LM Studio / cualquier endpoint)."""
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        try:
+            resp = requests.post(
+                url,
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": 0.2,
+                    "max_tokens": max_tokens,
+                },
+                headers=headers,
+                timeout=30,
+            )
+            if resp.status_code != 200:
+                logger.warning('%s respondió %s: %s', url, resp.status_code, resp.text[:200])
+                return None
+            return resp.json()['choices'][0]['message']['content'].strip()
+        except Exception as e:
+            logger.warning('Error llamando a %s: %s', url, e)
+            return None
+
+    @classmethod
+    def _proveedores_vision(cls) -> list:
+        """Cadena de proveedores de visión: Groq -> VLM local (LM Studio)."""
+        proveedores = []
+        if getattr(settings, 'GROQ_API_KEY', ''):
+            proveedores.append((GROQ_API_URL, settings.GROQ_API_KEY, GROQ_VISION_MODEL))
+        local_url = getattr(settings, 'LOCAL_AI_URL', '')
+        if local_url:
+            proveedores.append((local_url, None, getattr(settings, 'LOCAL_AI_MODEL', 'local-vlm')))
+        return proveedores
+
+    @classmethod
     def _vision_groq(
         cls,
         prompt_usuario: str,
@@ -71,10 +115,6 @@ class AsistenteEspacialEngine:
         sistema: Optional[str] = None,
         max_tokens: int = 250,
     ) -> Optional[str]:
-        api_key = getattr(settings, 'GROQ_API_KEY', '')
-        if not api_key:
-            return None
-
         sistema = sistema or (
             "Eres el asistente visual de un recorrido 360° de una propiedad "
             "inmobiliaria en Bolivia. Respondes en español, de forma breve "
@@ -98,33 +138,35 @@ class AsistenteEspacialEngine:
                 "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"},
             })
 
-        payload = {
-            "model": GROQ_VISION_MODEL,
-            "messages": [
-                {"role": "system", "content": sistema},
-                {"role": "user", "content": content},
-            ],
-            "temperature": 0.2,
-            "max_tokens": max_tokens,
-        }
+        messages = [
+            {"role": "system", "content": sistema},
+            {"role": "user", "content": content},
+        ]
 
-        try:
-            resp = requests.post(
-                GROQ_API_URL,
-                json=payload,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                timeout=30,
-            )
-            if resp.status_code != 200:
-                logger.warning('Groq vision respondió %s', resp.status_code)
-                return None
-            return resp.json()['choices'][0]['message']['content'].strip()
-        except Exception as e:
-            logger.warning('Error llamando a Groq vision: %s', e)
-            return None
+        for url, key, model in cls._proveedores_vision():
+            texto = cls._llamar_chat(url, key, model, messages, max_tokens)
+            if texto:
+                return texto
+        return None
+
+    @classmethod
+    def _texto_groq(cls, prompt_usuario: str, sistema: str, max_tokens: int = 60) -> Optional[str]:
+        """LLM de solo texto (clasificador de intención). Groq -> local."""
+        proveedores = []
+        if getattr(settings, 'GROQ_API_KEY', ''):
+            proveedores.append((GROQ_API_URL, settings.GROQ_API_KEY, 'llama-3.3-70b-versatile'))
+        local_url = getattr(settings, 'LOCAL_AI_URL', '')
+        if local_url:
+            proveedores.append((local_url, None, getattr(settings, 'LOCAL_AI_MODEL', 'local-llm')))
+        messages = [
+            {"role": "system", "content": sistema},
+            {"role": "user", "content": prompt_usuario},
+        ]
+        for url, key, model in proveedores:
+            texto = cls._llamar_chat(url, key, model, messages, max_tokens)
+            if texto:
+                return texto
+        return None
 
     # ────────────────────── Resolución del panorama ──────────────────────
 
@@ -274,6 +316,50 @@ class AsistenteEspacialEngine:
 
         pano, pano_url = cls._resolver_panorama(inmueble_obj, panorama_id, foto_360_url)
 
+        def _con_sugerencias(resultado: Dict[str, Any]) -> Dict[str, Any]:
+            resultado.setdefault('sugerencias', cls.generar_sugerencias(inmueble_obj, pano))
+            return resultado
+
+        # ── 0. Comando de cámara relativa (gira, acerca, arriba...) ───────
+        camara_rel = cls._comando_camara_relativa(t)
+        if camara_rel:
+            return _con_sugerencias({
+                'tipo': 'movimiento_camara',
+                'fuente': 'comando',
+                'confianza': 'alta',
+                'respuesta': camara_rel['texto'],
+                'camara_relativa': camara_rel['delta'],
+            })
+
+        # ── 0b. Navegación a un ambiente (hotspots reales) ────────────────
+        if any(k in t for k in ('llevame', 'llévame', 'muestrame', 'muéstrame', 'ir a', 've a', 'vamos a')):
+            destino = cls._buscar_hotspot_destino(pano, t)
+            if destino:
+                return _con_sugerencias({
+                    'tipo': 'navegacion_ambiente',
+                    'fuente': 'datos_propiedad',
+                    'confianza': 'alta',
+                    'respuesta': f"Vamos hacia {destino['texto']}.",
+                    'camara_360': {
+                        'yaw': float(destino['yaw']),
+                        'pitch': float(destino['pitch']),
+                        'hfov': 80.0,
+                    },
+                })
+            return _con_sugerencias({
+                'tipo': 'navegacion_ambiente',
+                'fuente': 'no_determinado',
+                'respuesta': "No encuentro ese ambiente entre los espacios registrados. Puedes moverte con las flechas o las miniaturas del recorrido.",
+            })
+
+        # ── 0c. Acciones de negocio (visita, contacto, contrato) ──────────
+        if any(k in t for k in ('visita', 'visitar', 'agendar', 'reservar', 'contactar', 'propietario', 'dueño', 'contrato', 'alquilar', 'comprar')):
+            return _con_sugerencias(cls._responder_accion(t))
+
+        # ── 0d. Barrio / entorno (POIs reales del motor de calidad de vida)
+        if cls._es_pregunta_barrio(t):
+            return _con_sugerencias(cls._responder_barrio(t, inmueble_obj))
+
         # ── 1. Precio / oferta ────────────────────────────────────────────
         if any(k in t for k in ('precio', 'cuesta', 'vale', 'alquiler', 'costo', 'expensa', 'monto', 'anticretico', 'anticrético', 'venta')):
             if not inmueble_obj:
@@ -286,13 +372,13 @@ class AsistenteEspacialEngine:
                 texto = f"Este {tipo} está en {oferta} por Bs. {pub.precio}{periodicidad}."
             else:
                 texto = "El precio de esta propiedad no está publicado todavía."
-            return {
+            return _con_sugerencias({
                 'tipo': 'informacion_precio',
                 'fuente': 'datos_propiedad',
                 'confianza': 'alta',
                 'respuesta': texto,
                 'dimensiones': {'precio_bs': float(pub.precio)} if pub and pub.precio is not None else {},
-            }
+            })
 
         # ── 2. Características registradas ────────────────────────────────
         if any(k in t for k in ('habitacion', 'dormitorio', 'cuarto', 'baño', 'bano', 'mascota', 'garaje', 'parqueo', 'piscina', 'amoblado', 'amueblado')):
@@ -301,11 +387,11 @@ class AsistenteEspacialEngine:
             # Solo campos que realmente existen en la ficha. Mascotas y
             # piscina no son datos registrados: respuesta honesta.
             if any(k in t for k in ('mascota', 'piscina', 'amoblado', 'amueblado')):
-                return {
+                return _con_sugerencias({
                     'tipo': 'informacion_caracteristicas',
                     'fuente': 'no_determinado',
                     'respuesta': "Ese dato no está registrado en la ficha. Puedes consultarlo directamente con el propietario por el chat.",
-                }
+                })
             datos = []
             habs = getattr(inmueble_obj, 'habitaciones', None)
             banos = getattr(inmueble_obj, 'banos', None)
@@ -319,7 +405,7 @@ class AsistenteEspacialEngine:
                 texto = "Según los datos registrados, la propiedad tiene " + ", ".join(datos) + "."
             else:
                 texto = "Ese dato no está registrado en la ficha de la propiedad."
-            return {
+            return _con_sugerencias({
                 'tipo': 'informacion_caracteristicas',
                 'fuente': 'datos_propiedad',
                 'confianza': 'alta',
@@ -327,7 +413,7 @@ class AsistenteEspacialEngine:
                 'dimensiones': {
                     k: v for k, v in (('habitaciones', habs), ('banos', banos)) if v is not None
                 },
-            }
+            })
 
         # ── 3. Superficie / dimensiones del inmueble ──────────────────────
         if any(k in t for k in ('superficie', 'metros cuadrados', 'm2', 'terreno', 'dimensiones del')):
@@ -346,7 +432,7 @@ class AsistenteEspacialEngine:
                 if partes else
                 "Las dimensiones de esta propiedad no están registradas."
             )
-            return {
+            return _con_sugerencias({
                 'tipo': 'dimensiones_generales',
                 'fuente': 'datos_propiedad',
                 'confianza': 'alta',
@@ -356,10 +442,10 @@ class AsistenteEspacialEngine:
                         ('superficie_m2', sup), ('largo_m', largo), ('ancho_m', ancho)
                     ) if v
                 },
-            }
+            })
 
-        # ── 4. Ubicación ──────────────────────────────────────────────────
-        if any(k in t for k in ('ubicacion', 'ubicación', 'donde queda', 'dónde queda', 'zona', 'barrio', 'direccion', 'dirección')):
+        # ── 4. Ubicación registrada ───────────────────────────────────────
+        if any(k in t for k in ('ubicacion', 'ubicación', 'donde queda', 'dónde queda', 'direccion', 'dirección')) or ('zona' in t and 'cerca' not in t):
             if not inmueble_obj:
                 return cls._sin_inmueble()
             direccion = getattr(inmueble_obj, 'direccion', None)
@@ -368,44 +454,28 @@ class AsistenteEspacialEngine:
                 if direccion else
                 "La dirección exacta no está registrada; puedes ver la zona en el mapa de la publicación."
             )
-            return {
+            return _con_sugerencias({
                 'tipo': 'informacion_ubicacion',
                 'fuente': 'datos_propiedad',
                 'confianza': 'alta',
                 'respuesta': texto,
-            }
+            })
 
-        # ── 5. Navegación a un ambiente (hotspots reales) ─────────────────
-        if any(k in t for k in ('llevame', 'llévame', 'muestrame', 'muéstrame', 'ir a', 've a', 'vamos a')):
-            destino = cls._buscar_hotspot_destino(pano, t)
-            if destino:
-                return {
-                    'tipo': 'navegacion_ambiente',
-                    'fuente': 'datos_propiedad',
-                    'confianza': 'alta',
-                    'respuesta': f"Vamos hacia {destino['texto']}.",
-                    'camara_360': {
-                        'yaw': float(destino['yaw']),
-                        'pitch': float(destino['pitch']),
-                        'hfov': 80.0,
-                    },
-                }
-
-        # ── 6. Pregunta visual -> visión sobre la imagen real ──────────────
+        # ── 5. Pregunta visual -> visión sobre la imagen real ──────────────
         if pano is None and not pano_url:
-            return {
+            return _con_sugerencias({
                 'tipo': 'sin_imagen',
                 'fuente': 'no_determinado',
                 'respuesta': "Esta propiedad aún no tiene fotos 360° para analizar. Puedo responderte sobre el precio, los ambientes y los datos registrados de la ficha.",
-            }
+            })
 
         img_b64 = cls._url_a_base64(pano_url)
         if not img_b64:
-            return {
+            return _con_sugerencias({
                 'tipo': 'imagen_no_disponible',
                 'fuente': 'no_determinado',
                 'respuesta': "No pude cargar la imagen actual para analizarla. Intenta de nuevo en un momento, o pregúntame por los datos registrados de la propiedad.",
-            }
+            })
 
         ambiente = getattr(pano, 'descripcion', '') or 'este ambiente'
         contexto = cls._contexto_inmueble(inmueble_obj)
@@ -419,11 +489,11 @@ class AsistenteEspacialEngine:
         respuesta = cls._vision_groq(prompt, img_b64)
 
         if not respuesta:
-            return {
+            return _con_sugerencias({
                 'tipo': 'vision_no_disponible',
                 'fuente': 'no_determinado',
                 'respuesta': "No pude analizar la imagen en este momento. Puedo responderte sobre el precio, los ambientes y los datos registrados de la propiedad.",
-            }
+            })
 
         resultado = {
             'tipo': 'medicion_estimada' if es_medida else 'vision_objeto',
@@ -434,7 +504,7 @@ class AsistenteEspacialEngine:
         }
         if es_medida:
             resultado['nota'] = 'Estimación visual aproximada, no una medición calibrada.'
-        return resultado
+        return _con_sugerencias(resultado)
 
     # ──────────────────────── Helpers internos ────────────────────────
 
@@ -466,6 +536,242 @@ class AsistenteEspacialEngine:
         except Exception:
             pass
         return None
+
+    # ─────────────────── Herramientas del orquestador ───────────────────
+
+    @classmethod
+    def _comando_camara_relativa(cls, t: str) -> Optional[Dict[str, Any]]:
+        """Comandos de cámara relativos: 'gira a la derecha', 'acércate'."""
+        if any(k in t for k in ('acerca', 'zoom in', 'adelante', 'acercate', 'acércate')):
+            return {'delta': {'zoom': 'in'}, 'texto': 'Acercando la vista.'}
+        if any(k in t for k in ('aleja', 'zoom out', 'atras', 'atrás', 'abrir')):
+            return {'delta': {'zoom': 'out'}, 'texto': 'Alejando la vista.'}
+        if 'izquierda' in t or 'izq' in t:
+            return {'delta': {'dyaw': -45.0}, 'texto': 'Girando a la izquierda.'}
+        if 'derecha' in t or 'der' in t:
+            return {'delta': {'dyaw': 45.0}, 'texto': 'Girando a la derecha.'}
+        if 'arriba' in t or 'techo' in t or 'sube' in t:
+            return {'delta': {'dpitch': 25.0}, 'texto': 'Mirando hacia arriba.'}
+        if 'abajo' in t or 'piso' in t or 'baja' in t:
+            return {'delta': {'dpitch': -25.0}, 'texto': 'Mirando hacia abajo.'}
+        if 'gira' in t or 'girar' in t or 'voltea' in t:
+            return {'delta': {'dyaw': 45.0}, 'texto': 'Girando la vista.'}
+        return None
+
+    _CATEGORIAS_POI = {
+        'supermercados': (
+            'supermercado', 'mercado', 'tienda', 'compras', 'abarrote', 'minimarket', 'hipermaxi'
+        ),
+        'salud': (
+            'farmacia', 'salud', 'hospital', 'clinica', 'clínica', 'medico', 'médico',
+            'doctor', 'emergencia',
+        ),
+        'educacion': (
+            'colegio', 'escuela', 'universidad', 'educacion', 'educación',
+            'guarderia', 'guardería', 'instituto', 'estudiar',
+        ),
+        'recreacion': (
+            'parque', 'plaza', 'recreacion', 'recreación', 'cine', 'gimnasio',
+            'deporte', 'cancha',
+        ),
+        'transporte': (
+            'bus', 'transporte', 'parada', 'micro', 'trufi', 'taxi', 'terminal',
+        ),
+    }
+
+    @classmethod
+    def _es_pregunta_barrio(cls, t: str) -> bool:
+        proximidad = ('cerca', 'cercano', 'alrededor', 'barrio', 'vecindario',
+                      'a pie', 'caminando', 'servicios', 'que hay por ahi',
+                      'qué hay por ahí')
+        if any(k in t for k in proximidad):
+            return True
+        for palabras in cls._CATEGORIAS_POI.values():
+            if any(k in t for k in palabras):
+                return True
+        return False
+
+    @classmethod
+    def _responder_barrio(cls, t: str, inmueble_obj: Any) -> Dict[str, Any]:
+        """Responde '¿hay X cerca?' con los POIs calculados del entorno real
+        (CalidadVidaEngine sobre el GPS del inmueble)."""
+        if not inmueble_obj:
+            return cls._sin_inmueble()
+
+        gps = getattr(inmueble_obj, 'gps', None)
+        if not gps or ',' not in gps:
+            return {
+                'tipo': 'informacion_barrio',
+                'fuente': 'no_determinado',
+                'respuesta': "Esta propiedad no tiene ubicación GPS registrada, así que no puedo decirte qué hay cerca.",
+            }
+
+        try:
+            lat, lng = (float(x.strip()) for x in gps.split(',')[:2])
+        except (ValueError, IndexError):
+            return {
+                'tipo': 'informacion_barrio',
+                'fuente': 'no_determinado',
+                'respuesta': "La ubicación registrada no permite calcular el entorno.",
+            }
+
+        from .services_calidad_vida import CalidadVidaEngine
+        try:
+            data = CalidadVidaEngine.calcular_indice_barrio(lat, lng)
+        except Exception as e:
+            logger.warning('CalidadVidaEngine falló: %s', e)
+            return {
+                'tipo': 'informacion_barrio',
+                'fuente': 'no_determinado',
+                'respuesta': "No pude calcular el entorno del barrio en este momento.",
+            }
+
+        pois = data.get('puntos_de_interes', []) or []
+
+        # Categoría específica pedida ("¿hay farmacias cerca?")
+        categoria_pedida = None
+        for cat, palabras in cls._CATEGORIAS_POI.items():
+            if any(k in t for k in palabras):
+                categoria_pedida = cat
+                break
+
+        if categoria_pedida:
+            cercanos = [p for p in pois if p.get('categoria') == categoria_pedida][:3]
+            if cercanos:
+                lista = '; '.join(
+                    f"{p.get('nombre')} a {int(p.get('distancia_metros', 0))} m (~{p.get('minutos_a_pie')} min a pie)"
+                    for p in cercanos
+                )
+                return {
+                    'tipo': 'informacion_barrio',
+                    'fuente': 'datos_barrio',
+                    'confianza': 'media',
+                    'respuesta': f"Cerca de la propiedad: {lista}. Distancias estimadas según la ubicación.",
+                    'pois': cercanos,
+                }
+            return {
+                'tipo': 'informacion_barrio',
+                'fuente': 'datos_barrio',
+                'confianza': 'media',
+                'respuesta': "No encontré ese servicio entre los puntos cercanos registrados para esta zona.",
+            }
+
+        # Pregunta general "¿qué hay cerca?"
+        if pois:
+            por_cat = {}
+            for p in pois:
+                por_cat.setdefault(p.get('categoria', 'otros'), p)
+            lista = '; '.join(
+                f"{p.get('nombre')} (~{p.get('minutos_a_pie')} min a pie)"
+                for p in list(por_cat.values())[:5]
+            )
+            walk = data.get('walk_score')
+            extra = f" La zona tiene un puntaje de caminabilidad de {walk}/100." if walk else ''
+            return {
+                'tipo': 'informacion_barrio',
+                'fuente': 'datos_barrio',
+                'confianza': 'media',
+                'respuesta': f"En los alrededores hay: {lista}.{extra} Distancias estimadas según la ubicación.",
+                'pois': list(por_cat.values())[:5],
+            }
+
+        return {
+            'tipo': 'informacion_barrio',
+            'fuente': 'no_determinado',
+            'respuesta': "No tengo puntos de interés calculados para esta zona todavía.",
+        }
+
+    @classmethod
+    def _responder_accion(cls, t: str) -> Dict[str, Any]:
+        """Peticiones de acción: agendar visita, contactar, contrato."""
+        if any(k in t for k in ('visita', 'visitar', 'agendar', 'reservar', 'conocer')):
+            return {
+                'tipo': 'accion_visita',
+                'fuente': 'datos_propiedad',
+                'confianza': 'alta',
+                'respuesta': "Puedes pedir una visita con el botón 'Pedir visita' de la publicación. Cierro el recorrido si quieres hacerlo ahora.",
+                'accion': {'tipo': 'cerrar_visor', 'etiqueta': 'Ir a pedir visita'},
+            }
+        if any(k in t for k in ('contactar', 'propietario', 'dueño', 'mensaje', 'chat', 'hablar con')):
+            return {
+                'tipo': 'accion_contacto',
+                'fuente': 'datos_propiedad',
+                'confianza': 'alta',
+                'respuesta': "Puedes escribirle directamente al propietario con el botón 'Escribir al propietario' de la publicación.",
+                'accion': {'tipo': 'cerrar_visor', 'etiqueta': 'Escribir al propietario'},
+            }
+        if any(k in t for k in ('contrato', 'alquilar', 'comprar', 'arrendar')):
+            return {
+                'tipo': 'accion_contrato',
+                'fuente': 'datos_propiedad',
+                'confianza': 'alta',
+                'respuesta': "Cuando tú y el propietario se pongan de acuerdo, el contrato se genera desde la publicación. ¿Quieres escribirle o pedir una visita primero?",
+            }
+        return {
+            'tipo': 'accion_general',
+            'fuente': 'no_determinado',
+            'respuesta': "Puedo guiarte por el recorrido, responder sobre la propiedad o indicarte cómo pedir una visita. ¿Qué necesitas?",
+        }
+
+    # ─────────────────── Sugerencias dinámicas de preguntas ───────────────────
+
+    @classmethod
+    def generar_sugerencias(cls, inmueble_obj: Any, pano: Any) -> list:
+        """Chips de sugerencia generados desde el contexto REAL:
+        objetos detectados en el panorama, hotspots disponibles, datos de
+        la ficha y el entorno. Nunca una lista fija."""
+        sugerencias = []
+
+        # 1. Objetos realmente detectados por visión en este ambiente
+        analisis = getattr(pano, 'analisis_visual', None) if pano else None
+        if analisis:
+            for obj in analisis.get('objetos', [])[:2]:
+                nombre = (obj.get('nombre') or '').strip()
+                if nombre:
+                    sugerencias.append(f'¿Cuánto mide {nombre}?')
+            if analisis.get('descripcion'):
+                sugerencias.append('¿Qué más se ve aquí?')
+
+        # 2. Ambientes alcanzables por hotspots reales
+        if pano is not None:
+            try:
+                for h in pano.hotspots_salida.select_related('escena_destino').all()[:2]:
+                    destino = ''
+                    if h.escena_destino:
+                        destino = h.escena_destino.descripcion or ''
+                    if destino:
+                        sugerencias.append(f'Llévame a {destino}')
+            except Exception:
+                pass
+
+        # 3. Datos de la ficha que existen y son pregunta natural
+        if inmueble_obj:
+            pub = cls._publicacion_activa(inmueble_obj)
+            if pub and pub.precio is not None:
+                sugerencias.append('¿Cuál es el precio?')
+            if getattr(inmueble_obj, 'habitaciones', None):
+                sugerencias.append('¿Cuántos dormitorios tiene?')
+            if getattr(inmueble_obj, 'gps', None):
+                sugerencias.append('¿Qué servicios hay cerca?')
+
+        # 4. Fallback honesto si no hay contexto
+        if not sugerencias:
+            sugerencias = [
+                '¿Qué se ve en esta habitación?',
+                '¿Cuál es el precio?',
+                '¿Qué servicios hay cerca?',
+            ]
+
+        # Deduplicar preservando orden, máximo 5
+        vistas = set()
+        unicas = []
+        for s in sugerencias:
+            if s not in vistas:
+                vistas.add(s)
+                unicas.append(s)
+            if len(unicas) >= 5:
+                break
+        return unicas
 
     # ────────────────────────── Tour narrado ──────────────────────────
 

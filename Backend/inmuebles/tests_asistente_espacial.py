@@ -9,7 +9,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from .models import Inmueble, Multimedia, Publicacion, TipoInmueble
+from .models import Hotspot, Inmueble, Multimedia, Publicacion, TipoInmueble
 from .services_asistente_espacial import AsistenteEspacialEngine
 
 
@@ -148,3 +148,81 @@ class AsistenteEspacialTestCase(TestCase):
         self.assertEqual(r['fuente'], 'no_determinado')
         self.assertNotIn('cuadro decorativo', r['respuesta'])
         self.assertNotIn('sofá', r['respuesta'])
+
+    # ── Orquestador: cámara, barrio, acciones, sugerencias ───────────────
+
+    def test_comando_camara_relativa(self):
+        r = AsistenteEspacialEngine.procesar_consulta('gira a la derecha', self.inmueble)
+        self.assertEqual(r['tipo'], 'movimiento_camara')
+        self.assertEqual(r['camara_relativa']['dyaw'], 45.0)
+
+        r2 = AsistenteEspacialEngine.procesar_consulta('acércate', self.inmueble)
+        self.assertEqual(r2['camara_relativa']['zoom'], 'in')
+
+    def test_navegacion_a_ambiente_por_hotspot_real(self):
+        cocina = Multimedia.objects.create(
+            inmueble=self.inmueble, tipo='panorama360',
+            archivo='https://ejemplo.com/pano_cocina.jpg',
+            descripcion='Cocina', orden=1,
+        )
+        Hotspot.objects.create(
+            inmueble=self.inmueble,
+            escena_origen=self.panorama, escena_destino=cocina,
+            yaw=75.0, pitch=-5.0, texto_ayuda='Ir a la cocina',
+        )
+        r = AsistenteEspacialEngine.procesar_consulta('llévame a la cocina', self.inmueble)
+        self.assertEqual(r['tipo'], 'navegacion_ambiente')
+        self.assertEqual(r['camara_360']['yaw'], 75.0)
+        self.assertIn('cocina', r['respuesta'].lower())
+
+    def test_navegacion_sin_ambiente_honesto(self):
+        r = AsistenteEspacialEngine.procesar_consulta('llévame al sótano', self.inmueble)
+        self.assertEqual(r['fuente'], 'no_determinado')
+        self.assertIn('No encuentro ese ambiente', r['respuesta'])
+
+    def test_accion_pedir_visita(self):
+        r = AsistenteEspacialEngine.procesar_consulta('quiero agendar una visita', self.inmueble)
+        self.assertEqual(r['tipo'], 'accion_visita')
+        self.assertEqual(r['accion']['tipo'], 'cerrar_visor')
+        self.assertIn('Pedir visita', r['respuesta'])
+
+    def test_barrio_sin_gps_honesto(self):
+        r = AsistenteEspacialEngine.procesar_consulta('¿hay supermercados cerca?', self.inmueble)
+        self.assertEqual(r['fuente'], 'no_determinado')
+        self.assertIn('GPS', r['respuesta'])
+
+    @patch('inmuebles.services_calidad_vida.CalidadVidaEngine.calcular_indice_barrio')
+    def test_barrio_con_pois_reales(self, mock_barrio):
+        self.inmueble.gps = '-17.78, -63.18'
+        self.inmueble.save()
+        mock_barrio.return_value = {
+            'walk_score': 78,
+            'puntos_de_interes': [
+                {'categoria': 'supermercados', 'nombre': 'Mercado Central',
+                 'tipo': 'Mercado', 'distancia_metros': 320, 'minutos_a_pie': 4},
+                {'categoria': 'salud', 'nombre': 'Farmacia Centro',
+                 'tipo': 'Farmacia', 'distancia_metros': 150, 'minutos_a_pie': 2},
+            ],
+        }
+        r = AsistenteEspacialEngine.procesar_consulta('¿hay supermercados cerca?', self.inmueble)
+        self.assertEqual(r['fuente'], 'datos_barrio')
+        self.assertIn('Mercado Central', r['respuesta'])
+        self.assertIn('320', r['respuesta'])
+
+        r2 = AsistenteEspacialEngine.procesar_consulta('¿qué hay cerca?', self.inmueble)
+        self.assertIn('78/100', r2['respuesta'])
+
+    def test_sugerencias_siempre_presentes(self):
+        r = AsistenteEspacialEngine.procesar_consulta('¿cuál es el precio?', self.inmueble)
+        self.assertIn('sugerencias', r)
+        self.assertGreater(len(r['sugerencias']), 0)
+        self.assertIn('¿Cuál es el precio?', r['sugerencias'])
+
+    def test_sugerencias_usan_objetos_detectados(self):
+        self.panorama.analisis_visual = {
+            'descripcion': 'Sala con mesa',
+            'objetos': [{'nombre': 'la mesa de centro', 'posicion': 'centro'}],
+        }
+        self.panorama.save()
+        sugs = AsistenteEspacialEngine.generar_sugerencias(self.inmueble, self.panorama)
+        self.assertTrue(any('mesa de centro' in s for s in sugs))
