@@ -1836,19 +1836,51 @@ class CalidadVidaViewSet(viewsets.ViewSet):
             tour_narrado = []
 
 
-        # 3. Cotas de Realidad Aumentada: solo objetos realmente detectados
-        # por visión en los panoramas (analisis_visual cacheado), marcadas
-        # siempre como estimación. Sin análisis -> lista vacía, nunca
-        # dimensiones inventadas.
+        # 3. Cotas de Realidad Aumentada: objetos con bounding box real
+        # (objetos_3d cacheados por MedidaEspacialEngine). Para panoramas
+        # aún no analizados se dispara el análisis en background y se usa
+        # la posición cualitativa del análisis de visión como respaldo.
+        # Sin análisis -> lista vacía, nunca dimensiones inventadas.
+        from .services_medida_espacial import MedidaEspacialEngine
+        import threading
+
         _POS_A_YAW = {
             'izquierda': -60.0, 'centro-izquierda': -30.0, 'centro': 0.0,
             'centro-derecha': 30.0, 'derecha': 60.0,
         }
         cotas_ar = []
         for p in panoramas_qs:
-            analisis = getattr(p, 'analisis_visual', None)
-            if not analisis:
+            analisis = getattr(p, 'analisis_visual', None) or {}
+            objetos_3d = analisis.get('objetos_3d')
+            if objetos_3d:
+                for o in objetos_3d:
+                    medida = f"~{o['ancho_m']} m" if o.get('ancho_m') else ''
+                    if o.get('alto_m') and o['alto_m'] > 0.3:
+                        medida = f"~{o['ancho_m']} x {o['alto_m']} m"
+                    cotas_ar.append({
+                        'elemento': o.get('nombre', 'Objeto'),
+                        'panorama_id': p.id,
+                        'yaw': o['yaw'],
+                        'pitch': o['pitch'],
+                        'yaw0': o['yaw0'], 'yaw1': o['yaw1'],
+                        'pitch0': o['pitch0'], 'pitch1': o['pitch1'],
+                        'span_yaw': o['span_yaw'], 'span_pitch': o['span_pitch'],
+                        'ancho_m': o['ancho_m'], 'alto_m': o['alto_m'],
+                        'distancia_m': o.get('distancia_m'),
+                        'tipo': 'vertical' if o['span_pitch'] > o['span_yaw'] * 1.6 else 'horizontal',
+                        'parcial': o.get('parcial', False),
+                        'confianza': o.get('confianza', 'media'),
+                        'cota': f"{medida} (aprox.)",
+                        'estimado': True,
+                    })
                 continue
+            # Panorama sin objetos_3d: disparar análisis en background
+            # (YOLO + profundidad tardan unos segundos) y servir el
+            # respaldo cualitativo mientras tanto.
+            threading.Thread(
+                target=MedidaEspacialEngine.analizar_objetos_3d,
+                args=(p,), daemon=True,
+            ).start()
             for obj in analisis.get('objetos', []):
                 dim = obj.get('dimension_aprox')
                 if not dim:
@@ -1859,11 +1891,12 @@ class CalidadVidaViewSet(viewsets.ViewSet):
                     'yaw': _POS_A_YAW.get((obj.get('posicion') or 'centro').lower(), 0.0),
                     'pitch': 0.0,
                     'cota': f"{dim} (aprox.)",
+                    'confianza': 'baja',
                     'estimado': True,
                 })
-            if len(cotas_ar) >= 8:
+            if len(cotas_ar) >= 12:
                 break
-        cotas_ar = cotas_ar[:8]
+        cotas_ar = cotas_ar[:12]
 
         # 4. Calidad de Vida, Walk Score y Pines AR del Barrio
         lat = -17.7833

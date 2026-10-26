@@ -59,6 +59,11 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
   const [sugerencias, setSugerencias] = useState([]);
   const [accionSugerida, setAccionSugerida] = useState(null);
 
+  // Overlay AR de medición (línea de cota encendida por una pregunta)
+  const arOverlayRef = useRef(null);
+  const arOverlayTimerRef = useRef(null);
+  const hudCanvasRef = useRef(null);
+
   const audioFondoRef = useRef(null);
   const tourTimerRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -166,6 +171,15 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
               v.lookAt(nuevoPitch, nuevoYaw, null, 800);
             }
           } catch {}
+        }
+
+        // Overlay AR de medición: enciende la línea de cota sobre el objeto
+        if (data.ar_overlay) {
+          arOverlayRef.current = data.ar_overlay;
+          clearTimeout(arOverlayTimerRef.current);
+          arOverlayTimerRef.current = setTimeout(() => {
+            arOverlayRef.current = null;
+          }, (data.ar_overlay.duracion_s || 6) * 1000);
         }
 
         // Responder con voz en voz alta
@@ -314,21 +328,9 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
       text: h.texto_ayuda || 'Ir a habitación'
     }));
 
-    // Añadir Hotspots de Cotas AR si está activado
-    if (capaCotasAR && metaData.cotas_ar) {
-      metaData.cotas_ar.forEach(c => {
-        hotspots.push({
-          pitch: c.pitch,
-          yaw: c.yaw,
-          type: 'info',
-          text: `[Cota AR] ${c.elemento}: ${c.cota}`,
-          createTooltipFunc: (div) => {
-            div.className = 'pnlm-cota-ar-pin';
-            div.innerHTML = `<div class="cota-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> <span>${c.elemento}: <strong>${c.cota}</strong></span></div>`;
-          }
-        });
-      });
-    }
+    // Las cotas AR ya no van como hotspots de Pannellum: se dibujan como
+    // líneas de medida reales sobre el objeto en el canvas HUD (efecto de
+    // dibujo más abajo).
 
     // Los pines del barrio no se pintan sobre el panorama: el usuario
     // consulta los servicios cercanos preguntándole al asistente.
@@ -359,7 +361,142 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
         viewerInstanceRef.current = null;
       }
     };
-  }, [loading, metaData, escenaActiva, capaCotasAR]);
+  }, [loading, metaData, escenaActiva]);
+
+  // ─── Canvas HUD "lentes inteligentes": líneas de cota sobre objetos ──────
+  // Proyección esférica idéntica a la que Pannellum usa internamente para
+  // posicionar hotspots (ver función Ca en pannellum.js).
+  useEffect(() => {
+    let raf;
+    const rad = Math.PI / 180;
+
+    const proyectar = (yaw, pitch, camYaw, camPitch, hfov, W, H) => {
+      const sP = Math.sin(pitch * rad), cP = Math.cos(pitch * rad);
+      const sC = Math.sin(camPitch * rad), cC = Math.cos(camPitch * rad);
+      const dY = (camYaw - yaw) * rad;
+      const l = Math.sin(dY), g = Math.cos(dY);
+      const h = sP * sC + cP * g * cC;          // profundidad en vista
+      if (h <= 0.08) return null;               // detrás de la cámara
+      const k = Math.tan(hfov * rad / 2);
+      return {
+        x: W / 2 - (W / (2 * k)) * (l * cP) / h,
+        y: H / 2 - (W / (2 * k)) * (sP * cC - cP * g * sC) / h,
+        h,
+      };
+    };
+
+    const dibujarEtiqueta = (ctx, x, y, texto, destacado) => {
+      ctx.font = '600 11px "Segoe UI", system-ui, sans-serif';
+      const wTxt = ctx.measureText(texto).width;
+      const bx = x - wTxt / 2 - 7, by = y - 24, bw = wTxt + 14, bh = 18;
+      ctx.fillStyle = destacado ? 'rgba(14,116,144,0.92)' : 'rgba(15,23,42,0.82)';
+      ctx.strokeStyle = 'rgba(56,189,248,0.9)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 5);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e2f4ff';
+      ctx.fillText(texto, x - wTxt / 2, by + 13);
+    };
+
+    const dibujarCota = (ctx, c, destacado) => {
+      const color = destacado ? '#7dd3fc' : '#38bdf8';
+      const punteada = !destacado && c.confianza === 'baja';
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = destacado ? 2 : 1.5;
+      ctx.setLineDash(punteada ? [5, 4] : []);
+
+      const tieneBBox = c.yaw0 != null && c.yaw1 != null && c.pitch1 != null;
+      const etiqueta = c.valor || c.cota || '';
+      const titulo = c.elemento ? `${c.elemento} ` : '';
+
+      if (!tieneBBox) {
+        // Cota cualitativa (análisis de visión sin bbox): punto + etiqueta
+        const p = proyectar(c.yaw, c.pitch, cam.yaw, cam.pitch, hfov, W, H);
+        if (p) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+          dibujarEtiqueta(ctx, p.x, p.y, `${titulo}${etiqueta}`.trim(), destacado);
+        }
+        ctx.setLineDash([]);
+        return;
+      }
+
+      // Línea de cota en el borde superior del bbox (horizontal) o borde
+      // derecho (vertical), con ticks en los extremos, estilo regla AR.
+      const esVertical = c.tipo === 'vertical';
+      const a = esVertical
+        ? proyectar(c.yaw1, c.pitch0, cam.yaw, cam.pitch, hfov, W, H)
+        : proyectar(c.yaw0, c.pitch1, cam.yaw, cam.pitch, hfov, W, H);
+      const b = esVertical
+        ? proyectar(c.yaw1, c.pitch1, cam.yaw, cam.pitch, hfov, W, H)
+        : proyectar(c.yaw1, c.pitch1, cam.yaw, cam.pitch, hfov, W, H);
+      if (!a || !b) { ctx.setLineDash([]); return; }
+      if (Math.abs(b.x - a.x) > W * 0.8) { ctx.setLineDash([]); return; } // costura ±180°
+
+      // Brackets en las 4 esquinas del bbox (solo destacado o confianza alta)
+      if (destacado || c.confianza === 'alta') {
+        const esq = [
+          proyectar(c.yaw0, c.pitch1, cam.yaw, cam.pitch, hfov, W, H),
+          proyectar(c.yaw1, c.pitch1, cam.yaw, cam.pitch, hfov, W, H),
+          proyectar(c.yaw0, c.pitch0, cam.yaw, cam.pitch, hfov, W, H),
+          proyectar(c.yaw1, c.pitch0, cam.yaw, cam.pitch, hfov, W, H),
+        ];
+        const L = 9;
+        ctx.beginPath();
+        for (const [i, e] of esq.entries()) {
+          if (!e) continue;
+          const sx = i % 2 === 0 ? 1 : -1;   // hacia adentro en x
+          const sy = i < 2 ? 1 : -1;         // hacia adentro en y
+          ctx.moveTo(e.x + sx * L, e.y); ctx.lineTo(e.x, e.y); ctx.lineTo(e.x, e.y + sy * L);
+        }
+        ctx.stroke();
+      }
+
+      // Línea de cota + ticks de extremo
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      const T = 7;
+      const nx = esVertical ? T : 0, ny = esVertical ? 0 : T;
+      ctx.moveTo(a.x - nx, a.y - ny); ctx.lineTo(a.x + nx, a.y + ny);
+      ctx.moveTo(b.x - nx, b.y - ny); ctx.lineTo(b.x + nx, b.y + ny);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+      dibujarEtiqueta(ctx, cx, esVertical ? cy + 20 : cy, `${titulo}${etiqueta}`.trim(), destacado);
+    };
+
+    let cam = { yaw: 0, pitch: 0 };
+    let hfov = 100, W = 0, H = 0;
+
+    const draw = () => {
+      raf = requestAnimationFrame(draw);
+      const canvas = hudCanvasRef.current;
+      const viewer = viewerInstanceRef.current;
+      if (!canvas || !viewer?.getYaw) return;
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      if (W === 0 || H === 0) return;
+      if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+      cam = { yaw: viewer.getYaw(), pitch: viewer.getPitch() };
+      hfov = viewer.getHfov ? viewer.getHfov() : 100;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+
+      if (capaCotasAR && metaData?.cotas_ar) {
+        for (const c of metaData.cotas_ar) {
+          if (c.panorama_id !== escenaActiva?.id) continue;
+          dibujarCota(ctx, c, false);
+        }
+      }
+      const ov = arOverlayRef.current;
+      if (ov && (!ov.panorama_id || ov.panorama_id === escenaActiva?.id)) {
+        dibujarCota(ctx, ov, true);
+      }
+    };
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, [metaData, escenaActiva, capaCotasAR]);
 
   // ─── Ejecutar Tour Narrado Cinemático Dinámico ─────────────────────────────
   const ejecutarPasoTour = useCallback((pasos, index) => {
@@ -530,6 +667,12 @@ const VisorMetaversoTotal360 = ({ inmuebleId, onClose, musica = null }) => {
 
       {/* ─── Contenedor del Visor 360° ─── */}
       <div ref={viewerRef} style={{ width: '100vw', height: '100vh' }} id="metaverso-pannellum-viewer" />
+
+      {/* Canvas HUD: líneas de cota AR estilo "lentes inteligentes" */}
+      <canvas
+        ref={hudCanvasRef}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 6 }}
+      />
 
       {/* Estado vacío honesto: la propiedad no tiene panoramas reales */}
       {!escenaActiva && (

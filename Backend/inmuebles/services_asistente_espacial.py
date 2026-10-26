@@ -524,6 +524,50 @@ class AsistenteEspacialEngine:
                 'respuesta': texto,
             })
 
+        # ── 4b. Medición de un objeto visible -> cota AR sobre el objeto ──
+        es_medida = any(k in t for k in ('mide', 'medida', 'cuanto mide', 'cuánto mide', 'largo', 'ancho', 'alto', 'distancia', 'cabe', 'entra'))
+        if es_medida and pano is not None:
+            try:
+                from .services_medida_espacial import MedidaEspacialEngine
+                obj = MedidaEspacialEngine.buscar_objeto(pano, t)
+            except Exception:
+                obj = None
+            if obj:
+                nombre = obj.get('nombre', 'El objeto')
+                partes = []
+                if obj.get('ancho_m'):
+                    partes.append(f"~{obj['ancho_m']} m de ancho")
+                if obj.get('alto_m'):
+                    partes.append(f"~{obj['alto_m']} m de alto")
+                if obj.get('distancia_m'):
+                    partes.append(f"a unos {obj['distancia_m']} m de ti")
+                respuesta = (
+                    f"{nombre} mide aproximadamente " + ", ".join(partes[:2]) +
+                    (f" ({partes[2]})." if len(partes) > 2 else ".")
+                )
+                if obj.get('parcial'):
+                    respuesta += " Está parcialmente cortado en el borde de la imagen, así que la medida puede quedarse corta."
+                return _con_sugerencias({
+                    'tipo': 'medicion_estimada',
+                    'fuente': 'medicion_estimada',
+                    'confianza': obj.get('confianza', 'media'),
+                    'respuesta': respuesta,
+                    'nota': 'Estimación visual sobre la imagen real, no una medición calibrada.',
+                    'ar_overlay': {
+                        'elemento': nombre,
+                        'panorama_id': getattr(pano, 'id', None),
+                        'yaw': obj['yaw'], 'pitch': obj['pitch'],
+                        'yaw0': obj['yaw0'], 'yaw1': obj['yaw1'],
+                        'pitch0': obj['pitch0'], 'pitch1': obj['pitch1'],
+                        'span_yaw': obj['span_yaw'], 'span_pitch': obj['span_pitch'],
+                        'valor': ", ".join(partes[:2]),
+                        'tipo': 'vertical' if obj['span_pitch'] > obj['span_yaw'] * 1.6 else 'horizontal',
+                        'confianza': obj.get('confianza', 'media'),
+                        'parcial': obj.get('parcial', False),
+                        'duracion_s': 6,
+                    },
+                })
+
         # ── 5. Pregunta visual -> visión sobre la imagen real ──────────────
         if pano is None and not pano_url:
             return _con_sugerencias({

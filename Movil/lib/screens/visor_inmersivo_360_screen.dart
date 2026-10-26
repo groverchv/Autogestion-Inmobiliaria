@@ -69,6 +69,11 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
 
   // Medidor táctil: dos puntos sobre la imagen -> distancia estimada (backend)
   bool _modoMedir = false;
+
+  // Overlay AR de medición (línea de cota encendida por una pregunta o un
+  // toque sobre un objeto detectado)
+  Map<String, dynamic>? _arOverlay;
+  Timer? _arOverlayTimer;
   bool _midiendo = false;
   final List<Offset> _puntosMedir = [];
   Size? _imgSize;
@@ -119,6 +124,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   void dispose() {
     _gyroSub?.cancel();
     _tourTimer?.cancel();
+    _arOverlayTimer?.cancel();
     _animController.dispose();
     _flutterTts.stop();
     _speech.stop();
@@ -268,6 +274,39 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
 
   void _registrarPuntoMedicion(Offset localPos, Size viewSize) {
     if (_midiendo || _puntosMedir.length >= 2) return;
+
+    // Lente inteligente: si el toque cae dentro del bbox de un objeto
+    // detectado, muestra su cota directamente en vez de un punto libre.
+    final uv = _puntoAUv(localPos, viewSize);
+    final yawT = (uv.dx - 0.5) * 360.0;
+    final pitchT = (0.5 - uv.dy) * 180.0;
+    final cotas = _metaversoDatos?['cotas_ar'];
+    if (cotas is List) {
+      for (final c in cotas) {
+        if (c is! Map || c['panorama_id'] != _panoramaActualId) continue;
+        final y0 = (c['yaw0'] as num?)?.toDouble();
+        final y1 = (c['yaw1'] as num?)?.toDouble();
+        final p0 = (c['pitch0'] as num?)?.toDouble();
+        final p1 = (c['pitch1'] as num?)?.toDouble();
+        if (y0 == null || y1 == null || p0 == null || p1 == null) continue;
+        if (yawT >= y0 && yawT <= y1 && pitchT >= p0 && pitchT <= p1) {
+          final ov = Map<String, dynamic>.from(c);
+          ov['valor'] = c['cota'];
+          _arOverlayTimer?.cancel();
+          setState(() {
+            _arOverlay = ov;
+            _locucionActual = '${c['elemento']}: ${c['cota']}';
+            _fuenteRespuesta = _fuenteLabels['medicion_estimada'];
+            _notaRespuesta = 'Estimación visual sobre la imagen real.';
+          });
+          _arOverlayTimer = Timer(const Duration(seconds: 6), () {
+            if (mounted) setState(() => _arOverlay = null);
+          });
+          return;
+        }
+      }
+    }
+
     setState(() => _puntosMedir.add(localPos));
     if (_puntosMedir.length == 2) _ejecutarMedicion(viewSize);
   }
@@ -501,6 +540,29 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
             ..._buildPinesAR(
               Size(constraints.maxWidth, constraints.maxHeight),
             ),
+
+            // ─── HUD de cotas estilo "lentes inteligentes" ───
+            if (!_vrMode && (_mostrarCotasAR || _arOverlay != null))
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _CotaHUDPainter(
+                      cotas: !_mostrarCotasAR
+                          ? const <Map>[]
+                          : [
+                              for (final c in (_metaversoDatos?['cotas_ar'] as List? ?? const []))
+                                if (c is Map && c['panorama_id'] == _panoramaActualId) c,
+                            ],
+                      overlay: _arOverlay,
+                      projector: (yaw, pitch) => _punto360APantalla(
+                        yaw,
+                        pitch,
+                        Size(constraints.maxWidth, constraints.maxHeight),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
             if (_locucionActual.isNotEmpty)
               Positioned(
@@ -767,6 +829,17 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
         }
       });
 
+      // Overlay AR de medición: enciende la línea de cota sobre el objeto
+      if (res['ar_overlay'] is Map) {
+        final ov = Map<String, dynamic>.from(res['ar_overlay'] as Map);
+        _arOverlayTimer?.cancel();
+        setState(() => _arOverlay = ov);
+        final dur = ((ov['duracion_s'] as num?) ?? 6).toInt();
+        _arOverlayTimer = Timer(Duration(seconds: dur), () {
+          if (mounted) setState(() => _arOverlay = null);
+        });
+      }
+
       // Decir la respuesta en voz alta a través de los altavoces / auriculares
       _hablarEnVozAlta(respuestaTexto + (res['nota'] != null ? ' ${res['nota']}' : ''));
 
@@ -847,18 +920,8 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
       );
     }
 
-    // Cotas métricas del ambiente activo (solo objetos detectados por visión)
-    if (_mostrarCotasAR && _metaversoDatos?['cotas_ar'] != null) {
-      for (final c in (_metaversoDatos!['cotas_ar'] as List)) {
-        if (c['panorama_id'] != _panoramaActualId) continue;
-        addPin(
-          yaw: c['yaw'],
-          pitch: c['pitch'],
-          icon: Icons.straighten,
-          label: '${c['elemento']}: ${c['cota']}',
-        );
-      }
-    }
+    // Las cotas ya no son pines: se dibujan como líneas de medida reales
+    // sobre cada objeto en _CotaHUDPainter (capa del Stack principal).
 
     // Hotspots navegables del panorama activo (paridad con la web)
     final panoramas = _metaversoDatos?['panoramas'];
@@ -887,6 +950,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                         _panoramaActualUrl = destino['archivo'];
                         _panoramaActualId = destino['id'];
                         _puntosMedir.clear();
+                        _arOverlay = null;
                         _resolverDimensionesPanorama();
                         _yaw = 0.0;
                         _pitch = 0.0;
@@ -1164,4 +1228,139 @@ class _LineaMedicionPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_LineaMedicionPainter old) => old.a != a || old.b != b;
+}
+
+/// HUD de cotas estilo "lentes inteligentes": dibuja la línea de medida
+/// real sobre el objeto detectado (top del bbox para horizontales, borde
+/// derecho para verticales), ticks de regla, brackets de esquina y chip
+/// con el valor estimado.
+class _CotaHUDPainter extends CustomPainter {
+  final List<Map> cotas;
+  final Map? overlay;
+  final Offset? Function(double yaw, double pitch) projector;
+
+  _CotaHUDPainter({
+    required this.cotas,
+    required this.overlay,
+    required this.projector,
+  });
+
+  void _lineaPunteada(Canvas canvas, Offset a, Offset b, Paint paint,
+      {double dash = 6, double gap = 5}) {
+    final d = b - a;
+    final len = d.distance;
+    if (len <= 0) return;
+    final dir = d / len;
+    double t = 0;
+    while (t < len) {
+      final t2 = (t + dash).clamp(0.0, len);
+      canvas.drawLine(a + dir * t, a + dir * t2, paint);
+      t = t2 + gap;
+    }
+  }
+
+  void _etiqueta(Canvas canvas, Offset centro, String texto, bool destacado) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: texto,
+        style: const TextStyle(
+          color: Color(0xFFE2F4FF),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final rect = Rect.fromCenter(
+      center: centro,
+      width: tp.width + 14,
+      height: tp.height + 8,
+    );
+    final fondo = Paint()
+      ..color = destacado
+          ? const Color(0xFF0E7490).withValues(alpha: 0.92)
+          : const Color(0xFF0F172A).withValues(alpha: 0.85);
+    final borde = Paint()
+      ..color = const Color(0xFF38BDF8).withValues(alpha: 0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(5)), fondo);
+    canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(5)), borde);
+    tp.paint(canvas, rect.center - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  void _dibujar(Canvas canvas, Map c, bool destacado) {
+    final color = destacado ? const Color(0xFF7DD3FC) : const Color(0xFF38BDF8);
+    final punteada = !destacado && c['confianza'] == 'baja';
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = destacado ? 2.0 : 1.5
+      ..style = PaintingStyle.stroke;
+    final fill = Paint()..color = color;
+
+    double? n(String k) => (c[k] as num?)?.toDouble();
+    final y0 = n('yaw0'), y1 = n('yaw1'), p0 = n('pitch0'), p1 = n('pitch1');
+    final etiqueta = '${c['elemento'] ?? ''} ${c['valor'] ?? c['cota'] ?? ''}'.trim();
+    final esVertical = c['tipo'] == 'vertical';
+
+    if (y0 == null || y1 == null || p0 == null || p1 == null) {
+      // Cota cualitativa sin bbox: punto + etiqueta
+      final y = n('yaw'), p = n('pitch');
+      if (y == null || p == null) return;
+      final pos = projector(y, p);
+      if (pos == null) return;
+      canvas.drawCircle(pos, 3, fill);
+      _etiqueta(canvas, pos - const Offset(0, 22), etiqueta, destacado);
+      return;
+    }
+
+    final a = projector(esVertical ? y1 : y0, esVertical ? p0 : p1);
+    final b = projector(y1, p1);
+    if (a == null || b == null) return;
+    if ((b - a).dx.abs() > 900) return; // costura ±180°
+
+    // Brackets en las 4 esquinas del bbox
+    if (destacado || c['confianza'] == 'alta') {
+      const L = 9.0;
+      final esquinas = [
+        [projector(y0, p1), 1.0, 1.0],
+        [projector(y1, p1), -1.0, 1.0],
+        [projector(y0, p0), 1.0, -1.0],
+        [projector(y1, p0), -1.0, -1.0],
+      ];
+      for (final e in esquinas) {
+        final pt = e[0] as Offset?;
+        if (pt == null) continue;
+        final sx = e[1] as double, sy = e[2] as double;
+        canvas.drawLine(pt + Offset(sx * L, 0), pt, paint);
+        canvas.drawLine(pt, pt + Offset(0, sy * L), paint);
+      }
+    }
+
+    // Línea de cota + ticks de extremo
+    if (punteada) {
+      _lineaPunteada(canvas, a, b, paint);
+    } else {
+      canvas.drawLine(a, b, paint);
+    }
+    const T = 7.0;
+    final tick = esVertical ? const Offset(T, 0) : const Offset(0, T);
+    canvas.drawLine(a - tick, a + tick, paint);
+    canvas.drawLine(b - tick, b + tick, paint);
+
+    final centro = (a + b) / 2;
+    _etiqueta(canvas, centro + (esVertical ? const Offset(0, 20) : const Offset(0, -8)), etiqueta, destacado);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final c in cotas) {
+      _dibujar(canvas, c, false);
+    }
+    final ov = overlay;
+    if (ov != null) _dibujar(canvas, ov, true);
+  }
+
+  @override
+  bool shouldRepaint(_CotaHUDPainter old) => true; // yaw/pitch cambian por frame
 }
