@@ -216,6 +216,34 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
     );
   }
 
+  // ─── Proyección inversa: (yaw°, pitch°) -> punto en pantalla ───
+  // Misma cadena de transformación que _puntoAUv pero en sentido inverso:
+  // sirve para anclar pines AR (cotas, barrio, hotspots) al panorama.
+  Offset? _punto360APantalla(double yawDeg, double pitchDeg, Size view) {
+    final w = view.width;
+    final h = view.height;
+    final iw = _imgSize?.width ?? (2 * h);
+    final ih = _imgSize?.height ?? h;
+    final s = math.max(w / iw, h / ih);
+    final rw = iw * s;
+    final rh = ih * s;
+    final ax = (_yaw / math.pi).clamp(-1.0, 1.0);
+    final ay = _pitch.clamp(-1.0, 1.0);
+    final ox = (ax + 1) / 2 * (w - rw);
+    final oy = (ay + 1) / 2 * (h - rh);
+    var y = yawDeg % 360;
+    if (y > 180) y -= 360;
+    if (y < -180) y += 360;
+    final u = y / 360 + 0.5;
+    final v = (0.5 - pitchDeg / 180).clamp(0.0, 1.0);
+    final qx = ox + u * rw;
+    final qy = oy + v * rh;
+    final px = w / 2 + (qx - w / 2) * _fov;
+    final py = h / 2 + (qy - h / 2) * _fov;
+    if (px < -60 || px > w + 60 || py < -60 || py > h + 60) return null;
+    return Offset(px, py);
+  }
+
   // ─── Medidor táctil: toque de pantalla -> (u, v) del panorama equirectangular ───
   Offset _puntoAUv(Offset p, Size view) {
     final w = view.width;
@@ -475,57 +503,10 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
           children: [
             _vrMode ? _buildVRDualView() : _buildSinglePanoramaView(),
 
-            // ─── Capa Flotante de Cotas en Realidad Aumentada (HUD) ───
-            if (_mostrarCotasAR && _metaversoDatos?['cotas_ar'] != null)
-              Positioned(
-                top: 70,
-                left: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.6)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.straighten, color: Color(0xFF38BDF8), size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Cota AR: ${(_metaversoDatos!['cotas_ar'] as List).first['cota']}',
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // ─── Capa Flotante de Pines del Barrio en Realidad Aumentada ───
-            if (_mostrarPinesBarrioAR && _metaversoDatos?['pines_ar_barrio'] != null)
-              Positioned(
-                top: 105,
-                left: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.6)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.place, color: Color(0xFF38BDF8), size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Entorno AR: ${(_metaversoDatos!['pines_ar_barrio'] as List).first['nombre']} (${(_metaversoDatos!['pines_ar_barrio'] as List).first['distancia_m']}m)',
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // ─── Pines AR anclados al panorama (cotas, barrio, hotspots) ───
+            ..._buildPinesAR(
+              Size(constraints.maxWidth, constraints.maxHeight),
+            ),
 
             if (_locucionActual.isNotEmpty)
               Positioned(
@@ -826,6 +807,123 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
 
 
 
+
+  // ─── Pines AR anclados a coordenadas esféricas del panorama ───
+  // Paridad con la capa AR de la web: cada pin flota en su (yaw, pitch)
+  // real y se mueve con la cámara. Los hotspots son táctiles: navegan
+  // al ambiente destino como en el visor Pannellum.
+  List<Widget> _buildPinesAR(Size view) {
+    if (_vrMode) return const [];
+    final pins = <Widget>[];
+
+    void addPin({
+      required dynamic yaw,
+      required dynamic pitch,
+      required IconData icon,
+      required String label,
+      VoidCallback? onTap,
+    }) {
+      final y = (yaw as num?)?.toDouble();
+      final p = (pitch as num?)?.toDouble();
+      if (y == null || p == null) return;
+      final pos = _punto360APantalla(y, p, view);
+      if (pos == null) return;
+      pins.add(
+        Positioned(
+          left: pos.dx - 14,
+          top: pos.dy - 14,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Tooltip(
+              message: label,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+                  border: Border.all(
+                    color: const Color(0xFF38BDF8).withValues(alpha: 0.7),
+                  ),
+                ),
+                child: Icon(icon, color: const Color(0xFF38BDF8), size: 14),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Cotas métricas del ambiente activo (solo objetos detectados por visión)
+    if (_mostrarCotasAR && _metaversoDatos?['cotas_ar'] != null) {
+      for (final c in (_metaversoDatos!['cotas_ar'] as List)) {
+        if (c['panorama_id'] != _panoramaActualId) continue;
+        addPin(
+          yaw: c['yaw'],
+          pitch: c['pitch'],
+          icon: Icons.straighten,
+          label: '${c['elemento']}: ${c['cota']}',
+        );
+      }
+    }
+
+    // Pines del entorno urbano (POIs reales del barrio)
+    if (_mostrarPinesBarrioAR && _metaversoDatos?['pines_ar_barrio'] != null) {
+      for (final p in (_metaversoDatos!['pines_ar_barrio'] as List)) {
+        addPin(
+          yaw: p['yaw'],
+          pitch: p['pitch'],
+          icon: Icons.place,
+          label: '${p['nombre']} · ${p['distancia_m']}m (~${p['minutos_a_pie']} min a pie)',
+        );
+      }
+    }
+
+    // Hotspots navegables del panorama activo (paridad con la web)
+    final panoramas = _metaversoDatos?['panoramas'];
+    if (panoramas is List) {
+      final activo = panoramas.firstWhere(
+        (p) => p['id'] == _panoramaActualId || p['archivo'] == _panoramaActualUrl,
+        orElse: () => null,
+      );
+      if (activo != null && activo['hotspots'] is List) {
+        for (final hs in (activo['hotspots'] as List)) {
+          final destinoId = hs['escena_destino'] ?? hs['escena_destino_id'];
+          addPin(
+            yaw: hs['yaw'],
+            pitch: hs['pitch'],
+            icon: Icons.navigation,
+            label: hs['texto_ayuda'] ?? 'Ir a otro ambiente',
+            onTap: destinoId == null
+                ? null
+                : () {
+                    final destino = panoramas.firstWhere(
+                      (p) => p['id'] == destinoId,
+                      orElse: () => null,
+                    );
+                    if (destino != null && destino['archivo'] != null) {
+                      setState(() {
+                        _panoramaActualUrl = destino['archivo'];
+                        _panoramaActualId = destino['id'];
+                        _puntosMedir.clear();
+                        _resolverDimensionesPanorama();
+                        _yaw = 0.0;
+                        _pitch = 0.0;
+                        if (destino['sugerencias'] is List &&
+                            (destino['sugerencias'] as List).isNotEmpty) {
+                          _sugerencias = (destino['sugerencias'] as List)
+                              .map((e) => e.toString())
+                              .toList();
+                        }
+                      });
+                    }
+                  },
+          );
+        }
+      }
+    }
+
+    return pins;
+  }
 
   Widget _buildSinglePanoramaView() {
     final alignX = (_yaw / math.pi).clamp(-1.0, 1.0);
