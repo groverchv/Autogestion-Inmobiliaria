@@ -82,7 +82,7 @@ const MisNotificaciones = () => {
                 onClick={() => setTab('sistema')}
                 style={{
                   border: '1px solid var(--color-border)',
-                  background: tab === 'sistema' ? '#ecfeff' : 'var(--color-surface)',
+                  background: tab === 'sistema' ? 'rgba(14,165,233,0.14)' : 'var(--color-surface)',
                   color: 'var(--color-text)',
                   borderRadius: '8px',
                   padding: '8px 10px',

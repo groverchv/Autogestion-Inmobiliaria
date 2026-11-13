@@ -1,8 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/mensajes_error.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
+import 'agente_screen.dart';
 import 'auditoria_camara_screen.dart';
 import 'captura_360_screen.dart';
 import 'mis_mensajes_screen.dart';
@@ -55,7 +59,7 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = mensajeError(e);
         });
       }
     }
@@ -356,6 +360,21 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
         actions: [
           IconButton(
+            icon: const Icon(Icons.share_outlined,
+                color: AppColors.textSecondary),
+            tooltip: 'Compartir inmueble',
+            onPressed: () {
+              SharePlus.instance.share(
+                ShareParams(
+                  text: '${item.titulo}\n'
+                      '${item.tipoOferta} — ${item.precio}\n'
+                      '${item.direccionCompleta}\n\n'
+                      'Publicado en Inmobiliaria Nobleve',
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: Icon(
               item.isFavorito ? Icons.favorite : Icons.favorite_border,
               color: item.isFavorito
@@ -381,8 +400,7 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                   SizedBox(
                     height: 240,
                     child: fotos.isNotEmpty
-                        ? Image.network(
-                            fotos[_selectedPhotoIndex],
+                        ? CachedNetworkImage(imageUrl: fotos[_selectedPhotoIndex],
                             fit: BoxFit.cover,
                           )
                         : Container(
@@ -426,8 +444,7 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(6),
-                                child: Image.network(
-                                  fotos[index],
+                                child: CachedNetworkImage(imageUrl: fotos[index],
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -913,6 +930,25 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          AgenteScreen(inmuebleId: widget.inmuebleId),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.smart_toy_outlined,
+                    color: AppColors.primary,
+                    size: 16,
+                  ),
+                  label: const Text(
+                    'Preguntar al asistente sobre esta propiedad',
+                    style: TextStyle(color: AppColors.primary, fontSize: 12),
                   ),
                 ),
               ],

@@ -194,7 +194,7 @@ const VisorVRGlasses = ({ panoramas = [], onClose, audioRef = null, inmuebleId =
         }
       } catch (err) {
         console.error('Error al solicitar permiso de giroscopio:', err);
-        if (!silencioso) alert('Error al solicitar permiso: ' + err.message);
+        if (!silencioso) alert('No pudimos activar el sensor de movimiento. Revisa los permisos del navegador.');
       }
     } else {
       setGyroPermission('granted');

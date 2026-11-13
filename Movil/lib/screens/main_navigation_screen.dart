@@ -10,6 +10,8 @@ import 'mis_contratos_screen.dart';
 import 'mis_pagos_screen.dart';
 import 'mis_notificaciones_screen.dart';
 import 'finanzas_propietario_screen.dart';
+import 'agente_screen.dart';
+import '../widgets/estados.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -293,6 +295,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           letterSpacing: -0.3,
                         ),
                       ),
+                      const Spacer(),
+                      IconButton(
+                        tooltip: 'Asistente virtual',
+                        icon: const Icon(
+                          Icons.smart_toy_outlined,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AgenteScreen(),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -330,7 +347,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
 
       // ─── Pantalla Activa ───
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: Column(
+        children: [
+          const BannerConectividad(),
+          Expanded(
+            child: IndexedStack(index: _currentIndex, children: _screens),
+          ),
+        ],
+      ),
 
       // ─── Barra Inferior con Fondo Oscuro (Propiedades, Trámites) ───
       bottomNavigationBar: Container(

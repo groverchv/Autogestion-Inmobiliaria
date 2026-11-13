@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/mensajes_error.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
@@ -43,7 +44,7 @@ class _MisMensajesScreenState extends State<MisMensajesScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = mensajeError(e);
         });
       }
     }

@@ -22,6 +22,7 @@ import PagoExitoso from './pages/Public/PagoExitoso';
 import PagoCancelado from './pages/Public/PagoCancelado';
 import MisContratos from './pages/Public/MisContratos';
 import MisPagos from './pages/Public/MisPagos';
+import MiPlan from './pages/Public/MiPlan';
 import MiActividad from './pages/Public/MiActividad';
 import WizardPublicar from './pages/Public/WizardPublicar';
 import LegalPage from './pages/Legal/LegalPage';
@@ -108,6 +109,10 @@ const router = createBrowserRouter([
           {
             path: '/mis-pagos',
             element: <MisPagos />,
+          },
+          {
+            path: '/mi-plan',
+            element: <MiPlan />,
           },
           {
             path: '/mis-finanzas',

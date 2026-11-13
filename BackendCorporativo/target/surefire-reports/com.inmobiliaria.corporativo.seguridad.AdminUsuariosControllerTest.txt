@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.inmobiliaria.corporativo.seguridad.AdminUsuariosControllerTest
+-------------------------------------------------------------------------------
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.152 s -- in com.inmobiliaria.corporativo.seguridad.AdminUsuariosControllerTest

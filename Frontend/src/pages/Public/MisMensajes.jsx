@@ -1859,7 +1859,7 @@ Puedes consultarme sobre las cláusulas, penalidades o términos que deseas camb
             type="text"
             value={whatsappNumero}
             onChange={(e) => setWhatsappNumero(e.target.value)}
-            placeholder="Ejemplo: +59170000000"
+            placeholder="Ejemplo: +59164526763"
             style={{
               width: '100%',
               border: '1px solid var(--color-border)',

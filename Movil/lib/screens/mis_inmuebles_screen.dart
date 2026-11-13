@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/mensajes_error.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/estados.dart';
 import 'captura_360_screen.dart';
 import 'wizard_publicar_screen.dart';
 import '../widgets/gestion_inmueble_modal.dart';
@@ -57,7 +60,7 @@ class _MisInmueblesScreenState extends State<MisInmueblesScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = mensajeError(e);
         });
       }
     }
@@ -331,7 +334,7 @@ class _MisInmueblesScreenState extends State<MisInmueblesScreen> {
 
   Widget _buildGridContent() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const CargandoView(mensaje: 'Cargando tu información…');
     }
 
     if (_errorMessage != null) {
@@ -421,10 +424,9 @@ class _MisInmueblesScreenState extends State<MisInmueblesScreen> {
                   height: 140,
                   width: double.infinity,
                   child: item.imagenPrincipal != null && item.imagenPrincipal!.isNotEmpty
-                      ? Image.network(
-                          item.imagenPrincipal!,
+                      ? CachedNetworkImage(imageUrl: item.imagenPrincipal!,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
+                          errorWidget: (context, error, stackTrace) => Container(
                             color: AppColors.surfaceElevated,
                             child: const Icon(Icons.home_work_outlined, size: 40, color: AppColors.textMuted),
                           ),

@@ -323,3 +323,4 @@ class AuditoriaCheckSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'creado', 'actualizado', 'auditor']
 
 
+

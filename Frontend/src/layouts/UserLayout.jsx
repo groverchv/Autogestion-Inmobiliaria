@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import UserMenu from '../components/UserMenu';
 import Footer from '../components/Footer';
 import CookieBanner from '../components/CookieBanner';
+import AgenteWidget from '../components/AgenteWidget';
 
 const UserLayout = () => {
   return (
@@ -15,6 +16,7 @@ const UserLayout = () => {
       </main>
       <Footer />
       <CookieBanner />
+      <AgenteWidget />
     </div>
   );
 };

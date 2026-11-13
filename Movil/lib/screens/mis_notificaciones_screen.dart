@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../utils/mensajes_error.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/estados.dart';
 
 class MisNotificacionesScreen extends StatefulWidget {
   const MisNotificacionesScreen({super.key});
@@ -41,7 +43,7 @@ class _MisNotificacionesScreenState extends State<MisNotificacionesScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = mensajeError(e);
         });
       }
     }
@@ -67,7 +69,7 @@ class _MisNotificacionesScreenState extends State<MisNotificacionesScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const CargandoView(mensaje: 'Cargando tu información…');
     }
 
     if (_errorMessage != null) {

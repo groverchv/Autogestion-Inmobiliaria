@@ -77,14 +77,18 @@ class RegistroView(viewsets.GenericViewSet):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request):
+        if not request.data.get('acepta_terminos'):
+            return Response(
+                {'acepta_terminos': ['Debes aceptar los Términos y Condiciones para crear tu cuenta.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        if request.data.get('acepta_terminos'):
-            from django.utils import timezone
-            user.acepto_terminos_at = timezone.now()
-            user.terminos_version = 'v1.0'
-            user.save(update_fields=['acepto_terminos_at', 'terminos_version'])
+        from django.utils import timezone
+        user.acepto_terminos_at = timezone.now()
+        user.terminos_version = 'v1.0'
+        user.save(update_fields=['acepto_terminos_at', 'terminos_version'])
         return Response(
             UsuarioSerializer(user).data,
             status=status.HTTP_201_CREATED,

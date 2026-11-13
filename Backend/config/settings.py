@@ -228,6 +228,8 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', '')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+# Tasa Bs → USD para cobrar planes en Stripe (BOB no es moneda soportada por Stripe)
+STRIPE_TASA_USD_BOB = float(os.getenv('STRIPE_TASA_USD_BOB', '6.96'))
 
 # ─── Frontend URL ───────────────────────────────────────────
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')

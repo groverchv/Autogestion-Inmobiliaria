@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
@@ -206,10 +207,9 @@ class _AuditoriaCamaraScreenState extends State<AuditoriaCamaraScreen> {
                               height: 140,
                               width: double.infinity,
                               child: fotoUrl.isNotEmpty
-                                  ? Image.network(
-                                      fotoUrl,
+                                  ? CachedNetworkImage(imageUrl: fotoUrl,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Container(
+                                      errorWidget: (context, error, stackTrace) => Container(
                                         color: AppColors.surfaceElevated,
                                         child: const Icon(Icons.broken_image, color: AppColors.textMuted, size: 40),
                                       ),

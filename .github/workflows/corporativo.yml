@@ -1,0 +1,67 @@
+name: Corporativo CI
+
+on:
+  push:
+    paths:
+      - 'BackendCorporativo/**'
+      - 'FrontendCorporativo/**'
+      - '.github/workflows/corporativo.yml'
+  pull_request:
+    paths:
+      - 'BackendCorporativo/**'
+      - 'FrontendCorporativo/**'
+
+jobs:
+  backend:
+    name: Backend Spring Boot (compile + test)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: inmobiliaria_corporativo
+          POSTGRES_USER: corporativo
+          POSTGRES_PASSWORD: test_password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U corporativo -d inmobiliaria_corporativo"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compilar
+        working-directory: BackendCorporativo
+        run: ./mvnw -B compile || mvn -B compile
+      - name: Tests + validación Flyway (PostgreSQL real)
+        working-directory: BackendCorporativo
+        env:
+          DB_HOST: localhost
+          DB_USER: corporativo
+          DB_PASSWORD: test_password
+          JWT_SECRET: ci-jwt-secret-de-prueba-32-caracteres-minimo
+          ADMIN_PASSWORD: TestAdmin123!
+        run: ./mvnw -B test || mvn -B test
+
+  frontend:
+    name: Frontend SvelteKit (check + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: FrontendCorporativo/package-lock.json
+      - name: Dependencias
+        working-directory: FrontendCorporativo
+        run: npm ci
+      - name: svelte-check
+        working-directory: FrontendCorporativo
+        run: npm run check
+      - name: Build de producción
+        working-directory: FrontendCorporativo
+        run: npm run build

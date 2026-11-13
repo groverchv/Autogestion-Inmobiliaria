@@ -91,6 +91,7 @@ class Inmueble(models.Model):
     # Coordenadas GPS
     gps = models.CharField(max_length=100, null=True, blank=True, help_text="Coordenadas GPS (ej. -17.7898, -63.1939)")
     modelo_3d = models.CharField(max_length=500, null=True, blank=True, help_text="URL del modelo 3D (.glb) para visualización AR")
+    vistas = models.PositiveIntegerField(default=0, help_text='Veces que se vio el detalle público')
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
@@ -255,6 +256,10 @@ class Publicacion(models.Model):
         choices=EstadoPublicacion.choices,
         default=EstadoPublicacion.BORRADOR,
         db_index=True
+    )
+    destacada = models.BooleanField(
+        default=False,
+        help_text='Aparece primero en el catálogo (requiere plan con destacados)',
     )
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
@@ -845,3 +850,47 @@ class AuditoriaAmbienteFoto(models.Model):
 
 
 
+
+
+class AgenteLog(models.Model):
+    """Bitácora del asistente virtual: qué pregunta el usuario, qué tool/proveedor
+    respondió, latencia y éxito — para métricas de uso en el panel."""
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='agente_logs',
+    )
+    pregunta = models.CharField(max_length=1000)
+    tool = models.CharField(max_length=40, default='ninguna')
+    latencia_ms = models.PositiveIntegerField(default=0)
+    ok = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'inmuebles_agente_log'
+        verbose_name = 'Registro de Agente'
+        verbose_name_plural = 'Registros de Agente'
+        ordering = ['-creado']
+        indexes = [
+            models.Index(fields=['usuario', 'creado'], name='agente_log_user_idx'),
+        ]
+
+
+class AgenteSesion(models.Model):
+    """Memoria persistente del asistente: historial reciente + resumen de
+    preferencias del usuario (zona, presupuesto, tipo) entre sesiones."""
+
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='agente_sesion',
+    )
+    historial = models.JSONField(default=list, blank=True)
+    memoria = models.CharField(max_length=400, blank=True, default='')
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'inmuebles_agente_sesion'
+        verbose_name = 'Sesión de Agente'
+        verbose_name_plural = 'Sesiones de Agente'

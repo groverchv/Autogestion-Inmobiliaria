@@ -1,0 +1,41 @@
+name: Movil Flutter
+
+on:
+  push:
+    branches: [main]
+    paths: ['Movil/**', '.github/workflows/movil.yml']
+  pull_request:
+    paths: ['Movil/**', '.github/workflows/movil.yml']
+
+jobs:
+  analyze-test-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Movil
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Análisis estático
+        run: flutter analyze
+
+      - name: Tests unitarios y de widgets
+        run: flutter test
+
+      - name: Compilar APK debug (smoke de build)
+        run: flutter build apk --debug
+
+      - name: Subir APK de verificación
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: Movil/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

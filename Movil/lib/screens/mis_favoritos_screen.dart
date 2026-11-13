@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/mensajes_error.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/estados.dart';
 import 'propiedad_detalle_screen.dart';
 
 class MisFavoritosScreen extends StatefulWidget {
@@ -42,7 +45,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = mensajeError(e);
         });
       }
     }
@@ -68,7 +71,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const CargandoView(mensaje: 'Cargando tu información…');
     }
 
     if (_errorMessage != null) {
@@ -112,7 +115,7 @@ class _MisFavoritosScreenState extends State<MisFavoritosScreen> {
                 width: 60,
                 height: 60,
                 child: item.imagenPrincipal != null && item.imagenPrincipal!.isNotEmpty
-                    ? Image.network(item.imagenPrincipal!, fit: BoxFit.cover)
+                    ? CachedNetworkImage(imageUrl: item.imagenPrincipal!, fit: BoxFit.cover)
                     : Container(color: AppColors.surfaceElevated, child: const Icon(Icons.home, color: AppColors.textMuted)),
               ),
             ),

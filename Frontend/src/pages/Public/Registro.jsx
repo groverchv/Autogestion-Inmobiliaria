@@ -52,6 +52,10 @@ const Registro = () => {
       setError('Las contraseñas no coinciden. Revísalas.');
       return;
     }
+    if (!aceptaTerminos) {
+      setError('Debes leer y aceptar los Términos y Condiciones para continuar.');
+      return;
+    }
     setPaso(2);
   };
 
@@ -162,6 +166,50 @@ const Registro = () => {
               </div>
             </div>
 
+            {/* Checkbox Términos y Condiciones */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: aceptaTerminos ? '1px solid rgba(14, 165, 233, 0.5)' : '1px solid rgba(51, 65, 85, 0.6)',
+              padding: '12px',
+              borderRadius: '10px',
+              margin: '12px 0 18px 0'
+            }}>
+              <input
+                type="checkbox"
+                id="terminos_check"
+                checked={aceptaTerminos}
+                onChange={(e) => setAceptaTerminos(e.target.checked)}
+                style={{ marginTop: '3px', cursor: 'pointer', accentColor: '#0ea5e9' }}
+              />
+              <label htmlFor="terminos_check" style={{ fontSize: '0.82rem', color: '#94a3b8', cursor: 'pointer', lineHeight: '1.4' }}>
+                He leído y acepto expresamente los{' '}
+                <button
+                  type="button"
+                  onClick={() => setModalTerminosAbierto(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#38bdf8',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    padding: 0,
+                    fontSize: '0.82rem'
+                  }}
+                >
+                  Términos y Condiciones Generales de Uso
+                </button>
+                {' '}y la{' '}
+                <Link to="/privacidad" target="_blank" style={{ color: '#38bdf8', fontWeight: 'bold' }}>
+                  Política de Privacidad
+                </Link>
+                {' '}de Inmobiliaria Nobleve.
+              </label>
+            </div>
+
             <Button type="button" fullWidth onClick={irAPaso2}>
               Siguiente
             </Button>
@@ -204,50 +252,6 @@ const Registro = () => {
                 required
               />
             </div>
-
-        {/* Checkbox Términos y Condiciones */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '10px',
-          background: 'rgba(15, 23, 42, 0.6)',
-          border: aceptaTerminos ? '1px solid rgba(14, 165, 233, 0.5)' : '1px solid rgba(51, 65, 85, 0.6)',
-          padding: '12px',
-          borderRadius: '10px',
-          margin: '12px 0 18px 0'
-        }}>
-          <input 
-            type="checkbox" 
-            id="terminos_check"
-            checked={aceptaTerminos}
-            onChange={(e) => setAceptaTerminos(e.target.checked)}
-            style={{ marginTop: '3px', cursor: 'pointer', accentColor: '#0ea5e9' }}
-          />
-          <label htmlFor="terminos_check" style={{ fontSize: '0.82rem', color: '#94a3b8', cursor: 'pointer', lineHeight: '1.4' }}>
-            He leído y acepto expresamente los{' '}
-            <button
-              type="button"
-              onClick={() => setModalTerminosAbierto(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#38bdf8',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                padding: 0,
-                fontSize: '0.82rem'
-              }}
-            >
-              Términos y Condiciones Generales de Uso
-            </button>
-            {' '}y la{' '}
-            <Link to="/privacidad" target="_blank" style={{ color: '#38bdf8', fontWeight: 'bold' }}>
-              Política de Privacidad
-            </Link>
-            {' '}de Inmobiliaria Nobleve.
-          </label>
-        </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
               <button type="button" onClick={() => { setError(''); setPaso(1); }}

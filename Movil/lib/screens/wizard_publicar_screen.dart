@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/mensajes_error.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -156,7 +157,7 @@ class _WizardPublicarScreenState extends State<WizardPublicarScreen> {
       if (mounted) setState(() => _publicado = true);
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+        setState(() => _error = mensajeError(e));
       }
     } finally {
       if (mounted) setState(() => _guardando = false);

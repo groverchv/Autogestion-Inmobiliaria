@@ -387,7 +387,7 @@ const EditorRecorrido = ({ inmuebleId, tituloPropiedad = '', onClose }) => {
     } catch (err) {
       console.error(err);
       setGuardadoStatus('error');
-      alert('Error al guardar punto de recorrido: ' + (err.response?.data?.detail || err.message));
+      alert('No se pudo guardar el punto. Intenta de nuevo.');
     } finally {
       setGuardandoHotspot(false);
     }
@@ -407,7 +407,7 @@ const EditorRecorrido = ({ inmuebleId, tituloPropiedad = '', onClose }) => {
     } catch (err) {
       console.error(err);
       setGuardadoStatus('error');
-      alert('Error al eliminar punto de transición: ' + (err.response?.data?.detail || err.message));
+      alert('No se pudo eliminar el punto. Intenta de nuevo.');
     } finally {
       setEliminando(false);
     }

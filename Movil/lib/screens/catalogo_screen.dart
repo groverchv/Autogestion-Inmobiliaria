@@ -1,8 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/mensajes_error.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/estados.dart';
 import 'propiedad_detalle_screen.dart';
 
 class CatalogoScreen extends StatefulWidget {
@@ -55,7 +58,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = mensajeError(e);
         });
       }
     }
@@ -310,50 +313,31 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
 
   Widget _buildListContent() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const SkeletonLista(items: 6);
     }
 
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-            const SizedBox(height: 12),
-            Text('Error al cargar catálogo: $_errorMessage', style: const TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _cargarCatalogo,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryDark),
-              child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
+      return ErrorView(
+        mensaje: 'Error al cargar catálogo: $_errorMessage',
+        onReintentar: _cargarCatalogo,
       );
     }
 
     if (_inmueblesFiltrados.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.home_work_outlined, size: 48, color: AppColors.textMuted),
-            const SizedBox(height: 12),
-            const Text('No se encontraron propiedades', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            const SizedBox(height: 6),
-            const Text('Intenta ajustar los términos de búsqueda o filtros.', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-            const SizedBox(height: 14),
-            TextButton(
-              onPressed: () {
-                _searchController.clear();
-                _filtroTipoOferta = 'TODOS';
-                _filtroTipoInmueble = 'TODOS';
-                _filtroHabitaciones = 0;
-                _aplicarFiltros();
-              },
-              child: const Text('Restablecer Búsqueda', style: TextStyle(color: AppColors.primary)),
-            ),
-          ],
+      return EmptyView(
+        icono: Icons.home_work_outlined,
+        titulo: 'No se encontraron propiedades',
+        subtitulo: 'Intenta ajustar los términos de búsqueda o filtros.',
+        accion: TextButton(
+          onPressed: () {
+            _searchController.clear();
+            _filtroTipoOferta = 'TODOS';
+            _filtroTipoInmueble = 'TODOS';
+            _filtroHabitaciones = 0;
+            _aplicarFiltros();
+          },
+          child: const Text('Restablecer Búsqueda',
+              style: TextStyle(color: AppColors.primary)),
         ),
       );
     }
@@ -415,10 +399,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                     height: 95,
                     width: double.infinity,
                     child: item.imagenPrincipal != null && item.imagenPrincipal!.isNotEmpty
-                        ? Image.network(
-                            item.imagenPrincipal!,
+                        ? CachedNetworkImage(imageUrl: item.imagenPrincipal!,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
+                            errorWidget: (context, error, stackTrace) => Container(
                               color: AppColors.surfaceElevated,
                               child: const Icon(Icons.home_work_outlined, size: 28, color: AppColors.textMuted),
                             ),

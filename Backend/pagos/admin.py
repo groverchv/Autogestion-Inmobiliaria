@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe
+from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe, Suscripcion, PagoSuscripcion
 
 
 @admin.register(TipoPago)
@@ -53,3 +53,34 @@ class TransaccionStripeAdmin(admin.ModelAdmin):
     list_filter = ['estado', 'tipo_operacion', 'moneda']
     search_fields = ['stripe_session_id', 'stripe_payment_intent', 'descripcion']
     readonly_fields = ['stripe_session_id', 'stripe_payment_intent', 'comprobante_url']
+
+
+@admin.register(Suscripcion)
+class SuscripcionAdmin(admin.ModelAdmin):
+    list_display = ['id', 'usuario', 'plan', 'estado', 'fecha_vencimiento', 'creado']
+    list_filter = ['estado', 'plan']
+    search_fields = ['usuario__username', 'usuario__email']
+
+
+@admin.register(PagoSuscripcion)
+class PagoSuscripcionAdmin(admin.ModelAdmin):
+    list_display = ['id', 'usuario', 'plan', 'monto', 'metodo', 'estado', 'creado']
+    list_filter = ['estado', 'metodo', 'plan']
+    search_fields = ['usuario__username', 'usuario__email', 'referencia']
+    actions = ['confirmar_pagos', 'rechazar_pagos']
+
+    @admin.action(description='Confirmar pagos seleccionados (activa el plan)')
+    def confirmar_pagos(self, request, queryset):
+        n = 0
+        for pago in queryset.filter(estado=PagoSuscripcion.Estado.EN_REVISION):
+            pago.estado = PagoSuscripcion.Estado.COMPLETADO
+            pago.save()
+            n += 1
+        self.message_user(request, f'{n} pago(s) confirmados y planes activados.')
+
+    @admin.action(description='Rechazar pagos seleccionados')
+    def rechazar_pagos(self, request, queryset):
+        n = queryset.filter(estado=PagoSuscripcion.Estado.EN_REVISION).update(
+            estado=PagoSuscripcion.Estado.RECHAZADO
+        )
+        self.message_user(request, f'{n} pago(s) rechazados.')

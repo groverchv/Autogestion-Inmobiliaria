@@ -26,10 +26,10 @@ const Footer = () => {
             <MapPin size={13} /> Santa Cruz de la Sierra, Bolivia
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-            <Mail size={13} /> contacto@nobleve.bo
+            <Mail size={13} /> groverchoquevillca80@gmail.com
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-            <Phone size={13} /> +591 70000000
+            <Phone size={13} /> +591 64526763
           </div>
         </div>
         <nav aria-label="Enlaces legales" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

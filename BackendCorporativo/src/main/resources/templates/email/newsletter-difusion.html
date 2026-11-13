@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+    <div style="background:#0f172a;padding:28px 32px;">
+      <span style="color:#ffffff;font-size:20px;font-weight:bold;">Inmobiliaria <span style="color:#38bdf8;">360</span></span>
+    </div>
+    <div style="padding:32px;">
+      <div style="color:#334155;line-height:1.7;" th:utext="${contenido}">Contenido</div>
+    </div>
+    <div style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;">
+      <p style="color:#94a3b8;font-size:12px;margin:0 0 6px;">Inmobiliaria 360 — Autogestión inmobiliaria con IA y Realidad Aumentada</p>
+      <p style="color:#94a3b8;font-size:12px;margin:0;">
+        Recibiste este correo por tu suscripción a nuestro boletín (<span th:text="${email}">correo</span>).
+        <a th:href="${enlaceBaja}" style="color:#64748b;text-decoration:underline;">Darse de baja</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

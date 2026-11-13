@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/mensajes_error.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 
@@ -27,7 +28,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _errorMessage = mensajeError(e);
       notifyListeners();
       return false;
     }
@@ -45,7 +46,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _errorMessage = mensajeError(e);
       notifyListeners();
       return false;
     }

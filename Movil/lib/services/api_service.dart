@@ -1,13 +1,27 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/models.dart';
 
+/// Error de red con mensaje listo para mostrar al usuario.
+class ApiException implements Exception {
+  final String mensaje;
+  const ApiException(this.mensaje);
+  @override
+  String toString() => mensaje;
+}
+
 class ApiService {
   final _storage = const FlutterSecureStorage();
   String _baseUrl = AppConfig.baseUrl;
+
+  static const _timeout = Duration(seconds: 25);
+  static const _maxIntentos = 2;
 
   void setBaseUrl(String url) {
     _baseUrl = url.replaceAll(RegExp(r'/$'), '');
@@ -33,9 +47,85 @@ class ApiService {
     if (token != null) 'Authorization': 'Bearer $token',
   };
 
+  /// Envoltura resiliente para todas las llamadas JSON de la API:
+  /// timeout por llamada, reintento con backoff en 5xx/timeout y
+  /// refresh transparente del access token cuando el servidor responde 401.
+  Future<http.Response> _request(
+    String metodo,
+    Uri uri, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    final conexiones = await Connectivity().checkConnectivity();
+    if (conexiones.every((c) => c == ConnectivityResult.none)) {
+      throw const ApiException('Sin conexión a internet.');
+    }
+    var h = headers ?? _headers(await getToken());
+    for (var i = 0; i < _maxIntentos; i++) {
+      http.Response resp;
+      try {
+        resp = await switch (metodo) {
+          'GET' => http.get(uri, headers: h).timeout(_timeout),
+          'POST' => http.post(uri, headers: h, body: body).timeout(_timeout),
+          'PATCH' => http.patch(uri, headers: h, body: body).timeout(_timeout),
+          'PUT' => http.put(uri, headers: h, body: body).timeout(_timeout),
+          'DELETE' => http.delete(uri, headers: h).timeout(_timeout),
+          _ => throw ArgumentError('Método no soportado: $metodo'),
+        };
+      } on TimeoutException {
+        if (i + 1 == _maxIntentos) {
+          throw const ApiException(
+            'El servidor tardó demasiado en responder. Revisa tu conexión.',
+          );
+        }
+        await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+        continue;
+      } on SocketException {
+        throw const ApiException('Sin conexión a internet.');
+      }
+
+      // Token expirado → renovar una vez y reintentar con el nuevo
+      if (resp.statusCode == 401 && await _renovarToken()) {
+        h = _headers(await getToken());
+        continue;
+      }
+      // Error del servidor → un reintento con backoff, luego devolver
+      if (resp.statusCode >= 500 && i + 1 < _maxIntentos) {
+        await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+        continue;
+      }
+      return resp;
+    }
+    throw const ApiException('No se pudo completar la solicitud.');
+  }
+
+  /// Renueva el access token con el refresh guardado. Devuelve false si no
+  /// hay refresh válido (la sesión expiró y toca re-login).
+  Future<bool> _renovarToken() async {
+    final refresh = await _storage.read(key: 'refresh_token');
+    if (refresh == null || refresh.isEmpty) return false;
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('$_baseUrl/token/refresh/'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refresh': refresh}),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200) return false;
+      final data = jsonDecode(utf8.decode(resp.bodyBytes));
+      final access = data['access'];
+      if (access == null) return false;
+      await _storage.write(key: 'access_token', value: access);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ─── Autenticación & Perfil ──────────────────────────────────────────
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/usuarios/login/'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
@@ -57,7 +147,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/usuarios/registro/'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(userData),
@@ -78,7 +168,7 @@ class ApiService {
 
   Future<Usuario> getProfile() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/usuarios/me/'),
       headers: _headers(token),
     );
@@ -93,7 +183,7 @@ class ApiService {
 
   Future<Usuario> updateProfile(Map<String, dynamic> data) async {
     final token = await getToken();
-    final response = await http.patch(
+    final response = await _request('PATCH', 
       Uri.parse('$_baseUrl/usuarios/me/'),
       headers: _headers(token),
       body: jsonEncode(data),
@@ -108,7 +198,7 @@ class ApiService {
 
   Future<Map<String, int>> getBadges() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/usuarios/lista/badges/'),
       headers: _headers(token),
     );
@@ -135,7 +225,7 @@ class ApiService {
       url += 'publicaciones__tipo_oferta=${tipoOferta.toLowerCase()}&';
     }
 
-    final response = await http.get(Uri.parse(url), headers: _headers(token));
+    final response = await _request('GET', Uri.parse(url), headers: _headers(token));
     if (response.statusCode == 200) {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       List results = [];
@@ -151,7 +241,7 @@ class ApiService {
 
   Future<Inmueble> getInmuebleDetalle(int id) async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/lista/$id/'),
       headers: _headers(token),
     );
@@ -164,7 +254,7 @@ class ApiService {
 
   Future<Inmueble> updateInmueble(int id, Map<String, dynamic> data) async {
     final token = await getToken();
-    final response = await http.patch(
+    final response = await _request('PATCH', 
       Uri.parse('$_baseUrl/inmuebles/lista/$id/'),
       headers: _headers(token),
       body: jsonEncode(data),
@@ -179,7 +269,7 @@ class ApiService {
 
   Future<bool> deleteInmueble(int id) async {
     final token = await getToken();
-    final response = await http.delete(
+    final response = await _request('DELETE', 
       Uri.parse('$_baseUrl/inmuebles/lista/$id/'),
       headers: _headers(token),
     );
@@ -188,7 +278,7 @@ class ApiService {
 
   Future<List<Inmueble>> getMisInmuebles() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/mis_inmuebles/'),
       headers: _headers(token),
     );
@@ -208,7 +298,7 @@ class ApiService {
 
   Future<List<Inmueble>> getFavoritos() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/favoritos/'),
       headers: _headers(token),
     );
@@ -230,7 +320,7 @@ class ApiService {
 
   Future<bool?> toggleFavorito(int inmuebleId) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/favoritos/toggle/'),
       headers: _headers(token),
       body: jsonEncode({'inmueble': inmuebleId}),
@@ -247,7 +337,7 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> getTiposInmueble() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/tipos/'),
       headers: _headers(token),
     );
@@ -265,7 +355,7 @@ class ApiService {
 
   Future<int> crearInmueble(Map<String, dynamic> payload) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/panel/lista/'),
       headers: _headers(token),
       body: jsonEncode(payload),
@@ -285,7 +375,7 @@ class ApiService {
     required double precio,
   }) async {
     final token = await getToken();
-    await http.post(
+    await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/panel/publicaciones/'),
       headers: _headers(token),
       body: jsonEncode({
@@ -300,7 +390,7 @@ class ApiService {
   // ─── Citas ───────────────────────────────────────────────────────────
   Future<List<Cita>> getMisCitas() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/citas/'),
       headers: _headers(token),
     );
@@ -322,7 +412,7 @@ class ApiService {
     String notas = '',
   }) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/citas/'),
       headers: _headers(token),
       body: jsonEncode({
@@ -338,7 +428,7 @@ class ApiService {
   // ─── Contratos & Pagos ───────────────────────────────────────────────
   Future<List<Contrato>> getMisContratos() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/contratos/'),
       headers: _headers(token),
     );
@@ -356,7 +446,7 @@ class ApiService {
   /// Detalle completo de un contrato (cláusulas, partes, montos).
   Future<Map<String, dynamic>?> getContratoDetalle(int contratoId) async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/contratos/$contratoId/'),
       headers: _headers(token),
     );
@@ -370,7 +460,7 @@ class ApiService {
   /// El inquilino acepta/firma el contrato que le fue enviado.
   Future<Map<String, dynamic>> aceptarContrato(int contratoId) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/contratos/$contratoId/aceptar/'),
       headers: _headers(token),
     );
@@ -389,7 +479,7 @@ class ApiService {
     String motivo,
   ) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/contratos/$contratoId/rechazar/'),
       headers: _headers(token),
       body: jsonEncode({'motivo': motivo}),
@@ -406,7 +496,7 @@ class ApiService {
   /// Tipos de contrato disponibles (alquiler, venta, anticrético...).
   Future<List<dynamic>> getTiposContrato() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/inmuebles/tipos-contrato/'),
       headers: _headers(token),
     );
@@ -422,7 +512,7 @@ class ApiService {
   /// El propietario crea un contrato y lo envía al inquilino (estado 'enviado').
   Future<Map<String, dynamic>> crearContrato(Map<String, dynamic> datos) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/contratos/crear-con-ia/'),
       headers: _headers(token),
       body: jsonEncode(datos),
@@ -439,7 +529,7 @@ class ApiService {
   /// Opiniones de usuarios sobre un inmueble.
   Future<List<dynamic>> getResenas(int inmuebleId) async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/usuarios/resenas/?inmueble=$inmuebleId'),
       headers: _headers(token),
     );
@@ -455,7 +545,7 @@ class ApiService {
   /// Promedio y total de reseñas del inmueble.
   Future<Map<String, dynamic>?> getPromedioResenas(int inmuebleId) async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/usuarios/resenas/promedio/$inmuebleId/'),
       headers: _headers(token),
     );
@@ -468,7 +558,7 @@ class ApiService {
   /// Publica una reseña (calificación 1-5 + comentario).
   Future<Map<String, dynamic>> crearResena(int inmuebleId, int calificacion, String comentario) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/usuarios/resenas/'),
       headers: _headers(token),
       body: jsonEncode({'inmueble': inmuebleId, 'calificacion': calificacion, 'comentario': comentario}),
@@ -484,7 +574,7 @@ class ApiService {
   /// Balance financiero del propietario (KPIs + extracto de pagos).
   Future<Map<String, dynamic>?> getReportesPropietario() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/pagos/reportes/?personal=true'),
       headers: _headers(token),
     );
@@ -497,7 +587,7 @@ class ApiService {
   /// Transacciones Stripe donde el usuario es pagador o propietario.
   Future<List<dynamic>> getTransacciones() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/pagos/transacciones/'),
       headers: _headers(token),
     );
@@ -510,10 +600,35 @@ class ApiService {
     return [];
   }
 
+  /// Chat con el asistente virtual operativo (IA con acceso a datos reales).
+  /// Devuelve {ok, texto, sugerencias[], tarjetas?[], accion}.
+  Future<Map<String, dynamic>> agenteChat(
+    String mensaje, {
+    List<Map<String, String>> historial = const [],
+    int? inmuebleId,
+  }) async {
+    final token = await getToken();
+    final response = await _request(
+      'POST',
+      Uri.parse('$_baseUrl/inmuebles/agente/chat/'),
+      headers: _headers(token),
+      body: jsonEncode({
+        'mensaje': mensaje,
+        'historial': historial,
+        'contexto': inmuebleId != null ? {'inmueble_id': inmuebleId} : {},
+      }),
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is Map<String, dynamic>) return decoded;
+    }
+    throw const ApiException('El asistente no respondió correctamente.');
+  }
+
   /// Genera una URL de Stripe Checkout fresca para una transacción pendiente.
   Future<String?> crearCheckoutUrlTransaccion(int transaccionId) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/pagos/transacciones/$transaccionId/checkout-url/'),
       headers: _headers(token),
     );
@@ -526,7 +641,7 @@ class ApiService {
 
   Future<List<Pago>> getMisPagos() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/pagos/pagos/'),
       headers: _headers(token),
     );
@@ -544,7 +659,7 @@ class ApiService {
   // ─── Mensajería & Chats ──────────────────────────────────────────────
   Future<List<ChatItem>> getChats(int currentUserId) async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/usuarios/chats/'),
       headers: _headers(token),
     );
@@ -563,7 +678,7 @@ class ApiService {
 
   Future<List<MensajeItem>> getMensajesChat(int chatId) async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/usuarios/mensajes/?chat=$chatId'),
       headers: _headers(token),
     );
@@ -583,7 +698,7 @@ class ApiService {
     required String contenido,
   }) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/usuarios/mensajes/'),
       headers: _headers(token),
       body: jsonEncode({'chat': chatId, 'contenido': contenido}),
@@ -593,7 +708,7 @@ class ApiService {
 
   Future<ChatItem> getOrCreateChat(int propietarioId, int currentUserId) async {
     final token = await getToken();
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/usuarios/chats/'),
       headers: _headers(token),
       body: jsonEncode({'participante2': propietarioId}),
@@ -609,7 +724,7 @@ class ApiService {
   // ─── Notificaciones ──────────────────────────────────────────────────
   Future<List<NotificacionItem>> getNotificaciones() async {
     final token = await getToken();
-    final response = await http.get(
+    final response = await _request('GET', 
       Uri.parse('$_baseUrl/usuarios/notificaciones/'),
       headers: _headers(token),
     );
@@ -655,7 +770,7 @@ class ApiService {
     );
     request.files.add(multipartFile);
 
-    final streamedResponse = await request.send();
+    final streamedResponse = await request.send().timeout(const Duration(minutes: 2));
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 201 || response.statusCode == 200) {
@@ -693,7 +808,7 @@ class ApiService {
           ),
         );
       }
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(const Duration(minutes: 2));
       final response = await http.Response.fromStream(streamedResponse);
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -726,7 +841,7 @@ class ApiService {
 
   Future<bool> eliminarMultimedia(int mediaId) async {
     final token = await getToken();
-    final response = await http.delete(
+    final response = await _request('DELETE', 
       Uri.parse('$_baseUrl/inmuebles/multimedia/$mediaId/'),
       headers: _headers(token),
     );
@@ -748,7 +863,7 @@ class ApiService {
     };
     if (contratoId != null) bodyData['contrato'] = contratoId;
 
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/auditorias/iniciar-checkin/'),
       headers: _headers(token),
       body: jsonEncode(bodyData),
@@ -773,7 +888,7 @@ class ApiService {
     if (contratoId != null) bodyData['contrato'] = contratoId;
     if (checkinId != null) bodyData['checkin_id'] = checkinId;
 
-    final response = await http.post(
+    final response = await _request('POST', 
       Uri.parse('$_baseUrl/inmuebles/auditorias/ejecutar-checkout/'),
       headers: _headers(token),
       body: jsonEncode(bodyData),
@@ -800,7 +915,7 @@ class ApiService {
     if (panoramaId != null) bodyData['panorama_id'] = panoramaId;
 
     try {
-      final response = await http.post(
+      final response = await _request('POST', 
         Uri.parse('$_baseUrl/inmuebles/asistente-espacial/consultar/'),
         headers: _headers(token),
         body: jsonEncode(bodyData),
@@ -823,7 +938,7 @@ class ApiService {
     if (fotoUrl != null) bodyData['foto_360_url'] = fotoUrl;
 
     try {
-      final response = await http.post(
+      final response = await _request('POST', 
         Uri.parse('$_baseUrl/inmuebles/asistente-espacial/iniciar-tour/'),
         headers: _headers(token),
         body: jsonEncode(bodyData),
@@ -857,7 +972,7 @@ class ApiService {
     if (panoramaId != null) bodyData['panorama_id'] = panoramaId;
 
     try {
-      final response = await http.post(
+      final response = await _request('POST', 
         Uri.parse('$_baseUrl/inmuebles/calidad-vida/medir-distancia-3d/'),
         headers: _headers(token),
         body: jsonEncode(bodyData),
@@ -889,7 +1004,7 @@ class ApiService {
         '$_baseUrl/inmuebles/calidad-vida/evaluar/',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(uri, headers: _headers(token));
+      final response = await _request('GET', uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         return jsonDecode(utf8.decode(response.bodyBytes));
@@ -908,7 +1023,7 @@ class ApiService {
         '$_baseUrl/inmuebles/calidad-vida/metaverso-datos/',
       ).replace(queryParameters: {'inmueble': inmuebleId.toString()});
 
-      final response = await http.get(uri, headers: _headers(token));
+      final response = await _request('GET', uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         return jsonDecode(utf8.decode(response.bodyBytes));

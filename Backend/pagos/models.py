@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from inmuebles.models import Contrato
 
 
@@ -180,6 +181,13 @@ class Plan(models.Model):
         help_text='Cantidad máxima de usuarios',
     )
     activo = models.BooleanField(default=True)
+    permite_360 = models.BooleanField(default=False, help_text='Tours 360 en las propiedades')
+    permite_destacado = models.BooleanField(default=False, help_text='Marcar propiedades como destacadas')
+    permite_estadisticas = models.BooleanField(default=False, help_text='Ver estadísticas de visitas')
+    max_fotos = models.PositiveIntegerField(
+        default=8,
+        help_text='Máximo de fotos por inmueble (0 = ilimitado)',
+    )
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -190,6 +198,119 @@ class Plan(models.Model):
 
     def __str__(self):
         return f'{self.nombre} — {self.precio} Bs/mes'
+
+
+class Suscripcion(models.Model):
+    """Plan contratado por un usuario (una activa a la vez)."""
+
+    class Estado(models.TextChoices):
+        ACTIVA = 'activa', 'Activa'
+        VENCIDA = 'vencida', 'Vencida'
+        CANCELADA = 'cancelada', 'Cancelada'
+        PENDIENTE = 'pendiente', 'Pendiente de pago'
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='suscripciones',
+    )
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.PROTECT,
+        related_name='suscripciones',
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=Estado.choices,
+        default=Estado.PENDIENTE,
+    )
+    fecha_inicio = models.DateTimeField(auto_now_add=True)
+    fecha_vencimiento = models.DateField(
+        null=True, blank=True,
+        help_text='Null = sin vencimiento (plan gratuito)',
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'pagos_suscripcion'
+        verbose_name = 'Suscripción'
+        verbose_name_plural = 'Suscripciones'
+        ordering = ['-creado']
+        indexes = [
+            models.Index(fields=['usuario', 'estado'], name='sus_user_estado_idx'),
+        ]
+
+    def vigente(self):
+        return self.estado == self.Estado.ACTIVA and (
+            self.fecha_vencimiento is None or self.fecha_vencimiento >= timezone.now().date()
+        )
+
+    def __str__(self):
+        return f'{self.usuario} — {self.plan.nombre} ({self.estado})'
+
+
+class PagoSuscripcion(models.Model):
+    """Pago de una suscripción. Al completarse, activa el plan."""
+
+    class Metodo(models.TextChoices):
+        QR = 'qr', 'QR Bolivia'
+        TRANSFERENCIA = 'transferencia', 'Transferencia'
+        STRIPE = 'stripe', 'Tarjeta (Stripe)'
+        MANUAL = 'manual', 'Manual (admin)'
+
+    class Estado(models.TextChoices):
+        PENDIENTE = 'pendiente', 'Pendiente'
+        EN_REVISION = 'en_revision', 'Comprobante en revisión'
+        COMPLETADO = 'completado', 'Completado'
+        RECHAZADO = 'rechazado', 'Rechazado'
+        CANCELADO = 'cancelado', 'Cancelado por el usuario'
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='pagos_suscripcion',
+    )
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.PROTECT,
+        related_name='pagos_suscripcion',
+    )
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    metodo = models.CharField(max_length=20, choices=Metodo.choices, default=Metodo.QR)
+    referencia = models.CharField(max_length=100, blank=True)
+    stripe_session_id = models.CharField(max_length=255, blank=True)
+    comprobante = models.FileField(upload_to='pagos/suscripciones/', blank=True, null=True)
+    estado = models.CharField(
+        max_length=20,
+        choices=Estado.choices,
+        default=Estado.PENDIENTE,
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+    procesado = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'pagos_pago_suscripcion'
+        verbose_name = 'Pago de suscripción'
+        verbose_name_plural = 'Pagos de suscripción'
+        ordering = ['-creado']
+
+    def save(self, *args, **kwargs):
+        completando = (
+            self.pk is None and self.estado == self.Estado.COMPLETADO
+        ) or (
+            self.pk is not None
+            and self.estado == self.Estado.COMPLETADO
+            and type(self).objects.filter(pk=self.pk).exclude(estado=self.Estado.COMPLETADO).exists()
+        )
+        if completando and self.procesado is None:
+            self.procesado = timezone.now()
+        super().save(*args, **kwargs)
+        if completando:
+            from .services_plan import activar_suscripcion
+            activar_suscripcion(self)
+
+    def __str__(self):
+        return f'PagoSus #{self.id} — {self.usuario} → {self.plan.nombre} ({self.estado})'
 
 
 class TransaccionStripe(models.Model):

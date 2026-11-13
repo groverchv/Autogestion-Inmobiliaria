@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe, ConfiguracionSistema
+from .models import (
+    TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan,
+    TransaccionStripe, ConfiguracionSistema, Suscripcion, PagoSuscripcion,
+)
 
 
 class TipoPagoSerializer(serializers.ModelSerializer):
@@ -79,3 +82,27 @@ class ConfiguracionSistemaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConfiguracionSistema
         fields = '__all__'
+
+
+class SuscripcionSerializer(serializers.ModelSerializer):
+    plan_nombre = serializers.CharField(source='plan.nombre', read_only=True)
+    plan_detalle = PlanSerializer(source='plan', read_only=True)
+    vigente = serializers.SerializerMethodField()
+
+    def get_vigente(self, obj):
+        return obj.vigente()
+
+    class Meta:
+        model = Suscripcion
+        fields = '__all__'
+        read_only_fields = ['id', 'creado', 'fecha_inicio']
+
+
+class PagoSuscripcionSerializer(serializers.ModelSerializer):
+    plan_nombre = serializers.CharField(source='plan.nombre', read_only=True)
+    usuario_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
+
+    class Meta:
+        model = PagoSuscripcion
+        fields = '__all__'
+        read_only_fields = ['id', 'usuario', 'monto', 'estado', 'creado', 'procesado']

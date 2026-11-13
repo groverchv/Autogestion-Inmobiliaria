@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+    <div style="background:#0f172a;padding:28px 32px;">
+      <span style="color:#ffffff;font-size:20px;font-weight:bold;">Inmobiliaria <span style="color:#38bdf8;">360</span></span>
+    </div>
+    <div style="padding:32px;">
+      <h1 style="color:#0f172a;font-size:22px;margin:0 0 16px;">Confirma tu suscripción</h1>
+      <p style="color:#334155;line-height:1.6;">
+        Hola <span th:text="${nombre}">Suscriptor</span>, recibimos tu solicitud para unirte
+        al boletín de Inmobiliaria 360. Confirma tu correo haciendo clic en el botón:
+      </p>
+      <p style="text-align:center;margin:28px 0;">
+        <a th:href="${enlaceConfirmacion}"
+           style="background:#0f172a;color:#ffffff;padding:14px 28px;border-radius:8px;
+                  text-decoration:none;font-weight:bold;display:inline-block;">
+          Confirmar suscripción
+        </a>
+      </p>
+      <p style="color:#64748b;font-size:13px;line-height:1.6;">
+        Si no solicitaste esta suscripción, ignora este correo: no recibirás nada más.
+      </p>
+    </div>
+    <div style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;">
+      <p style="color:#94a3b8;font-size:12px;margin:0;">Inmobiliaria 360 — Autogestión inmobiliaria con IA y Realidad Aumentada</p>
+    </div>
+  </div>
+</body>
+</html>

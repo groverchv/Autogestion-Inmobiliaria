@@ -142,7 +142,18 @@ class InmuebleViewSet(viewsets.ModelViewSet):
             return qs.filter(propietario=user) if not (user.is_staff or user.rol == 'admin') else qs.all()
 
         # Para catálogo público y detalle público general, no mostrar ocultos
-        return qs.exclude(estado='oculto')
+        qs = qs.exclude(estado='oculto')
+        if self.action == 'list':
+            qs = qs.annotate(
+                destacado=dj_models.Exists(
+                    Publicacion.objects.filter(
+                        inmueble_id=dj_models.OuterRef('pk'),
+                        estado='activa',
+                        destacada=True,
+                    )
+                )
+            ).order_by('-destacado', '-creado')
+        return qs
 
     def get_serializer_class(self):
         if self.action in ['list', 'mis_inmuebles']:
@@ -166,7 +177,20 @@ class InmuebleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def perform_create(self, serializer):
+        from pagos.services_plan import validar_crear_inmueble
+        validar_crear_inmueble(self.request.user)
         serializer.save(propietario=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        resp = super().retrieve(request, *args, **kwargs)
+        try:
+            inmueble = self.get_object()
+            if request.user != inmueble.propietario:
+                Inmueble.objects.filter(pk=inmueble.pk).update(vistas=dj_models.F('vistas') + 1)
+                resp.data['vistas'] = (resp.data.get('vistas') or 0) + 1
+        except Exception:
+            pass
+        return resp
 
     @action(detail=False, methods=['get'])
     def ciudades(self, request):
@@ -207,6 +231,18 @@ class MultimediaViewSet(viewsets.ModelViewSet):
 
         if not file_obj or not inmueble_id:
             return Response({'error': 'Archivo e inmueble requeridos'}, status=400)
+
+        inmueble = Inmueble.objects.filter(id=inmueble_id).select_related('propietario').first()
+        if inmueble is None:
+            return Response({'error': 'Inmueble no encontrado.'}, status=404)
+        if inmueble.propietario_id != request.user.id and not request.user.is_staff:
+            return Response({'error': 'No eres el propietario de este inmueble.'}, status=403)
+
+        from pagos.services_plan import validar_multimedia
+        try:
+            validar_multimedia(request.user, inmueble, tipo)
+        except Exception as e:
+            return Response({'error': str(e.detail[0] if hasattr(e, 'detail') else e)}, status=403)
 
         # Subir el archivo a Cloudinary
         upload_data = cloudinary.uploader.upload(
@@ -253,8 +289,15 @@ class MultimediaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not Inmueble.objects.filter(id=inmueble_id).exists():
+        inmueble_obj = Inmueble.objects.filter(id=inmueble_id).select_related('propietario').first()
+        if inmueble_obj is None:
             return Response({'error': 'Inmueble no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        from pagos.services_plan import validar_multimedia
+        try:
+            validar_multimedia(request.user, inmueble_obj, 'panorama360')
+        except Exception as e:
+            return Response({'error': str(e.detail[0] if hasattr(e, 'detail') else e)}, status=status.HTTP_403_FORBIDDEN)
 
         imagenes = []
         for f in files:
@@ -1024,11 +1067,20 @@ class PublicacionViewSet(viewsets.ModelViewSet):
             
         return qs
 
-    def perform_create(self, serializer):
-        # Asegurar que el usuario que crea la publicación sea el propietario del inmueble
-        inmueble = serializer.validated_data['inmueble']
+    def _validar(self, serializer):
+        inmueble = serializer.validated_data.get('inmueble') or serializer.instance.inmueble
         if inmueble.propietario != self.request.user and not self.request.user.is_staff:
             raise ValidationError("No eres el propietario de este inmueble.")
+        if serializer.validated_data.get('destacada'):
+            from pagos.services_plan import validar_destacado
+            validar_destacado(self.request.user)
+
+    def perform_create(self, serializer):
+        self._validar(serializer)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._validar(serializer)
         serializer.save()
 
 class VerificacionTituloViewSet(viewsets.ModelViewSet):
@@ -2045,8 +2097,41 @@ class CalidadVidaViewSet(viewsets.ViewSet):
         return Response(medicion, status=status.HTTP_200_OK)
 
 
+class AgenteViewSet(viewsets.ViewSet):
+    """Asistente virtual operativo para usuarios autenticados.
 
+    POST /api/agente/chat/
+    body: {mensaje, historial?: [{rol, texto}], contexto?: {inmueble_id}}
+    resp: {ok, texto, sugerencias[], tarjetas?[], accion}
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
+    @action(detail=False, methods=['post'], url_path='chat')
+    def chat(self, request):
+        import time
+        from .services_agente import responder
 
-
-
+        mensaje = request.data.get('mensaje', '')
+        if not isinstance(mensaje, str) or not mensaje.strip():
+            return Response({'error': 'Mensaje vacío'}, status=status.HTTP_400_BAD_REQUEST)
+        historial = request.data.get('historial', [])
+        if not isinstance(historial, list):
+            historial = []
+        contexto = request.data.get('contexto', {})
+        if not isinstance(contexto, dict):
+            contexto = {}
+        t0 = time.perf_counter()
+        resultado = responder(request.user, mensaje, historial, contexto)
+        try:
+            from .models import AgenteLog
+            AgenteLog.objects.create(
+                usuario=request.user,
+                pregunta=mensaje.strip()[:1000],
+                tool=str(resultado.get('tool') or 'ninguna')[:40],
+                latencia_ms=int(resultado.get('latencia_ms')
+                                or (time.perf_counter() - t0) * 1000),
+                ok=bool(resultado.get('ok')),
+            )
+        except Exception:
+            pass
+        return Response(resultado)

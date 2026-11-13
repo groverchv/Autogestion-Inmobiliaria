@@ -14,6 +14,8 @@ from .views import (
     stripe_webhook,
     ConfiguracionSistemaViewSet,
     ReportesAPIView,
+    SuscripcionViewSet,
+    PagoSuscripcionViewSet,
 )
 
 router = DefaultRouter()
@@ -25,6 +27,8 @@ router.register(r'tipos-plan', TipoPlanViewSet)
 router.register(r'planes', PlanViewSet)
 router.register(r'transacciones', TransaccionStripeViewSet, basename='transacciones')
 router.register(r'configuracion', ConfiguracionSistemaViewSet, basename='configuracion-sistema')
+router.register(r'suscripciones', SuscripcionViewSet, basename='suscripciones')
+router.register(r'pagos-suscripcion', PagoSuscripcionViewSet, basename='pagos-suscripcion')
 
 router.register(r'panel/lista', PagoViewSet, basename='panel-pagos')
 router.register(r'panel/historial', HistorialPagoViewSet, basename='panel-historial')

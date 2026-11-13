@@ -46,6 +46,7 @@ from .views import (
     AccesoRecorrido360ViewSet,
     AuditoriaCheckViewSet,
     AsistenteEspacialViewSet,
+    AgenteViewSet,
     CalidadVidaViewSet,
     BlockchainHistorialView,
     BlockchainStatsView,
@@ -71,6 +72,7 @@ router.register(r'verificacion',    VerificacionTituloViewSet, basename='verific
 router.register(r'accesos-360',     AccesoRecorrido360ViewSet, basename='accesos-360')
 router.register(r'auditorias',      AuditoriaCheckViewSet,  basename='auditorias')
 router.register(r'asistente-espacial', AsistenteEspacialViewSet, basename='asistente-espacial')
+router.register(r'agente',            AgenteViewSet,            basename='agente')
 router.register(r'calidad-vida',    CalidadVidaViewSet,     basename='calidad-vida')
 
 

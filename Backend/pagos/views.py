@@ -11,7 +11,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Q
 
-from .models import TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan, TransaccionStripe, ConfiguracionSistema
+from .models import (
+    TipoPago, Pago, DetallePago, HistorialPago, TipoPlan, Plan,
+    TransaccionStripe, ConfiguracionSistema, Suscripcion, PagoSuscripcion,
+)
 from .serializers import (
     TipoPagoSerializer,
     PagoSerializer,
@@ -20,6 +23,8 @@ from .serializers import (
     TipoPlanSerializer,
     PlanSerializer,
     TransaccionStripeSerializer,
+    SuscripcionSerializer,
+    PagoSuscripcionSerializer,
 )
 from inmuebles.models import Contrato, Inmueble
 from usuarios.models import Mensaje, Chat, Notificacion
@@ -85,6 +90,243 @@ class PlanViewSet(viewsets.ModelViewSet):
     """CRUD para planes."""
     queryset = Plan.objects.select_related('tipo_plan').all()
     serializer_class = PlanSerializer
+
+    def get_queryset(self):
+        if self.action == 'list' and not self.request.user.is_staff:
+            return Plan.objects.select_related('tipo_plan').filter(activo=True)
+        return super().get_queryset()
+
+
+class SuscripcionViewSet(viewsets.ReadOnlyModelViewSet):
+    """Historial de suscripciones del usuario + flujo de contratación."""
+    serializer_class = SuscripcionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Suscripcion.objects.select_related('usuario', 'plan').all()
+        return Suscripcion.objects.filter(usuario=self.request.user).select_related('plan')
+
+    @action(detail=False, methods=['get'], url_path='mi-plan')
+    def mi_plan(self, request):
+        """Plan vigente del usuario + uso actual (propiedades, fotos, visitas)."""
+        from .services_plan import plan_activo, inmuebles_activos
+        plan = plan_activo(request.user)
+        if plan is None:
+            return Response({'plan': None, 'uso': {'inmuebles': 0}, 'vistas': None})
+        sus = Suscripcion.objects.filter(
+            usuario=request.user, estado=Suscripcion.Estado.ACTIVA
+        ).select_related('plan').first()
+        vistas = None
+        if plan.permite_estadisticas:
+            vistas = sum(
+                Inmueble.objects.filter(propietario=request.user).values_list('vistas', flat=True)
+            )
+        pendiente = PagoSuscripcion.objects.filter(
+            usuario=request.user,
+            estado__in=[PagoSuscripcion.Estado.PENDIENTE, PagoSuscripcion.Estado.EN_REVISION],
+        ).select_related('plan').first()
+        return Response({
+            'plan': PlanSerializer(plan).data,
+            'suscripcion': SuscripcionSerializer(sus).data if sus else None,
+            'uso': {'inmuebles': inmuebles_activos(request.user)},
+            'vistas': vistas,
+            'pago_pendiente': PagoSuscripcionSerializer(pendiente).data if pendiente else None,
+        })
+
+    @action(detail=False, methods=['post'], url_path='checkout')
+    def checkout(self, request):
+        """Inicia la contratación de un plan: crea el pago pendiente.
+
+        Para el plan gratuito activa la suscripción directamente.
+        """
+        plan_id = request.data.get('plan_id')
+        metodo = request.data.get('metodo', PagoSuscripcion.Metodo.QR)
+        plan = Plan.objects.filter(id=plan_id, activo=True).first()
+        if plan is None:
+            return Response({'error': 'Plan no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if plan.precio == 0:
+            from .services_plan import plan_activo
+            plan_activo(request.user)
+            return Response({'ok': True, 'mensaje': f'Plan {plan.nombre} activo.'})
+
+        # No duplicar pagos abiertos del mismo plan
+        abierto = PagoSuscripcion.objects.filter(
+            usuario=request.user, plan=plan,
+            estado__in=[PagoSuscripcion.Estado.PENDIENTE, PagoSuscripcion.Estado.EN_REVISION],
+        ).first()
+        if abierto:
+            return Response(PagoSuscripcionSerializer(abierto).data, status=status.HTTP_200_OK)
+
+        pago = PagoSuscripcion.objects.create(
+            usuario=request.user, plan=plan, monto=plan.precio, metodo=metodo,
+        )
+        return Response(PagoSuscripcionSerializer(pago).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='checkout-stripe')
+    def checkout_stripe(self, request):
+        """Crea el pago del plan + sesión de Stripe Checkout y devuelve la URL.
+
+        Stripe no soporta BOB: se cobra en USD convirtiendo el precio en Bs
+        con la tasa configurada (STRIPE_TASA_USD_BOB).
+        """
+        plan_id = request.data.get('plan_id')
+        plan = Plan.objects.filter(id=plan_id, activo=True).first()
+        if plan is None:
+            return Response({'error': 'Plan no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if plan.precio == 0:
+            from .services_plan import plan_activo
+            plan_activo(request.user)
+            return Response({'ok': True, 'mensaje': f'Plan {plan.nombre} activo.'})
+
+        if not settings.STRIPE_SECRET_KEY:
+            return Response(
+                {'error': 'El pago con tarjeta no está configurado. Contáctanos por WhatsApp.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        pago = PagoSuscripcion.objects.filter(
+            usuario=request.user, plan=plan,
+            estado__in=[PagoSuscripcion.Estado.PENDIENTE, PagoSuscripcion.Estado.EN_REVISION],
+        ).first()
+        if pago is None:
+            pago = PagoSuscripcion.objects.create(
+                usuario=request.user, plan=plan, monto=plan.precio,
+                metodo=PagoSuscripcion.Metodo.STRIPE,
+            )
+        else:
+            pago.metodo = PagoSuscripcion.Metodo.STRIPE
+
+        tasa = getattr(settings, 'STRIPE_TASA_USD_BOB', 6.96)
+        usd = round(float(plan.precio) / tasa, 2)
+
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': f'Plan {plan.nombre} — Inmobiliaria 360',
+                            'description': f'Suscripción mensual (Bs {plan.precio}/mes ≈ US$ {usd})',
+                        },
+                        'unit_amount': int(round(usd * 100)),
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=f'{settings.FRONTEND_URL}/mi-plan?pago=exito&session_id={{CHECKOUT_SESSION_ID}}',
+                cancel_url=f'{settings.FRONTEND_URL}/mi-plan?pago=cancelado',
+                metadata={'pago_suscripcion_id': str(pago.id)},
+            )
+        except stripe.error.StripeError as e:
+            return Response({'error': f'Error de Stripe: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        pago.stripe_session_id = session.id
+        pago.save(update_fields=['metodo', 'stripe_session_id'])
+        return Response(
+            {'checkout_url': session.url, 'session_id': session.id, 'usd': usd},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=['get'], url_path='confirmar-stripe')
+    def confirmar_stripe(self, request):
+        """Confirma el pago tras volver de Stripe y activa el plan."""
+        session_id = request.query_params.get('session_id')
+        if not session_id:
+            return Response({'error': 'session_id requerido'}, status=status.HTTP_400_BAD_REQUEST)
+
+        pago = PagoSuscripcion.objects.select_related('plan').filter(
+            stripe_session_id=session_id, usuario=request.user,
+        ).first()
+        if pago is None:
+            return Response({'error': 'Pago no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+        except stripe.error.StripeError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        if session.payment_status == 'paid' and pago.estado != PagoSuscripcion.Estado.COMPLETADO:
+            pago.estado = PagoSuscripcion.Estado.COMPLETADO
+            pago.referencia = session.payment_intent or ''
+            pago.save()  # save() activa la suscripción automáticamente
+
+        return Response({
+            'estado': pago.estado,
+            'plan_nombre': pago.plan.nombre,
+            'payment_status': session.payment_status,
+        })
+
+    @action(detail=True, methods=['post'], url_path='comprobante')
+    def comprobante(self, request, pk=None):
+        """Sube el comprobante del pago → pasa a revisión."""
+        pago = PagoSuscripcion.objects.filter(
+            pk=pk, usuario=request.user, estado=PagoSuscripcion.Estado.PENDIENTE
+        ).first()
+        if pago is None:
+            return Response({'error': 'Pago no encontrado o ya procesado.'}, status=status.HTTP_404_NOT_FOUND)
+        archivo = request.FILES.get('comprobante')
+        if not archivo:
+            return Response({'error': 'Falta el archivo del comprobante.'}, status=status.HTTP_400_BAD_REQUEST)
+        pago.comprobante = archivo
+        pago.referencia = request.data.get('referencia', '')
+        pago.estado = PagoSuscripcion.Estado.EN_REVISION
+        pago.save()
+        return Response(PagoSuscripcionSerializer(pago).data)
+
+
+class PagoSuscripcionViewSet(viewsets.ReadOnlyModelViewSet):
+    """Historial de pagos de suscripción (admin ve todo)."""
+    serializer_class = PagoSuscripcionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return PagoSuscripcion.objects.select_related('usuario', 'plan').all()
+        return PagoSuscripcion.objects.filter(usuario=self.request.user).select_related('plan')
+
+    @action(detail=True, methods=['post'], url_path='cancelar')
+    def cancelar(self, request, pk=None):
+        """El usuario cancela su pago pendiente o en revisión."""
+        pago = PagoSuscripcion.objects.filter(
+            pk=pk, usuario=request.user,
+            estado__in=[PagoSuscripcion.Estado.PENDIENTE, PagoSuscripcion.Estado.EN_REVISION],
+        ).first()
+        if pago is None:
+            return Response({'error': 'Pago no encontrado o ya procesado.'}, status=status.HTTP_404_NOT_FOUND)
+        pago.estado = PagoSuscripcion.Estado.CANCELADO
+        pago.save(update_fields=['estado'])
+        return Response({'ok': True})
+
+    @action(detail=True, methods=['post'], url_path='confirmar')
+    def confirmar(self, request, pk=None):
+        """Solo staff: marca el pago como completado → activa el plan."""
+        if not request.user.is_staff:
+            return Response({'error': 'Solo administración.'}, status=status.HTTP_403_FORBIDDEN)
+        pago = PagoSuscripcion.objects.filter(
+            pk=pk, estado=PagoSuscripcion.Estado.EN_REVISION
+        ).first()
+        if pago is None:
+            return Response({'error': 'Pago no está en revisión.'}, status=status.HTTP_404_NOT_FOUND)
+        pago.estado = PagoSuscripcion.Estado.COMPLETADO
+        pago.save()  # dispara activar_suscripcion en save()
+        return Response(PagoSuscripcionSerializer(pago).data)
+
+    @action(detail=True, methods=['post'], url_path='rechazar')
+    def rechazar(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response({'error': 'Solo administración.'}, status=status.HTTP_403_FORBIDDEN)
+        pago = PagoSuscripcion.objects.filter(
+            pk=pk, estado=PagoSuscripcion.Estado.EN_REVISION
+        ).first()
+        if pago is None:
+            return Response({'error': 'Pago no está en revisión.'}, status=status.HTTP_404_NOT_FOUND)
+        pago.estado = PagoSuscripcion.Estado.RECHAZADO
+        pago.save()
+        return Response(PagoSuscripcionSerializer(pago).data)
 
 
 # ═══════════════════════════════════════════════════════════════════

@@ -1,0 +1,91 @@
+# docker-compose.prod.yml — stack completo para un solo EC2/Droplet.
+# Uso: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Servicios: nginx (80/443) → frontends + backends + gateway blockchain.
+# PostgreSQL y caché se esperan EXTERNOS (RDS en AWS o contenedor local
+# con el compose de desarrollo).
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend-operativo
+      - backend-corporativo
+      - frontend-corporativo
+      - frontend-operativo
+      - blockchain-gateway
+
+  backend-operativo:
+    build: ./Backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: "false"
+      ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      BLOCKCHAIN_GATEWAY_URL: http://blockchain-gateway:4000/api/blockchain
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    expose:
+      - "8000"
+
+  blockchain-gateway:
+    build: ./Blockchain
+    restart: unless-stopped
+    environment:
+      PORT: "4000"
+      SIMULATE_BLOCKCHAIN: ${SIMULATE_BLOCKCHAIN:-true}
+    expose:
+      - "4000"
+
+  backend-corporativo:
+    build: ./BackendCorporativo
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-inmobiliaria_corporativo}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      NOTIF_EMAIL_DESTINO: ${NOTIF_EMAIL_DESTINO}
+      FRONTEND_URL: ${FRONTEND_URL}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    expose:
+      - "8081"
+
+  frontend-corporativo:
+    build: ./FrontendCorporativo
+    restart: unless-stopped
+    environment:
+      PRIVATE_API_URL: http://backend-corporativo:8081
+      ORIGIN: ${FRONTEND_URL}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL}
+    expose:
+      - "3000"
+
+  frontend-operativo:
+    build: ./Frontend
+    restart: unless-stopped
+    expose:
+      - "80"

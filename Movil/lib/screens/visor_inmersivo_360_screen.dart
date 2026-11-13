@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -994,11 +995,10 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
               // ignore: deprecated_member_use
               ..scale(_fov, _fov, 1.0),
             alignment: Alignment.center,
-            child: Image.network(
-              _panoramaActualUrl.isNotEmpty ? _panoramaActualUrl : widget.panoramaUrl,
+            child: CachedNetworkImage(imageUrl: _panoramaActualUrl.isNotEmpty ? _panoramaActualUrl : widget.panoramaUrl,
               fit: BoxFit.cover,
               alignment: Alignment(alignX, alignY),
-              errorBuilder: (context, error, stackTrace) => const Center(
+              errorWidget: (context, error, stackTrace) => const Center(
                 child: Text('Error al cargar panorama 360°', style: TextStyle(color: Colors.white)),
               ),
             ),
@@ -1155,8 +1155,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
                     // ignore: deprecated_member_use
                     ..scale(_fov, _fov, 1.0),
                   alignment: Alignment.center,
-                  child: Image.network(
-                    _panoramaActualUrl.isNotEmpty
+                  child: CachedNetworkImage(imageUrl: _panoramaActualUrl.isNotEmpty
                         ? _panoramaActualUrl
                         : widget.panoramaUrl,
                     fit: BoxFit.cover,

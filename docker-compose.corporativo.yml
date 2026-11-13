@@ -1,0 +1,61 @@
+# Stack corporativo independiente: PostgreSQL + Spring Boot + SvelteKit.
+# Uso: docker compose -f docker-compose.corporativo.yml up --build
+services:
+  db-corporativo:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${CORP_DB_NAME:-inmobiliaria_corporativo}
+      POSTGRES_USER: ${CORP_DB_USER:-corporativo}
+      POSTGRES_PASSWORD: ${CORP_DB_PASSWORD:?Define CORP_DB_PASSWORD en un .env}
+    volumes:
+      - db_corporativo_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend-corporativo:
+    build: ./BackendCorporativo
+    depends_on:
+      db-corporativo:
+        condition: service_healthy
+    environment:
+      DB_HOST: db-corporativo
+      DB_PORT: "5432"
+      DB_NAME: ${CORP_DB_NAME:-inmobiliaria_corporativo}
+      DB_USER: ${CORP_DB_USER:-corporativo}
+      DB_PASSWORD: ${CORP_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en un .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SERVER_PORT: "8081"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_NOMBRE: ${ADMIN_NOMBRE:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      NOTIF_EMAIL_DESTINO: ${NOTIF_EMAIL_DESTINO:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  frontend-corporativo:
+    build: ./FrontendCorporativo
+    depends_on:
+      - backend-corporativo
+    environment:
+      PRIVATE_API_URL: http://backend-corporativo:8081
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3000}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:5173}
+      ORIGIN: ${FRONTEND_URL:-http://localhost:3000}
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  db_corporativo_data:

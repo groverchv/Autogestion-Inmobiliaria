@@ -152,7 +152,7 @@ const AuditoriaCheckInOut = () => {
       setDictamenReciente(res.data);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || 'Error procesando la auditoría');
+      alert(err.response?.data?.error || 'No pudimos registrar la auditoría. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }

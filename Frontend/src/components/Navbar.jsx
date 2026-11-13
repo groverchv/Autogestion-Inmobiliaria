@@ -12,6 +12,7 @@ import {
   Calendar,
   FileText,
   CreditCard,
+  Crown,
   TrendingUp,
   Heart,
   Bell,
@@ -96,7 +97,7 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
     let targetGroup = null;
     if (path.startsWith('/mis-inmuebles') || path.startsWith('/mi-agenda') || path.startsWith('/favoritos')) {
       targetGroup = 'propiedades';
-    } else if (path.startsWith('/mis-contratos') || path.startsWith('/mis-pagos') || path.startsWith('/mis-finanzas')) {
+    } else if (path.startsWith('/mis-contratos') || path.startsWith('/mis-pagos') || path.startsWith('/mis-finanzas') || path.startsWith('/mi-plan')) {
       targetGroup = 'finanzas';
     } else if (path.startsWith('/notificaciones') || path.startsWith('/mensajes')) {
       targetGroup = 'alertas';
@@ -177,6 +178,20 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
                     </Link>
                   )
                 )}
+                <Link to="/mi-plan" title="Mi plan de suscripción" style={{
+                  padding: '6px 12px',
+                  background: 'rgba(245,158,11,0.12)',
+                  color: '#d97706',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}>
+                  <Crown size={15} /> Plan
+                </Link>
                 <UserDropdown />
               </>
             ) : (
@@ -345,7 +360,7 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
                   {/* 3. Grupo: Trámites y Finanzas (Accordion) */}
                   <div className="sidebar-drawer__group">
                     <button 
-                      className={`sidebar-drawer__group-header ${isGroupActive(['/mis-contratos', '/mis-pagos', '/mis-finanzas']) ? 'active' : ''}`}
+                      className={`sidebar-drawer__group-header ${isGroupActive(['/mis-contratos', '/mis-pagos', '/mis-finanzas', '/mi-plan']) ? 'active' : ''}`}
                       onClick={() => toggleAccordion('finanzas')}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -363,6 +378,10 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
                         <Link to="/mis-pagos" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-pagos') ? 'active' : ''}`}>
                           <CreditCard size={16} />
                           <span>Mis Pagos</span>
+                        </Link>
+                        <Link to="/mi-plan" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mi-plan') ? 'active' : ''}`}>
+                          <Crown size={16} />
+                          <span>Mi Plan</span>
                         </Link>
                         <Link to="/mis-finanzas" onClick={() => setIsSidebarOpen(false)} className={`sidebar-drawer__sub-item ${location.pathname.startsWith('/mis-finanzas') ? 'active' : ''}`}>
                           <TrendingUp size={16} />
