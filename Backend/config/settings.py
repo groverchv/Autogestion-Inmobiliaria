@@ -207,6 +207,10 @@ CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
 CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if o.strip()
 ]
+# Orígenes por regex (ej. cualquier puerto localhost para `flutter run` en dev)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    o.strip() for o in os.getenv('CORS_ALLOWED_ORIGIN_REGEXES', '').split(',') if o.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ['*']
 CORS_ALLOW_METHODS = ['*']

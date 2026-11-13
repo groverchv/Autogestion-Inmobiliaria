@@ -168,8 +168,8 @@ class SuscripcionViewSet(viewsets.ReadOnlyModelViewSet):
     def checkout_stripe(self, request):
         """Crea el pago del plan + sesión de Stripe Checkout y devuelve la URL.
 
-        Stripe no soporta BOB: se cobra en USD convirtiendo el precio en Bs
-        con la tasa configurada (STRIPE_TASA_USD_BOB).
+        Se cobra directamente en BOB (moneda soportada por Stripe como
+        presentment currency) para que el precio coincida con el plan.
         """
         plan_id = request.data.get('plan_id')
         plan = Plan.objects.filter(id=plan_id, activo=True).first()
@@ -201,17 +201,18 @@ class SuscripcionViewSet(viewsets.ReadOnlyModelViewSet):
 
         tasa = getattr(settings, 'STRIPE_TASA_USD_BOB', 6.96)
         usd = round(float(plan.precio) / tasa, 2)
+        monto_bob = int(plan.precio * 100)
 
         try:
             session = stripe.checkout.Session.create(
                 line_items=[{
                     'price_data': {
-                        'currency': 'usd',
+                        'currency': 'bob',
                         'product_data': {
                             'name': f'Plan {plan.nombre} — Inmobiliaria 360',
-                            'description': f'Suscripción mensual (Bs {plan.precio}/mes ≈ US$ {usd})',
+                            'description': f'Suscripción mensual (Bs {plan.precio}/mes)',
                         },
-                        'unit_amount': int(round(usd * 100)),
+                        'unit_amount': monto_bob,
                     },
                     'quantity': 1,
                 }],
