@@ -9,7 +9,7 @@ const AuthLayout = () => {
     <div className="auth-layout" id="auth-layout">
       <div className="auth-layout__bg">
         <img
-          src="/logo_dark.png"
+          src={`${import.meta.env.BASE_URL}logo_dark.png`}
           alt="Nobleve Background"
           className="auth-layout__bg-watermark"
         />

@@ -139,7 +139,7 @@ const Navbar = ({ isSidebarOpen: externalSidebarOpen, onSidebarToggle: externalS
 
             <Link to="/" className="navbar__brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <img 
-                src="/logo_dark.png" 
+                src={`${import.meta.env.BASE_URL}logo_dark.png`} 
                 alt="Nobleve Logo" 
                 style={{ height: '34px', width: 'auto', objectFit: 'contain' }}
                 onError={(e) => { e.target.style.display = 'none'; }}

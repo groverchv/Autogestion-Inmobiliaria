@@ -204,7 +204,6 @@ class SuscripcionViewSet(viewsets.ReadOnlyModelViewSet):
 
         try:
             session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
                 line_items=[{
                     'price_data': {
                         'currency': 'usd',
@@ -389,7 +388,6 @@ class CrearSesionStripeView(APIView):
             monto_centavos = int(monto_decimal * 100)
 
             checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
                 line_items=[{
                     'price_data': {
                         'currency': moneda,
@@ -652,7 +650,6 @@ class TransaccionStripeViewSet(viewsets.ReadOnlyModelViewSet):
 
         try:
             session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
                 line_items=[{
                     'price_data': {
                         'currency': transaccion.moneda,
