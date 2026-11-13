@@ -705,31 +705,25 @@ def create_seed_data():
     tp_mensual, _ = TipoPlan.objects.get_or_create(nombre='Mensual', defaults={'descripcion': 'Planes de cobro mensual'})
     tp_anual, _ = TipoPlan.objects.get_or_create(nombre='Anual', defaults={'descripcion': 'Planes de cobro anual con descuento'})
     
-    Plan.objects.get_or_create(
-        nombre='Plan Básico',
-        precio=Decimal('99.00'),
-        defaults={
-            'tipo_plan': tp_mensual,
-            'descripcion': 'Hasta 5 inmuebles.',
-            'duracion': 1,
-            'max_inmuebles': 5,
-            'max_usuarios': 1,
-            'activo': True
-        }
-    )
-    Plan.objects.get_or_create(
-        nombre='Plan Premium',
-        precio=Decimal('299.00'),
-        defaults={
-            'tipo_plan': tp_mensual,
-            'descripcion': 'Inmuebles ilimitados y soporte prioritario.',
-            'duracion': 1,
-            'max_inmuebles': 100,
-            'max_usuarios': 5,
-            'activo': True
-        }
-    )
-    print("  OK Planes de Suscripción creados: 2")
+    planes_seed = [
+        dict(nombre='Gratis', precio=Decimal('0'), duracion=1, max_inmuebles=1,
+             max_usuarios=1, max_fotos=8, permite_360=False, permite_destacado=False,
+             permite_estadisticas=False, descripcion='Para empezar a publicar sin costo.'),
+        dict(nombre='Profesional', precio=Decimal('190'), duracion=1, max_inmuebles=10,
+             max_usuarios=1, max_fotos=0, permite_360=True, permite_destacado=True,
+             permite_estadisticas=True, descripcion='Para agentes que venden en serio.'),
+        dict(nombre='Inmobiliaria', precio=Decimal('490'), duracion=1, max_inmuebles=50,
+             max_usuarios=5, max_fotos=0, permite_360=True, permite_destacado=True,
+             permite_estadisticas=True, descripcion='Para equipos y agencias con cartera amplia.'),
+    ]
+    for datos in planes_seed:
+        nombre = datos.pop('nombre')
+        precio = datos.pop('precio')
+        Plan.objects.get_or_create(
+            nombre=nombre,
+            defaults={**datos, 'tipo_plan': tp_mensual, 'precio': precio, 'activo': True}
+        )
+    print("  OK Planes de Suscripción creados: 3")
 
     # 9. TRANSACCIONES STRIPE
     contrato_stripe = list(contratos.values())[0]
@@ -767,7 +761,7 @@ def create_seed_data():
     print("  [+] CHATS:              4 (con 16 mensajes)")
     print("  [+] RESENAS:            10 calificaciones")
     print("  [+] BLOQUEOS:           2 usuarios bloqueados")
-    print("  [+] PLANES / SUSC.:     2 planes comerciales")
+    print("  [+] PLANES / SUSC.:     3 planes (Gratis/Profesional/Inmobiliaria)")
     print("  [+] STRIPE TXS:         1 transacción de prueba")
     print("  ----------------------------------------------")
     print("  [!] Acceso Admin:       admin@autogestion.bo / admin123")
