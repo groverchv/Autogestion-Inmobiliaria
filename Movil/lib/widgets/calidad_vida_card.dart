@@ -210,24 +210,9 @@ class _CalidadVidaCardState extends State<CalidadVidaCard> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Capa Base de Mapa con Calles reales (OpenStreetMap / CartoDB Voyager)
+                  // Capa Base de Mapa con Calles reales (tiles OSM con User-Agent válido)
                   Positioned.fill(
-                    child: Image.network(
-                      'https://staticmap.openstreetmap.de/staticmap.php?center=$centroLat,$centroLng&zoom=16&size=600x300&maptype=mapnik',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.network(
-                          'https://tile.openstreetmap.org/16/${_lon2tile(centroLng, 16)}/${_lat2tile(centroLat, 16)}.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => Container(
-                            color: const Color(0xFF0F172A),
-                            child: const Center(
-                              child: Text('Cargando calles de OpenStreetMap...', style: TextStyle(color: Colors.white, fontSize: 11)),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: _MapaTilesOSM(lat: centroLat, lng: centroLng),
                   ),
 
 
@@ -481,14 +466,6 @@ class _CalidadVidaCardState extends State<CalidadVidaCard> {
     );
   }
 
-  int _lon2tile(double lon, int zoom) {
-    return ((lon + 180.0) / 360.0 * (1 << zoom)).floor();
-  }
-
-  int _lat2tile(double lat, int zoom) {
-    return ((1.0 - math.log(math.tan(lat * math.pi / 180.0) + 1.0 / math.cos(lat * math.pi / 180.0)) / math.pi) / 2.0 * (1 << zoom)).floor();
-  }
-
   Color _obtenerColorCategoria(String? cat) {
     switch (cat) {
       case 'supermercados': return const Color(0xFF10B981);
@@ -548,3 +525,73 @@ class _CartographicIsochronesPainter extends CustomPainter {
 }
 
 
+
+/// Mapa de calles real armado con tiles de OpenStreetMap.
+/// Requiere User-Agent que identifique la app (política de uso de tiles OSM).
+class _MapaTilesOSM extends StatelessWidget {
+  final double lat;
+  final double lng;
+
+  const _MapaTilesOSM({required this.lat, required this.lng});
+
+  static const int _zoom = 16;
+  static const double _tile = 256.0;
+  static const Map<String, String> _headers = {
+    'User-Agent': 'com.autogestion.inmobiliaria.movil/1.0 (+https://98.87.128.28.nip.io)',
+  };
+
+  double get _centerX => (lng + 180.0) / 360.0 * (1 << _zoom) * _tile;
+
+  double get _centerY =>
+      (1.0 -
+              math.log(
+                    math.tan(lat * math.pi / 180.0) +
+                        1.0 / math.cos(lat * math.pi / 180.0),
+                  ) /
+                  math.pi) /
+          2.0 *
+          (1 << _zoom) *
+          _tile;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double w = constraints.maxWidth;
+        final double h = constraints.maxHeight;
+        final double ox = _centerX - w / 2;
+        final double oy = _centerY - h / 2;
+        final int tx0 = (ox / _tile).floor();
+        final int ty0 = (oy / _tile).floor();
+        final int tx1 = ((ox + w) / _tile).floor();
+        final int ty1 = ((oy + h) / _tile).floor();
+
+        final List<Widget> tiles = [];
+        for (int ty = ty0; ty <= ty1; ty++) {
+          for (int tx = tx0; tx <= tx1; tx++) {
+            tiles.add(
+              Positioned(
+                left: tx * _tile - ox,
+                top: ty * _tile - oy,
+                child: Image.network(
+                  'https://tile.openstreetmap.org/$_zoom/$tx/$ty.png',
+                  headers: _headers,
+                  width: _tile,
+                  height: _tile,
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                  errorBuilder: (_, e, s) => Container(
+                    width: _tile,
+                    height: _tile,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+        return ClipRect(child: Stack(children: tiles));
+      },
+    );
+  }
+}

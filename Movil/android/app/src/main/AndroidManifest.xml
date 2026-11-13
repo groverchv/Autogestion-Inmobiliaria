@@ -14,7 +14,7 @@
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <application
-        android:label="movil"
+        android:label="Inmobiliaria Nobleve 360"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

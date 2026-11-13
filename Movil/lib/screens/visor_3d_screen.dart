@@ -105,10 +105,15 @@ class _Visor3DPlanoScreenState extends State<Visor3DPlanoScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _modoAR ? 'RA Activa: Gira el celular para explorar' : 'Arrastra para rotar en 3D / Pellizca para zoom',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  Expanded(
+                    child: Text(
+                      _modoAR ? 'RA Activa: Gira el celular para explorar' : 'Arrastra para rotar en 3D / Pellizca para zoom',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: () {
                       setState(() {

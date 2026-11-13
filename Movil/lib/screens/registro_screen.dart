@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/terminos_condiciones_modal.dart';
+import '../widgets/politica_privacidad_modal.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -92,7 +93,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
     if (!_aceptaTerminos) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Debes leer y aceptar los Términos y Condiciones para continuar.'),
+          content: Text('Debes leer y aceptar los Términos y la Política de Privacidad para continuar.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -333,6 +334,19 @@ class _RegistroScreenState extends State<RegistroScreen> {
                               onTap: () => TerminosCondicionesModal.mostrar(context),
                               child: const Text(
                                 'Términos y Condiciones',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                            const Text(' y la ', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            InkWell(
+                              onTap: () => PoliticaPrivacidadModal.mostrar(context),
+                              child: const Text(
+                                'Política de Privacidad',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,

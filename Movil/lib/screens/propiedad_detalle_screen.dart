@@ -876,79 +876,91 @@ class _PropiedadDetalleScreenState extends State<PropiedadDetalleScreen> {
               color: AppColors.backgroundSecondary,
               border: Border(top: BorderSide(color: AppColors.borderSubtle)),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                Row(
                   children: [
-                    const Text(
-                      'Precio mensual',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Precio mensual',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            'Bs. ${item.precio}',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      'Bs. ${item.precio}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                    const SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: _abrirModalAgendarCita,
+                        icon: const Icon(
+                          Icons.calendar_month,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Agendar Cita',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: _abrirModalAgendarCita,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AgenteScreen(inmuebleId: widget.inmuebleId),
+                      ),
+                    ),
                     icon: const Icon(
-                      Icons.calendar_month,
-                      color: Colors.white,
-                      size: 18,
+                      Icons.smart_toy_outlined,
+                      color: AppColors.primary,
+                      size: 16,
                     ),
                     label: const Text(
-                      'Agendar Cita',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      'Preguntar al asistente',
+                      style: TextStyle(color: AppColors.primary, fontSize: 12),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          AgenteScreen(inmuebleId: widget.inmuebleId),
-                    ),
-                  ),
-                  icon: const Icon(
-                    Icons.smart_toy_outlined,
-                    color: AppColors.primary,
-                    size: 16,
-                  ),
-                  label: const Text(
-                    'Preguntar al asistente sobre esta propiedad',
-                    style: TextStyle(color: AppColors.primary, fontSize: 12),
                   ),
                 ),
               ],
