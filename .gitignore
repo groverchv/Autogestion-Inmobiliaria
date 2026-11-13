@@ -18,5 +18,6 @@ Backend/export_inmuebles.py
 
 # Seguridad
 .env
+.env.prod
 *.pem
 skills-lock.json

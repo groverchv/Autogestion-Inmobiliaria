@@ -174,6 +174,6 @@ const router = createBrowserRouter([
       { path: 'favoritos', element: <ManageFavoritos /> },
     ],
   },
-]);
+], { basename: import.meta.env.BASE_URL });
 
 export default router;

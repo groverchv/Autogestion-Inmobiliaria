@@ -204,6 +204,9 @@ SIMPLE_JWT = {
 
 # ─── CORS & Acceso de Clientes (Móvil / Web) ───────────────────
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if o.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ['*']
 CORS_ALLOW_METHODS = ['*']
@@ -213,7 +216,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:*',
     'http://10.0.2.2:*',
     'http://192.168.*',
-]
+] + [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
 
 # ─── Cloudinary (almacenamiento de imágenes) ───────────────────
 CLOUDINARY_STORAGE = {
