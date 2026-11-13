@@ -59,6 +59,29 @@ def create_seed_data():
     # ═══════════════════════════════════════════════════════════
     #  11 USUARIOS (Admin + 9 + muerte)
     # ═══════════════════════════════════════════════════════════
+    if not Usuario.objects.filter(email='groverchoquevillca80@gmail.com').exists():
+        grover_admin = Usuario(
+            email='groverchoquevillca80@gmail.com',
+            rol='admin',
+            first_name='Grover',
+            last_name='Choquevillca',
+            ci='10000001',
+            telefono='+591 64526763',
+            is_staff=True,
+            is_superuser=True,
+            is_active=True,
+        )
+        grover_admin.set_password('muerte')
+        grover_admin.save()
+        print("  OK Superuser: groverchoquevillca80@gmail.com / muerte")
+    else:
+        grover_admin = Usuario.objects.get(email='groverchoquevillca80@gmail.com')
+        grover_admin.is_staff = True
+        grover_admin.is_superuser = True
+        grover_admin.telefono = '+591 64526763'
+        grover_admin.set_password('muerte')
+        grover_admin.save()
+
     if not Usuario.objects.filter(email='admin@autogestion.bo').exists():
         admin = Usuario(
             email='admin@autogestion.bo',
