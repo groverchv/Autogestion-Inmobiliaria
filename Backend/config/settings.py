@@ -120,6 +120,8 @@ if db_url and (db_url.startswith('postgres://') or db_url.startswith('postgresql
             'PORT': url.port or '5432',
             'CONN_MAX_AGE': int(os.getenv('CONN_MAX_AGE', '60')),
             'CONN_HEALTH_CHECKS': True,
+            # Requerido con pooler en modo transacción (Supabase :6543)
+            'DISABLE_SERVER_SIDE_CURSORS': os.getenv('DISABLE_SERVER_SIDE_CURSORS', 'False') == 'True',
         }
     }
 else:
@@ -135,6 +137,7 @@ else:
             # En producción con workers acotados usar CONN_MAX_AGE=60 + pgbouncer.
             'CONN_MAX_AGE': int(os.getenv('CONN_MAX_AGE', '0')),
             'CONN_HEALTH_CHECKS': True,
+            'DISABLE_SERVER_SIDE_CURSORS': os.getenv('DISABLE_SERVER_SIDE_CURSORS', 'False') == 'True',
         }
     }
 
