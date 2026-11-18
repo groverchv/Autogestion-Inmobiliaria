@@ -7,11 +7,11 @@ class AppConfig {
   ///   flutter run --dart-define=API_HOST=192.168.1.50
   ///   flutter build apk --dart-define=API_HOST=api.midominio.bo
   /// Contra producción:
-  ///   flutter run -d web-server --web-port=5200 --dart-define=API_HOST=https://98.87.128.28.nip.io/api
+  ///   flutter run -d web-server --web-port=5200 --dart-define=API_HOST=https://inmuebles3d.duckdns.org/api
   static const String _envHost = String.fromEnvironment('API_HOST');
 
   /// Backend productivo en EC2 (nginx + Let's Encrypt).
-  static const String prodUrl = 'https://98.87.128.28.nip.io/api';
+  static const String prodUrl = 'https://inmuebles3d.duckdns.org/api';
 
   /// Obtiene dinámicamente la URL base según la plataforma de ejecución
   static String get baseUrl {

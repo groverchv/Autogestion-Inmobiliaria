@@ -537,7 +537,7 @@ class _MapaTilesOSM extends StatelessWidget {
   static const int _zoom = 16;
   static const double _tile = 256.0;
   static const Map<String, String> _headers = {
-    'User-Agent': 'com.autogestion.inmobiliaria.movil/1.0 (+https://98.87.128.28.nip.io)',
+    'User-Agent': 'com.autogestion.inmobiliaria.movil/1.0 (+https://inmuebles3d.duckdns.org)',
   };
 
   double get _centerX => (lng + 180.0) / 360.0 * (1 << _zoom) * _tile;
