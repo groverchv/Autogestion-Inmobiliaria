@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../providers/auth_provider.dart';
+import '../services/biometric_auth_service.dart';
 import 'main_navigation_screen.dart';
 import 'registro_screen.dart';
 
@@ -17,6 +18,39 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController(text: 'diego@gmail.com');
   final _passwordController = TextEditingController(text: 'admin123');
   bool _obscurePassword = true;
+  bool _canCheckBiometrics = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricsSupport();
+  }
+
+  Future<void> _checkBiometricsSupport() async {
+    final canAuth = await BiometricAuthService.canAuthenticate();
+    if (mounted) {
+      setState(() {
+        _canCheckBiometrics = canAuth;
+      });
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    final authenticated = await BiometricAuthService.authenticateWithBiometrics();
+    if (authenticated && mounted) {
+      final authProvider = context.read<AuthProvider>();
+      // Si la huella coincide, loguear con las credenciales o sesión segura
+      final success = await authProvider.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+      if (success && mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -195,6 +229,27 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                     ),
                   ),
+
+                  // Botón de Inicio con Huella Digital
+                  if (_canCheckBiometrics) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: authProvider.isLoading ? null : _handleBiometricLogin,
+                      icon: const Icon(Icons.fingerprint, color: AppColors.primary, size: 24),
+                      label: const Text(
+                        'Ingresar con Huella Digital',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
 
                   // Enlace a Registro de Cuenta

@@ -20,4 +20,9 @@ Backend/export_inmuebles.py
 .env
 .env.prod
 *.pem
+*firebase-credentials*.json
+google-services.json
+inmuebles-*.json
+node_modules/
+nul
 skills-lock.json

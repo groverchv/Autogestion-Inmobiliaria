@@ -32,11 +32,24 @@ const useAuth = () => {
     navigate('/propiedades');
   };
 
+  const handleLoginWithGoogle = async (idToken) => {
+    const { loginWithGoogle } = useStore.getState();
+    const user = await loginWithGoogle(idToken);
+    const role = user?.rol?.toLowerCase() || '';
+    if (role === 'admin') {
+      navigate('/panel/dashboard');
+    } else {
+      navigate('/propiedades');
+    }
+    return user;
+  };
+
   return {
     user,
     isAuthenticated,
     isLoading,
     login: handleLogin,
+    loginWithGoogle: handleLoginWithGoogle,
     logout: handleLogout,
     updateUser,
   };

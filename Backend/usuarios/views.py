@@ -40,6 +40,17 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         serializer = UsuarioSerializer(request.user)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['post'], url_path='actualizar-fcm-token', permission_classes=[permissions.IsAuthenticated])
+    def actualizar_fcm_token(self, request):
+        """Registra el token de Firebase Cloud Messaging del navegador o móvil."""
+        token = request.data.get('fcm_token')
+        if not token:
+            return Response({'error': 'fcm_token requerido'}, status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        user.fcm_token = token
+        user.save(update_fields=['fcm_token'])
+        return Response({'ok': True, 'mensaje': 'Token FCM actualizado correctamente'})
+
     @action(detail=False, methods=['get'], url_path='badges')
     def badges(self, request):
         """Contadores de cosas no leídas para el navbar."""
@@ -89,6 +100,64 @@ class RegistroView(viewsets.GenericViewSet):
         user.acepto_terminos_at = timezone.now()
         user.terminos_version = 'v1.0'
         user.save(update_fields=['acepto_terminos_at', 'terminos_version'])
+
+        # Enviar correo de bienvenida al nuevo usuario
+        try:
+            from inmuebles.services_notificaciones import send_email_notification
+            nombre_mostrar = user.first_name or user.email.split('@')[0]
+            asunto = "¡Bienvenido a Inmobiliaria 360!"
+            mensaje_texto = (
+                f"Hola {nombre_mostrar},\n\n"
+                f"Te damos la bienvenida a Inmobiliaria 360, tu plataforma de autogestión inmobiliaria con IA y Realidad Aumentada.\n\n"
+                f"Tu cuenta ha sido creada exitosamente con el correo: {user.email}.\n\n"
+                f"Ya puedes acceder a publicar propiedades, agendar visitas, evaluar cotizaciones y explorar el metaverso 360°.\n\n"
+                f"Atentamente,\nEquipo de Inmobiliaria 360"
+            )
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                <div style="background: #0f172a; padding: 24px 32px; text-align: center;">
+                    <h2 style="color: #ffffff; margin: 0; font-size: 22px;">Inmobiliaria <span style="color: #38bdf8;">360</span></h2>
+                </div>
+                <div style="padding: 32px;">
+                    <h3 style="color: #0f172a; margin-top: 0;">¡Hola, {nombre_mostrar}!</h3>
+                    <p style="color: #334155; line-height: 1.6;">
+                        Te damos la más cordial bienvenida a <strong>Inmobiliaria 360</strong>. Tu cuenta ha sido creada con éxito.
+                    </p>
+                    <div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 16px; margin: 20px 0;">
+                        <p style="margin: 0; color: #475569; font-size: 14px;"><strong>Email registrado:</strong> {user.email}</p>
+                    </div>
+                    <p style="color: #334155; line-height: 1.6;">
+                        A partir de ahora podrás disfrutar de:
+                    </p>
+                    <ul style="color: #334155; line-height: 1.8;">
+                        <li>Tours virtuales inmersivos en 360° y Realidad Aumentada.</li>
+                        <li>Valuación predictiva inteligente de propiedades con IA.</li>
+                        <li>Auditoría y peritaje automatizado de ambientes.</li>
+                    </ul>
+                </div>
+                <div style="background: #f1f5f9; padding: 16px 32px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0; color: #94a3b8; font-size: 12px;">Inmobiliaria 360 &copy; 2026. Todos los derechos reservados.</p>
+                </div>
+            </div>
+            """
+            send_email_notification(
+                to_email=user.email,
+                subject=asunto,
+                message=mensaje_texto,
+                html_message=html_content
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error enviando correo de bienvenida: {e}")
+
+        # Crear notificación en plataforma
+        crear_notificacion_sistema(
+            usuario=user,
+            titulo="¡Bienvenido a Inmobiliaria 360!",
+            mensaje="Tu cuenta fue creada con éxito. Explora propiedades y descubre el visor 360° con Inteligencia Artificial.",
+            tipo=Notificacion.TipoNotificacion.CONFIRMACION
+        )
+
         return Response(
             UsuarioSerializer(user).data,
             status=status.HTTP_201_CREATED,
@@ -435,3 +504,85 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     Vista personalizada para retornar tokens y datos del usuario.
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class GoogleLoginView(APIView):
+    """
+    Endpoint para autenticación con Google (Firebase ID Token).
+    Verifica el token de Google, registra al usuario si es nuevo
+    y devuelve los tokens JWT de acceso para la plataforma.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        id_token = request.data.get('id_token')
+        if not id_token:
+            return Response({'error': 'id_token es requerido'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from inmuebles.services_notificaciones import initialize_firebase
+            import firebase_admin.auth as fb_auth
+
+            if not initialize_firebase():
+                return Response({'error': 'Servicio Firebase no disponible'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Verificar el token con Firebase Admin
+            decoded_token = fb_auth.verify_id_token(id_token)
+            email = decoded_token.get('email')
+            if not email:
+                return Response({'error': 'El token de Google no contiene un email válido'}, status=status.HTTP_400_BAD_REQUEST)
+
+            nombre = decoded_token.get('name', '')
+            foto = decoded_token.get('picture', '')
+
+            # Obtener o crear el usuario en Django
+            user, created = Usuario.objects.get_or_create(
+                email=email,
+                defaults={
+                    'first_name': nombre.split(' ')[0] if nombre else '',
+                    'last_name': ' '.join(nombre.split(' ')[1:]) if (nombre and len(nombre.split(' ')) > 1) else '',
+                    'rol': Usuario.RolesConfig.USUARIO,
+                    'activo': True,
+                }
+            )
+
+            # Si es nuevo, enviar correo de bienvenida y registrar términos
+            if created:
+                from django.utils import timezone
+                user.acepto_terminos_at = timezone.now()
+                user.terminos_version = 'v1.0 (Google Sign-In)'
+                user.set_unusable_password()
+                user.save()
+
+                try:
+                    from inmuebles.services_notificaciones import send_email_notification
+                    send_email_notification(
+                        to_email=user.email,
+                        subject="¡Bienvenido a Inmobiliaria 360 con Google!",
+                        message=f"Hola {user.first_name or user.email},\n\nTu cuenta ha sido creada exitosamente mediante Google en Inmobiliaria 360.",
+                    )
+                except Exception:
+                    pass
+
+                crear_notificacion_sistema(
+                    usuario=user,
+                    titulo="¡Bienvenido a Inmobiliaria 360!",
+                    mensaje="Tu cuenta fue creada con éxito a través de Google.",
+                    tipo=Notificacion.TipoNotificacion.CONFIRMACION
+                )
+
+            # Generar tokens JWT de sesión
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UsuarioSerializer(user).data,
+                'is_new_user': created,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'error': f'Token inválido o expirado: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+

@@ -12,6 +12,14 @@ const authService = {
     return data;
   },
 
+  /** Iniciar sesión con Google (Firebase Auth) */
+  loginWithGoogle: async (idToken) => {
+    const { data } = await api.post('/usuarios/login/google/', { id_token: idToken });
+    localStorage.setItem('access_token', data.access);
+    localStorage.setItem('refresh_token', data.refresh);
+    return data;
+  },
+
   /** Cerrar sesión */
   logout: () => {
     localStorage.removeItem('access_token');

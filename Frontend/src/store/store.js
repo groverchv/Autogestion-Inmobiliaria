@@ -26,6 +26,18 @@ const useStore = create((set) => ({
     }
   },
 
+  loginWithGoogle: async (idToken) => {
+    set({ isLoading: true });
+    try {
+      const data = await authService.loginWithGoogle(idToken);
+      set({ user: data.user, isAuthenticated: true, isLoading: false });
+      return data.user;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
   logout: () => {
     authService.logout();
     set({ user: null, isAuthenticated: false });

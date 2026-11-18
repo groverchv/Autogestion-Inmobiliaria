@@ -4,7 +4,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     UsuarioViewSet, RegistroView, AgendaViewSet,
     NotificacionViewSet, ChatViewSet, MensajeViewSet,
-    BloqueoViewSet, ResenaViewSet, CustomTokenObtainPairView
+    BloqueoViewSet, ResenaViewSet, CustomTokenObtainPairView,
+    GoogleLoginView
 )
 
 router = DefaultRouter()
@@ -27,5 +28,6 @@ urlpatterns = [
     path('', include(router.urls)),
     #  RUTAS DE AUTENTICACIÓN (LOGIN) 
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('login/google/', GoogleLoginView.as_view(), name='google_login'),
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

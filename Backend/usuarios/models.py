@@ -30,6 +30,7 @@ class Usuario(AbstractUser):
     activo = models.BooleanField(default=True)
     acepto_terminos_at = models.DateTimeField(null=True, blank=True)
     terminos_version = models.CharField(max_length=20, blank=True)
+    fcm_token = models.TextField(blank=True, null=True, help_text='Token FCM para notificaciones Push')
 
     class Meta:
         db_table = 'usuarios_usuario'
