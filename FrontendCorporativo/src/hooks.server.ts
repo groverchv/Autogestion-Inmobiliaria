@@ -47,7 +47,7 @@ const seguridad: Handle = async ({ event, resolve }) => {
 				"default-src 'self'",
 				"script-src 'self' 'unsafe-inline'",
 				"style-src 'self' 'unsafe-inline'",
-				"img-src 'self' data: blob: https://res.cloudinary.com",
+				"img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com",
 				"font-src 'self' data:",
 				"connect-src 'self' blob: https://res.cloudinary.com",
 				"worker-src 'self' blob:",
