@@ -4,7 +4,13 @@
 	import Icon from './Icon.svelte';
 	import Visor360 from './Visor360.svelte';
 
-	let { post }: { post: BlogPost } = $props();
+	const fallbackImages: Record<string, string> = {
+		'tendencias-mercado-inmobiliario-2026': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
+		'guia-compra-primer-departamento': 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
+		'como-funcionan-recorridos-360': 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+	};
+
+	const imagenPortada = post.portadaUrl || fallbackImages[post.slug] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80';
 </script>
 
 <a
@@ -16,17 +22,13 @@
 			<div class="tarjeta-visor">
 				<Visor360 alto={225} mostrarAyuda={false} />
 			</div>
-		{:else if post.portadaUrl}
+		{:else}
 			<img
-				src={post.portadaUrl}
+				src={imagenPortada}
 				alt={post.titulo}
 				loading="lazy"
 				class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 			/>
-		{:else}
-			<div class="flex h-full items-center justify-center bg-gradient-to-br from-navy-900 to-navy-800 text-brand-400">
-				<Icon nombre="newspaper" size={40} />
-			</div>
 		{/if}
 	</div>
 	<div class="flex flex-1 flex-col p-3 sm:p-5">
