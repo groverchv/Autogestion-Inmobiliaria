@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/mensajes_error.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/google_auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -41,6 +42,30 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await _apiService.register(userData);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = mensajeError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> loginWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = await GoogleAuthService.signInWithGoogle();
+      if (data == null) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      _user = await _apiService.getProfile();
       _isLoading = false;
       notifyListeners();
       return true;

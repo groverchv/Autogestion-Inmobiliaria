@@ -4,13 +4,19 @@
 	import Icon from './Icon.svelte';
 	import Visor360 from './Visor360.svelte';
 
+	interface Props {
+		post: BlogPost;
+	}
+
+	let { post }: Props = $props();
+
 	const fallbackImages: Record<string, string> = {
 		'tendencias-mercado-inmobiliario-2026': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
 		'guia-compra-primer-departamento': 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80',
 		'como-funcionan-recorridos-360': 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
 	};
 
-	const imagenPortada = post.portadaUrl || fallbackImages[post.slug] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80';
+	const imagenPortada = $derived(post.portadaUrl || fallbackImages[post.slug] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80');
 </script>
 
 <a

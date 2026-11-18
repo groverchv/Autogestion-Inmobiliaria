@@ -13,24 +13,13 @@ class AppConfig {
   /// Backend productivo en EC2 (nginx + Let's Encrypt).
   static const String prodUrl = 'https://inmuebles3d.duckdns.org/api';
 
-  /// Obtiene dinámicamente la URL base según la plataforma de ejecución
+  /// Obtiene dinámicamente la URL base. Por defecto apunta al servidor en la nube en AWS (inmuebles3d.duckdns.org)
   static String get baseUrl {
     if (_envHost.isNotEmpty) {
       return _envHost.startsWith('http') ? _envHost : 'http://$_envHost:8000/api';
     }
-    if (kReleaseMode) {
-      // Builds de producción (flutter build web / apk) apuntan al server real.
-      return prodUrl;
-    }
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000/api';
-    }
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      // 10.0.2.2 en el emulador resuelve al localhost de la máquina de desarrollo.
-      // En dispositivo físico, compilar con --dart-define=API_HOST=<IP-LAN>.
-      return 'http://10.0.2.2:8000/api';
-    }
-    return 'http://192.168.0.16:8000/api';
+    // Siempre apunta al servidor online en la nube de producción
+    return prodUrl;
   }
 
   static const String appTitle = 'Inmobiliaria Nobleve 360';

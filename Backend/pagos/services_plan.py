@@ -53,8 +53,21 @@ def inmuebles_activos(usuario):
     return Inmueble.objects.filter(propietario=usuario).exclude(estado='oculto').count()
 
 
+def es_administrador(usuario):
+    """Comprueba si el usuario tiene privilegios de administrador sin restricciones."""
+    if not usuario or not usuario.is_authenticated:
+        return False
+    return (
+        usuario.is_staff
+        or usuario.is_superuser
+        or getattr(usuario, 'rol', '').lower() == 'admin'
+    )
+
+
 def validar_crear_inmueble(usuario):
-    """Lanza ValidationError si el plan no permite crear más inmuebles."""
+    """Lanza ValidationError si el plan no permite crear más inmuebles (admin ilimitado)."""
+    if es_administrador(usuario):
+        return
     plan = plan_activo(usuario)
     if plan is None:
         return
@@ -68,7 +81,9 @@ def validar_crear_inmueble(usuario):
 
 
 def validar_multimedia(usuario, inmueble, tipo):
-    """Lanza ValidationError si la subida excede lo que permite el plan."""
+    """Lanza ValidationError si la subida excede lo que permite el plan (admin ilimitado)."""
+    if es_administrador(usuario):
+        return
     plan = plan_activo(usuario)
     if plan is None:
         return
@@ -89,7 +104,9 @@ def validar_multimedia(usuario, inmueble, tipo):
 
 
 def validar_destacado(usuario):
-    """Lanza ValidationError si el plan no permite marcar destacadas."""
+    """Lanza ValidationError si el plan no permite marcar destacadas (admin ilimitado)."""
+    if es_administrador(usuario):
+        return
     plan = plan_activo(usuario)
     if plan is None:
         return

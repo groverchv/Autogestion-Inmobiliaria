@@ -235,14 +235,20 @@ class MultimediaViewSet(viewsets.ModelViewSet):
         inmueble = Inmueble.objects.filter(id=inmueble_id).select_related('propietario').first()
         if inmueble is None:
             return Response({'error': 'Inmueble no encontrado.'}, status=404)
-        if inmueble.propietario_id != request.user.id and not request.user.is_staff:
+        es_admin = request.user.is_staff or request.user.is_superuser or getattr(request.user, 'rol', '').lower() == 'admin'
+        if inmueble.propietario_id != request.user.id and not es_admin:
             return Response({'error': 'No eres el propietario de este inmueble.'}, status=403)
 
         from pagos.services_plan import validar_multimedia
         try:
             validar_multimedia(request.user, inmueble, tipo)
         except Exception as e:
-            return Response({'error': str(e.detail[0] if hasattr(e, 'detail') else e)}, status=403)
+            return Response({
+                'error': str(e.detail[0] if hasattr(e, 'detail') else e),
+                'codigo': 'PLAN_LIMIT_EXCEEDED',
+                'requiere_upgrade': True,
+                'upgrade_url': '/app/mi-plan'
+            }, status=403)
 
         # Subir el archivo a Cloudinary
         upload_data = cloudinary.uploader.upload(

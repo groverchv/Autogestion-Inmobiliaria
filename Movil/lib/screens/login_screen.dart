@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../providers/auth_provider.dart';
 import '../services/biometric_auth_service.dart';
-import '../services/google_auth_service.dart';
 import 'main_navigation_screen.dart';
 import 'registro_screen.dart';
 
@@ -257,21 +256,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Botón Iniciar Sesión con Google
                   OutlinedButton.icon(
                     onPressed: authProvider.isLoading ? null : () async {
+                      final nav = Navigator.of(context);
+                      final scaffold = ScaffoldMessenger.of(context);
+                      final auth = context.read<AuthProvider>();
                       try {
-                        final result = await GoogleAuthService.signInWithGoogle();
-                        if (result != null && mounted) {
-                          // Recargar sesión y navegar
-                          final auth = context.read<AuthProvider>();
-                          await auth.checkAuth();
-                          if (mounted) {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-                            );
-                          }
+                        final success = await auth.loginWithGoogle();
+                        if (success && mounted) {
+                          nav.pushReplacement(
+                            MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                          );
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          scaffold.showSnackBar(
                             SnackBar(
                               content: Text('Error al ingresar con Google: ${e.toString()}'),
                               backgroundColor: Colors.redAccent,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Home, Building2, Map, Briefcase, Warehouse, Store, Camera, X, CheckCircle2, ChevronLeft, ImagePlus } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Home, Building2, Map, Briefcase, Warehouse, Store, Camera, X, CheckCircle2, ChevronLeft, ImagePlus, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 import Stepper from '../../components/Stepper';
 
@@ -48,6 +48,7 @@ const WizardPublicar = () => {
   });
   const [fotos, setFotos] = useState([]);          // File[]
   const [previews, setPreviews] = useState([]);    // object URLs
+  const [limitePlan, setLimitePlan] = useState(null);
 
   useEffect(() => {
     api.get('/inmuebles/tipos/').then(r => setTipos(r.data.results || r.data)).catch(() => {});
@@ -115,9 +116,14 @@ const WizardPublicar = () => {
       setPublicado(true);
     } catch (err) {
       const resp = err.response?.data;
-      setError(resp && typeof resp === 'object'
-        ? Object.entries(resp).map(([k, v]) => `${Array.isArray(v) ? v.join(' ') : v}`).join(' | ')
-        : 'No se pudo publicar. Revisa los datos e intenta de nuevo.');
+      if (resp?.codigo === 'PLAN_LIMIT_EXCEEDED' || resp?.requiere_upgrade) {
+        setLimitePlan(resp.error || 'Has superado el límite de publicaciones o fotos permitido por tu plan actual.');
+        setError('');
+      } else {
+        setError(resp && typeof resp === 'object'
+          ? Object.entries(resp).map(([k, v]) => `${Array.isArray(v) ? v.join(' ') : v}`).join(' | ')
+          : 'No se pudo publicar. Revisa los datos e intenta de nuevo.');
+      }
     } finally {
       setGuardando(false);
     }
@@ -317,6 +323,44 @@ const WizardPublicar = () => {
                 </div>
               </div>
             </div>
+
+            {limitePlan && (
+              <div style={{
+                marginTop: '16px',
+                padding: '16px',
+                borderRadius: '12px',
+                background: 'rgba(234, 179, 8, 0.12)',
+                border: '1px solid rgba(234, 179, 8, 0.35)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#facc15', fontWeight: 600 }}>
+                  <AlertTriangle size={20} />
+                  <span>Límite de plan alcanzado</span>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--color-text)' }}>
+                  {limitePlan}
+                </p>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+                  <Link
+                    to="/mi-plan"
+                    style={{
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      textDecoration: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '0.88rem',
+                      display: 'inline-block'
+                    }}
+                  >
+                    Ver Planes y Mejorar
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {error && <p role="alert" style={{ color: '#f87171', fontSize: '0.88rem', marginTop: '14px' }}>{error}</p>}
           </div>

@@ -37,7 +37,8 @@ class GoogleAuthService {
         final data = jsonDecode(response.body);
         // Guardar token en el almacenamiento seguro
         if (data['access'] != null) {
-          await ApiService.saveToken(data['access']);
+          final api = ApiService();
+          await api.saveToken(data['access'], data['refresh'] ?? '');
         }
         return data;
       } else {

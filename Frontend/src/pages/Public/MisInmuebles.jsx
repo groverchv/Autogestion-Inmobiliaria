@@ -645,17 +645,34 @@ const MisInmuebles = () => {
       setMetaStitch({ piso: '', habitacion: '' });
       fetchData(); // Recargar
       showAlert({
-        title: editingId ? '¡Propiedad actualizada!' : '¡Propiedad publicada!',
+        title: editingId ? 'Propiedad actualizada' : 'Propiedad publicada',
         message: editingId ? 'Los datos de tu propiedad han sido modificados exitosamente.' : 'Tu nuevo inmueble ha sido registrado y publicado exitosamente en la plataforma.',
         status: 'success'
       });
     } catch (err) {
       console.error(err);
-      showAlert({
-        title: 'Error de registro',
-        message: 'No se pudo guardar la información del inmueble.',
-        status: 'error'
-      });
+      const data = err.response?.data;
+      if (data?.codigo === 'PLAN_LIMIT_EXCEEDED' || data?.requiere_upgrade) {
+        showConfirm({
+          title: 'Límite de plan alcanzado',
+          message: data.error || 'Has superado el límite de tu plan actual para fotos o publicaciones. ¿Deseas ver los planes y mejorar tu suscripción?',
+          status: 'warning',
+          confirmText: 'Ver Planes y Mejorar',
+          cancelText: 'Cerrar',
+          onConfirm: () => {
+            navigate('/mi-plan');
+          }
+        });
+      } else {
+        const errorMsg = typeof data === 'object' && data?.error
+          ? data.error
+          : (typeof data === 'string' ? data : 'No se pudo guardar la información del inmueble.');
+        showAlert({
+          title: 'Error de registro',
+          message: errorMsg,
+          status: 'error'
+        });
+      }
     } finally {
       setSaving(false);
     }
