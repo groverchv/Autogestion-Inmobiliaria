@@ -14,7 +14,17 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',')]
+_allowed = os.getenv('ALLOWED_HOSTS', '*')
+if _allowed == '*':
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
+    if 'inmuebles3d.duckdns.org' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('inmuebles3d.duckdns.org')
+    if 'backend-operativo' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('backend-operativo')
+    if 'localhost' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('localhost')
 
 # ─── Seguridad en producción (activas solo con DEBUG=False) ──────
 if not DEBUG:
