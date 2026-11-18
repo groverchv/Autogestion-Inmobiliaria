@@ -453,6 +453,41 @@ class Contrato(models.Model):
                 BlockchainService.registrar_firma_contrato(self.id, 'propietario', hash_propietario)
                 BlockchainService.registrar_firma_contrato(self.id, 'inquilino', hash_inquilino)
 
+                # Notificar a ambas partes del contrato sellado
+                try:
+                    from .services_notificaciones import send_push_notification, send_email_notification
+                    
+                    # Notificar al Inquilino
+                    if getattr(self.inquilino, 'fcm_token', None):
+                        send_push_notification(
+                            fcm_token=self.inquilino.fcm_token,
+                            title='Contrato Formalizado',
+                            body=f'Tu contrato para {self.inmueble.titulo} ha sido firmado y activado.',
+                            data={'tipo': 'contrato', 'contrato_id': str(self.id)}
+                        )
+                    send_email_notification(
+                        to_email=self.inquilino.email,
+                        subject=f"Contrato Activado - {self.inmueble.titulo}",
+                        message=f"Hola {self.inquilino.get_full_name() or self.inquilino.email},\n\nTu contrato para '{self.inmueble.titulo}' se encuentra activo y firmado por ambas partes.\n\nGracias por confiar en Autogestión Inmobiliaria 360°."
+                    )
+
+                    # Notificar al Propietario
+                    propietario = self.inmueble.propietario
+                    if getattr(propietario, 'fcm_token', None):
+                        send_push_notification(
+                            fcm_token=propietario.fcm_token,
+                            title='Contrato Activado',
+                            body=f'El contrato para tu propiedad {self.inmueble.titulo} ya está vigente.',
+                            data={'tipo': 'contrato', 'contrato_id': str(self.id)}
+                        )
+                    send_email_notification(
+                        to_email=propietario.email,
+                        subject=f"Contrato Vigente - {self.inmueble.titulo}",
+                        message=f"Hola {propietario.get_full_name() or propietario.email},\n\nEl contrato de arrendamiento/venta para '{self.inmueble.titulo}' ha sido formalizado y firmado por ambas partes."
+                    )
+                except Exception as notif_err:
+                    logger.warning(f"Error despachando notificaciones de contrato {self.id}: {notif_err}")
+
             elif self.estado in ['finalizado', 'cancelado']:
                 # Actualizar estado final en Blockchain
                 BlockchainService._put("contratos/firmar", {

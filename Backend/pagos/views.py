@@ -856,6 +856,60 @@ def stripe_webhook(request):
                             titulo='Pago Confirmado',
                             mensaje=f'Tu pago por {inmueble.titulo} ha sido procesado exitosamente.'
                         )
+
+                        # Enviar Push FCM y Correo Electrónico al Pagador
+                        try:
+                            from inmuebles.services_notificaciones import send_push_notification, send_email_notification
+                            if getattr(transaccion.pagador, 'fcm_token', None):
+                                send_push_notification(
+                                    fcm_token=transaccion.pagador.fcm_token,
+                                    title='Pago Confirmado',
+                                    body=f'Tu pago de {transaccion.monto} BOB por {inmueble.titulo} ha sido acreditado.',
+                                    data={'tipo': 'pago', 'inmueble_id': str(inmueble.id), 'transaccion_id': str(transaccion.id)}
+                                )
+
+                            asunto_email = f"Recibo de Pago Confirmado - {inmueble.titulo}"
+                            mensaje_texto = (
+                                f"Hola {transaccion.pagador.get_full_name() or transaccion.pagador.email},\n\n"
+                                f"Tu pago por {transaccion.monto} BOB para el inmueble '{inmueble.titulo}' ha sido procesado exitosamente.\n"
+                                f"Referencia de transacción: {session_id}\n\n"
+                                f"Gracias por usar Autogestión Inmobiliaria 360°."
+                            )
+                            html_email = f"""
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+                                <h2 style="color: #0f172a; margin-top: 0;">Comprobante de Pago Confirmado</h2>
+                                <p style="color: #475569; font-size: 15px;">Se ha procesado exitosamente el pago para el inmueble <strong>{inmueble.titulo}</strong>.</p>
+                                <div style="background: #f8fafc; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0; border-radius: 4px;">
+                                    <p style="margin: 4px 0; color: #1e293b;"><strong>Monto:</strong> {transaccion.monto} BOB</p>
+                                    <p style="margin: 4px 0; color: #1e293b;"><strong>Estado:</strong> Acreditado</p>
+                                    <p style="margin: 4px 0; color: #64748b; font-size: 13px;"><strong>Transacción:</strong> {session_id}</p>
+                                </div>
+                                <p style="color: #64748b; font-size: 13px;">Puedes consultar tu historial de pagos y facturación ingresando a tu panel de la plataforma.</p>
+                            </div>
+                            """
+                            send_email_notification(
+                                to_email=transaccion.pagador.email,
+                                subject=asunto_email,
+                                message=mensaje_texto,
+                                html_message=html_email
+                            )
+
+                            # Notificar al Propietario de la acreditación
+                            if transaccion.propietario:
+                                if getattr(transaccion.propietario, 'fcm_token', None):
+                                    send_push_notification(
+                                        fcm_token=transaccion.propietario.fcm_token,
+                                        title='Pago Recibido',
+                                        body=f'Has recibido un pago de {transaccion.monto} BOB por {inmueble.titulo}.',
+                                        data={'tipo': 'pago', 'inmueble_id': str(inmueble.id)}
+                                    )
+                                send_email_notification(
+                                    to_email=transaccion.propietario.email,
+                                    subject=f"Pago Recibido - {inmueble.titulo}",
+                                    message=f"Has recibido un pago de {transaccion.monto} BOB de {transaccion.pagador.get_full_name() or transaccion.pagador.email} por {inmueble.titulo}."
+                                )
+                        except Exception as notif_err:
+                            print(f"Error enviando notificaciones push/email de pago: {notif_err}")
                 except Exception as e:
                     print(f"Error enviando mensaje de chat post-pago: {e}")
 
