@@ -13,7 +13,11 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		throw error(404, 'Artículo no encontrado');
 	}
 
-	const html = sanitizeHtml(await marked.parse(post.contenidoMd ?? ''), {
+	let markdownRaw = post.contenidoMd ?? '';
+	// Normalizar secuencias de escape literales como \n o \r\n que vengan de la base de datos
+	markdownRaw = markdownRaw.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+
+	const html = sanitizeHtml(await marked.parse(markdownRaw), {
 		allowedTags: ['h2', 'h3', 'h4', 'p', 'a', 'ul', 'ol', 'li', 'strong', 'em', 'blockquote', 'code', 'pre', 'img', 'hr'],
 		allowedAttributes: { a: ['href', 'target', 'rel'], img: ['src', 'alt'] },
 		transformTags: { a: sanitizeHtml.simpleTransform('a', { rel: 'noopener', target: '_blank' }) }
