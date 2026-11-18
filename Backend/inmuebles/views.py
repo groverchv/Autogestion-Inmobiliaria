@@ -972,18 +972,34 @@ class CitaViewSet(viewsets.ModelViewSet):
         # Notificar al propietario si existe
         if inmueble.propietario:
             try:
+                mensaje_cita = (
+                    f'{self.request.user.get_full_name() or self.request.user.email} '
+                    f'agendó una visita para el {serializer.validated_data["fecha"]} '
+                    f'a las {hora_inicio.strftime("%H:%M")} en "{inmueble.titulo}".'
+                )
                 crear_notificacion_sistema(
                     usuario=inmueble.propietario,
                     titulo='Nueva cita agendada',
-                    mensaje=(
-                        f'{self.request.user.get_full_name() or self.request.user.email} '
-                        f'agendó una visita para el {serializer.validated_data["fecha"]} '
-                        f'a las {hora_inicio.strftime("%H:%M")} en "{inmueble.titulo}".'
-                    ),
+                    mensaje=mensaje_cita,
                     tipo=Notificacion.TipoNotificacion.INFO,
                 )
-            except Exception:
-                pass
+
+                # Push FCM + Correo al propietario
+                from .services_notificaciones import send_push_notification, send_email_notification
+                if getattr(inmueble.propietario, 'fcm_token', None):
+                    send_push_notification(
+                        fcm_token=inmueble.propietario.fcm_token,
+                        title='Nueva Solicitud de Cita',
+                        body=f'{self.request.user.get_full_name() or self.request.user.email} solicita visitar {inmueble.titulo} el {serializer.validated_data["fecha"]}.',
+                        data={'tipo': 'cita', 'inmueble_id': str(inmueble.id)}
+                    )
+                send_email_notification(
+                    to_email=inmueble.propietario.email,
+                    subject=f"Nueva Visita Agendada - {inmueble.titulo}",
+                    message=f"Hola {inmueble.propietario.get_full_name() or inmueble.propietario.email},\n\n{mensaje_cita}\n\nPuedes confirmar o reprogramar la cita desde tu agenda en la plataforma."
+                )
+            except Exception as e_notif:
+                logger.warning(f"Error despachando notificaciones de cita: {e_notif}")
 
     @action(detail=True, methods=['patch'], url_path='cambiar-estado')
     def cambiar_estado(self, request, pk=None):
@@ -1030,6 +1046,24 @@ class CitaViewSet(viewsets.ModelViewSet):
             mensaje=textos[nuevo_estado],
             tipo=Notificacion.TipoNotificacion.INFO,
         )
+
+        # Enviar Push FCM + Correo a la contraparte
+        try:
+            from .services_notificaciones import send_push_notification, send_email_notification
+            if getattr(notificar_a, 'fcm_token', None):
+                send_push_notification(
+                    fcm_token=notificar_a.fcm_token,
+                    title=f'Cita {nuevo_estado.capitalize()}',
+                    body=textos[nuevo_estado],
+                    data={'tipo': 'cita_estado', 'cita_id': str(cita.id)}
+                )
+            send_email_notification(
+                to_email=notificar_a.email,
+                subject=f"Actualización de Cita ({nuevo_estado.capitalize()}) - {cita.inmueble.titulo}",
+                message=f"Hola {notificar_a.get_full_name() or notificar_a.email},\n\n{textos[nuevo_estado]}\n\nInmobiliaria 360°"
+            )
+        except Exception as e_status_notif:
+            logger.warning(f"Error despachando push/correo de estado de cita: {e_status_notif}")
 
         return Response(self.get_serializer(cita).data)
 
@@ -1740,6 +1774,54 @@ class AuditoriaCheckViewSet(viewsets.ModelViewSet):
             checkout.dictamen_ia = desglose['dictamen_texto']
             checkout.estado = AuditoriaCheck.EstadoAuditoria.LIQUIDADO
             checkout.save()
+
+            # Enviar Notificaciones de Liquidación de Garantía (Push + Correo)
+            try:
+                from .services_notificaciones import send_push_notification, send_email_notification
+                propietario = inmueble.propietario
+                if propietario:
+                    if getattr(propietario, 'fcm_token', None):
+                        send_push_notification(
+                            fcm_token=propietario.fcm_token,
+                            title='Auditoría Check-Out Liquidada',
+                            body=f'Peritaje completado en {inmueble.titulo}. Deducciones: {checkout.total_deducciones} BOB.',
+                            data={'tipo': 'auditoria_checkout', 'inmueble_id': str(inmueble.id), 'auditoria_id': str(checkout.id)}
+                        )
+                    send_email_notification(
+                        to_email=propietario.email,
+                        subject=f"Acta Pericial de Check-Out Liquidada - {inmueble.titulo}",
+                        message=(
+                            f"Hola {propietario.get_full_name() or propietario.email},\n\n"
+                            f"Se ha completado la auditoría pericial de salida (Check-out) para '{inmueble.titulo}'.\n\n"
+                            f"Dictamen: {checkout.dictamen_ia}\n"
+                            f"Total deducciones aplicadas: {checkout.total_deducciones} BOB\n"
+                            f"Monto a devolver al inquilino: {checkout.monto_a_reembolsar} BOB\n\n"
+                            f"Puedes revisar el detalle de las fotos periciales en la plataforma."
+                        )
+                    )
+
+                # Si hay contrato con inquilino asociado, notificarle el reembolso
+                if checkout.contrato and checkout.contrato.inquilino:
+                    inquilino = checkout.contrato.inquilino
+                    if getattr(inquilino, 'fcm_token', None):
+                        send_push_notification(
+                            fcm_token=inquilino.fcm_token,
+                            title='Resolución de Garantía Check-Out',
+                            body=f'Tu liquidación de garantía para {inmueble.titulo} es de {checkout.monto_a_reembolsar} BOB.',
+                            data={'tipo': 'auditoria_checkout', 'auditoria_id': str(checkout.id)}
+                        )
+                    send_email_notification(
+                        to_email=inquilino.email,
+                        subject=f"Resolución de Garantía - {inmueble.titulo}",
+                        message=(
+                            f"Hola {inquilino.get_full_name() or inquilino.email},\n\n"
+                            f"Se ha procesado la auditoría de Check-Out de tu arriendo en '{inmueble.titulo}'.\n\n"
+                            f"Monto de garantía a reembolsar: {checkout.monto_a_reembolsar} BOB.\n"
+                            f"Dictamen: {checkout.dictamen_ia}"
+                        )
+                    )
+            except Exception as notif_check_err:
+                logger.warning(f"Error despachando notificaciones de checkout: {notif_check_err}")
 
             return Response(AuditoriaCheckSerializer(checkout).data, status=status.HTTP_200_OK)
         except Exception as e:
