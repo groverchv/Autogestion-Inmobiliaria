@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../providers/auth_provider.dart';
 import '../services/biometric_auth_service.dart';
+import '../services/google_auth_service.dart';
 import 'main_navigation_screen.dart';
 import 'registro_screen.dart';
 
@@ -250,6 +251,50 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
+
+                  const SizedBox(height: 12),
+
+                  // Botón Iniciar Sesión con Google
+                  OutlinedButton.icon(
+                    onPressed: authProvider.isLoading ? null : () async {
+                      try {
+                        final result = await GoogleAuthService.signInWithGoogle();
+                        if (result != null && mounted) {
+                          // Recargar sesión y navegar
+                          final auth = context.read<AuthProvider>();
+                          await auth.checkAuth();
+                          if (mounted) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error al ingresar con Google: ${e.toString()}'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.g_mobiledata, color: AppColors.textPrimary, size: 28),
+                    label: const Text(
+                      'Continuar con Google',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      side: const BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+
                   const SizedBox(height: 20),
 
                   // Enlace a Registro de Cuenta
