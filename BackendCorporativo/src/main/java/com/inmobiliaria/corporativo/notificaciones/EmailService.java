@@ -136,7 +136,8 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, "UTF-8");
             helper.setTo(destinatario);
             helper.setSubject(asunto);
-            helper.setFrom(remitente, "Inmobiliaria 360");
+            helper.setFrom(props.getNotificaciones().getEmailDestino() != null && !props.getNotificaciones().getEmailDestino().isBlank()
+                    ? props.getNotificaciones().getEmailDestino() : remitente, "Inmobiliaria 360");
             helper.setText(html, true);
             mailSender.send(mensaje);
 
