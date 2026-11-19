@@ -1457,10 +1457,7 @@ class AIReportView(APIView):
         prompt_norm = self._normalizar(prompt)
         keys_a_conservar = self._detectar_columnas_del_prompt(prompt_norm, columns)
 
-        # ── 2. Llamada a IA Local para procesar los datos directamente ─────────────
-        local_ai_url = getattr(settings, 'LOCAL_AI_URL', 'http://192.168.56.1:1234/v1/chat/completions')
-        local_ai_model = getattr(settings, 'LOCAL_AI_MODEL', 'meta-llama-3.1-8b-instruct')
-
+        # ── 2. Llamada a cadena LLM (Gemini -> Groq -> IA Local) ─────────────
         columns_str = json.dumps(
             [{'key': c['key'], 'label': c['label']} for c in columns],
             ensure_ascii=False
@@ -1496,30 +1493,24 @@ Instrucción del Usuario: {prompt}"""
 
         ai_result = None
         try:
-            resp = http_requests.post(
-                local_ai_url,
-                json={
-                    "model": local_ai_model,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_content},
-                    ],
-                    "temperature": 0.1,
-                    "max_tokens": 1500,
-                },
-                headers={"Authorization": "Bearer lm-studio", "Content-Type": "application/json"},
-                timeout=60,
+            from .services_llm import llm_chat
+            ai_raw = llm_chat(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+                max_tokens=1500,
+                temperature=0.1,
             )
-            resp.raise_for_status()
-            ai_raw = resp.json()['choices'][0]['message']['content'].strip()
-
-            # Limpiar delimitadores markdown
-            for tag in ["```json", "```"]:
-                if ai_raw.startswith(tag):
-                    ai_raw = ai_raw[len(tag):]
-            if ai_raw.endswith("```"):
-                ai_raw = ai_raw[:-3]
-            ai_result = json.loads(ai_raw.strip())
+            if ai_raw:
+                ai_raw = ai_raw.strip()
+                # Limpiar delimitadores markdown
+                for tag in ["```json", "```"]:
+                    if ai_raw.startswith(tag):
+                        ai_raw = ai_raw[len(tag):]
+                if ai_raw.endswith("```"):
+                    ai_raw = ai_raw[:-3]
+                ai_result = json.loads(ai_raw.strip())
         except Exception:
             ai_result = None
 
