@@ -43,9 +43,31 @@ def initialize_firebase():
         return False
 
 
+def _build_high_priority_configs():
+    """Configuración de prioridad máxima para entrega inmediata (<1s) en Android, iOS y Web."""
+    android_cfg = messaging.AndroidConfig(
+        priority='high',
+        notification=messaging.AndroidNotification(
+            channel_id='high_importance_channel',
+            priority='max',
+            sound='default',
+        ),
+    )
+    apns_cfg = messaging.APNSConfig(
+        headers={'apns-priority': '10'},
+        payload=messaging.APNSPayload(
+            aps=messaging.Aps(sound='default'),
+        ),
+    )
+    webpush_cfg = messaging.WebpushConfig(
+        headers={'Urgency': 'high'},
+    )
+    return android_cfg, apns_cfg, webpush_cfg
+
+
 def send_push_notification(fcm_token: str, title: str, body: str, data: dict = None) -> bool:
     """
-    Envía una notificación push a un dispositivo específico (Web o Móvil) vía FCM.
+    Envía una notificación push de alta prioridad (<1s) en segundo plano vía FCM.
     """
     if not initialize_firebase():
         logger.warning("FCM no disponible: Firebase no inicializado.")
@@ -55,47 +77,61 @@ def send_push_notification(fcm_token: str, title: str, body: str, data: dict = N
         logger.warning("Token FCM vacío, no se puede enviar push.")
         return False
 
-    try:
-        sanitized_data = {str(k): str(v) for k, v in (data or {}).items()}
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title=title,
-                body=body,
-            ),
-            data=sanitized_data,
-            token=fcm_token,
-        )
-        response = messaging.send(message)
-        logger.info(f"Push enviado con éxito. ID: {response}")
-        return True
-    except Exception as e:
-        logger.error(f"Error al enviar notificación push: {e}")
-        return False
+    sanitized_data = {str(k): str(v) for k, v in (data or {}).items()}
+    android_cfg, apns_cfg, webpush_cfg = _build_high_priority_configs()
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        data=sanitized_data,
+        token=fcm_token,
+        android=android_cfg,
+        apns=apns_cfg,
+        webpush=webpush_cfg,
+    )
+
+    def _dispatch():
+        try:
+            response = messaging.send(message)
+            logger.info(f"Push alta prioridad enviado con éxito. ID: {response}")
+        except Exception as e:
+            logger.error(f"Error al enviar notificación push: {e}")
+
+    threading.Thread(target=_dispatch, daemon=True).start()
+    return True
 
 
 def send_push_to_topic(topic: str, title: str, body: str, data: dict = None) -> bool:
     """
-    Envía una notificación push a un canal/tópico (ej. 'inmuebles_nuevos', 'alertas').
+    Envía una notificación push de alta prioridad a un canal/tópico en segundo plano.
     """
     if not initialize_firebase():
         return False
 
-    try:
-        sanitized_data = {str(k): str(v) for k, v in (data or {}).items()}
-        message = messaging.Message(
-            notification=messaging.Notification(
-                title=title,
-                body=body,
-            ),
-            data=sanitized_data,
-            topic=topic,
-        )
-        response = messaging.send(message)
-        logger.info(f"Push a topic '{topic}' enviado. ID: {response}")
-        return True
-    except Exception as e:
-        logger.error(f"Error al enviar push a topic {topic}: {e}")
-        return False
+    sanitized_data = {str(k): str(v) for k, v in (data or {}).items()}
+    android_cfg, apns_cfg, webpush_cfg = _build_high_priority_configs()
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        data=sanitized_data,
+        topic=topic,
+        android=android_cfg,
+        apns=apns_cfg,
+        webpush=webpush_cfg,
+    )
+
+    def _dispatch():
+        try:
+            response = messaging.send(message)
+            logger.info(f"Push alta prioridad a topic '{topic}' enviado. ID: {response}")
+        except Exception as e:
+            logger.error(f"Error al enviar push a topic {topic}: {e}")
+
+    threading.Thread(target=_dispatch, daemon=True).start()
+    return True
 
 
 def send_email_notification(to_email: str, subject: str, message: str, html_message: str = None) -> bool:
