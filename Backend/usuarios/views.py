@@ -505,6 +505,25 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     """
     serializer_class = CustomTokenObtainPairSerializer
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            try:
+                email = request.data.get('email')
+                if email:
+                    user = Usuario.objects.filter(email=email).first()
+                    if user and getattr(user, 'fcm_token', None):
+                        from inmuebles.services_notificaciones import send_push_notification
+                        send_push_notification(
+                            fcm_token=user.fcm_token,
+                            title='Inicio de Sesión Exitoso',
+                            body=f'Hola {user.first_name or user.email}, has iniciado sesión en Autogestión Inmobiliaria 360°.',
+                            data={'tipo': 'inicio_sesion', 'usuario_id': str(user.id)}
+                        )
+            except Exception as e_push:
+                logger.warning(f"Error enviando push de inicio de sesión: {e_push}")
+        return response
+
 
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -576,6 +595,20 @@ class GoogleLoginView(APIView):
 
             # Generar tokens JWT de sesión
             refresh = RefreshToken.for_user(user)
+
+            # Enviar notificación push de inicio de sesión si tiene token registrado
+            try:
+                if getattr(user, 'fcm_token', None):
+                    from inmuebles.services_notificaciones import send_push_notification
+                    send_push_notification(
+                        fcm_token=user.fcm_token,
+                        title='Inicio de Sesión con Google',
+                        body=f'Bienvenido {user.first_name or user.email}, sesión iniciada con tu cuenta de Google.',
+                        data={'tipo': 'inicio_sesion_google', 'usuario_id': str(user.id)}
+                    )
+            except Exception as e_google_push:
+                logger.warning(f"Error enviando push de inicio de sesión con Google: {e_google_push}")
+
             return Response({
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),

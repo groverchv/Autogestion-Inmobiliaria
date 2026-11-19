@@ -18,6 +18,12 @@ const useAuth = () => {
   const handleLogin = async (username, password) => {
     const user = await login(username, password);
     const role = user?.rol?.toLowerCase() || '';
+
+    // Suscribir y registrar token FCM al iniciar sesión
+    try {
+      const { solicitarPermisoNotificaciones } = await import('../services/firebaseMessaging');
+      await solicitarPermisoNotificaciones();
+    } catch (_) {}
     
     if (role === 'admin') {
       navigate('/panel/dashboard');
@@ -36,6 +42,13 @@ const useAuth = () => {
     const { loginWithGoogle } = useStore.getState();
     const user = await loginWithGoogle(idToken);
     const role = user?.rol?.toLowerCase() || '';
+
+    // Suscribir y registrar token FCM al iniciar sesión con Google
+    try {
+      const { solicitarPermisoNotificaciones } = await import('../services/firebaseMessaging');
+      await solicitarPermisoNotificaciones();
+    } catch (_) {}
+
     if (role === 'admin') {
       navigate('/panel/dashboard');
     } else {
