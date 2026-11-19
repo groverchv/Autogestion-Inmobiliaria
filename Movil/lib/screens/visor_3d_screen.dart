@@ -17,15 +17,28 @@ class _Visor3DPlanoScreenState extends State<Visor3DPlanoScreen> {
   double _scale = 1.0;
   bool _modoAR = false;
   StreamSubscription<GyroscopeEvent>? _gyroSub;
+  DateTime? _lastGyroTime;
 
   @override
   void initState() {
     super.initState();
-    _gyroSub = gyroscopeEventStream().listen((event) {
+    _gyroSub = gyroscopeEventStream(
+      samplingPeriod: SensorInterval.gameInterval,
+    ).listen((event) {
+      final now = DateTime.now();
+      final dt = _lastGyroTime == null
+          ? 0.016
+          : (now.difference(_lastGyroTime!).inMicroseconds / 1000000.0)
+              .clamp(0.001, 0.1);
+      _lastGyroTime = now;
+
       if (_modoAR && mounted) {
+        final dx = event.x.abs() < 0.005 ? 0.0 : -event.x * dt * 2.5;
+        final dy = event.y.abs() < 0.005 ? 0.0 : -event.y * dt * 2.5;
+        if (dx == 0.0 && dy == 0.0) return;
         setState(() {
-          _rotX += event.x * 0.02;
-          _rotY += event.y * 0.02;
+          _rotX += dx;
+          _rotY += dy;
         });
       }
     });

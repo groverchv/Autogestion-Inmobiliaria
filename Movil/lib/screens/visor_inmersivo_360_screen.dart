@@ -127,8 +127,8 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
         final rawYaw = _vrMode ? event.x : event.y;
         final rawPitch = _vrMode ? event.y : event.x;
 
-        final dYaw = rawYaw.abs() < 0.02 ? 0.0 : -rawYaw * dt * 1.5;
-        final dPitch = rawPitch.abs() < 0.02 ? 0.0 : -rawPitch * dt * 1.2;
+        final dYaw = rawYaw.abs() < 0.005 ? 0.0 : -rawYaw * dt * 2.8;
+        final dPitch = rawPitch.abs() < 0.005 ? 0.0 : -rawPitch * dt * 2.4;
 
         if (dYaw == 0.0 && dPitch == 0.0) return;
 
