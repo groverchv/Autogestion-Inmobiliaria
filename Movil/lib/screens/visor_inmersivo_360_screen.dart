@@ -38,6 +38,7 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
   bool _vrMode = false;
   bool _gyroEnabled = true;
   StreamSubscription<GyroscopeEvent>? _gyroSub;
+  DateTime? _lastGyroTime;
 
   // Capas de Realidad Aumentada (HUD)
   bool _mostrarCotasAR = true;
@@ -109,14 +110,34 @@ class _VisorInmersivo360ScreenState extends State<VisorInmersivo360Screen> with 
         });
       });
 
-    _gyroSub = gyroscopeEventStream().listen((event) {
+    _gyroSub = gyroscopeEventStream(
+      samplingPeriod: SensorInterval.gameInterval,
+    ).listen((event) {
+      final now = DateTime.now();
+      final dt = _lastGyroTime == null
+          ? 0.016
+          : (now.difference(_lastGyroTime!).inMicroseconds / 1000000.0)
+              .clamp(0.001, 0.1);
+      _lastGyroTime = now;
+
       if (_gyroEnabled && !_tourActivo && !_modoMedir && mounted) {
+        // En retrato: girar a la derecha produce event.y < 0 (restar aumenta _yaw → derecha).
+        // Mirar hacia arriba produce event.x > 0 (restar lleva _pitch hacia -1.0 → techo).
+        // En modo VR (horizontal): los ejes X/Y se intercambian.
+        final rawYaw = _vrMode ? event.x : event.y;
+        final rawPitch = _vrMode ? event.y : event.x;
+
+        final dYaw = rawYaw.abs() < 0.02 ? 0.0 : -rawYaw * dt * 1.5;
+        final dPitch = rawPitch.abs() < 0.02 ? 0.0 : -rawPitch * dt * 1.2;
+
+        if (dYaw == 0.0 && dPitch == 0.0) return;
+
         setState(() {
-          _yaw += event.y * 0.03;
+          _yaw += dYaw;
           if (_yaw > math.pi) _yaw -= 2 * math.pi;
           if (_yaw < -math.pi) _yaw += 2 * math.pi;
 
-          _pitch = (_pitch + event.x * 0.03).clamp(-1.0, 1.0);
+          _pitch = (_pitch + dPitch).clamp(-1.0, 1.0);
         });
       }
     });
