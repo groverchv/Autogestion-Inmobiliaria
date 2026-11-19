@@ -341,7 +341,6 @@ class _Captura360ScreenState extends State<Captura360Screen> {
     setState(() {
       _capturas.removeLast();
       _indice--;
-      _rechazosBlur = 0;
     });
   }
 
@@ -465,7 +464,6 @@ class _Captura360ScreenState extends State<Captura360Screen> {
       _panoramicResult = null;
       _panoServidorUrl = null;
       _statusMessage = null;
-      _rechazosBlur = 0;
       _yawInicial = null;
     });
   }
