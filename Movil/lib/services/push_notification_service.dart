@@ -72,6 +72,11 @@ class PushNotificationService {
                 importance: Importance.max,
                 priority: Priority.high,
                 icon: '@mipmap/ic_launcher',
+                autoCancel: false,
+                styleInformation: BigTextStyleInformation(
+                  notification.body ?? '',
+                  contentTitle: notification.title,
+                ),
               ),
             ),
           );
