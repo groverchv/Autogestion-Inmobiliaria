@@ -75,6 +75,7 @@ class _Captura360ScreenState extends State<Captura360Screen> {
   bool _torch = false;
   Uint8List? _panoramicResult;
   String? _panoServidorUrl;
+  String _tituloAmbiente = 'Planta Baja - Sala';
   String? _statusMessage;
   int _flashTick = 0; // incrementa → dispara el flash visual de obturador
   String? _faseMsg;
@@ -281,7 +282,8 @@ class _Captura360ScreenState extends State<Captura360Screen> {
       });
 
       if (_indice >= _plan.length) {
-        _procesarPanoramica();
+        await _preguntarPisoYAmbiente();
+        if (mounted) _procesarPanoramica();
       } else {
         _anunciarSiguiente();
       }
@@ -353,6 +355,149 @@ class _Captura360ScreenState extends State<Captura360Screen> {
     } catch (_) {}
   }
 
+  Future<void> _preguntarPisoYAmbiente() async {
+    String pisoSel = 'Planta Baja';
+    String ambienteSel = 'Sala';
+    final customCtrl = TextEditingController();
+
+    const pisos = [
+      'Planta Baja',
+      'Piso 1',
+      'Piso 2',
+      'Piso 3',
+      'Piso 4',
+      'Sótano',
+      'Azotea / Terraza',
+    ];
+    const ambientes = [
+      'Sala',
+      'Cocina',
+      'Comedor',
+      'Dormitorio Principal',
+      'Dormitorio',
+      'Baño',
+      'Patio / Jardín',
+      'Garaje',
+      'Balcón',
+      'Oficina / Estudio',
+      'Otro',
+    ];
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.meeting_room_outlined, color: AppColors.primary),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '¿Qué piso y ambiente es?',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 17),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Esta etiqueta se guardará en tu imagen 360° para verla en RA 360°.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: pisoSel,
+                  dropdownColor: AppColors.backgroundSecondary,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Piso / Nivel',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  items: pisos
+                      .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setDlgState(() => pisoSel = v);
+                  },
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: ambienteSel,
+                  dropdownColor: AppColors.backgroundSecondary,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Lugar / Ambiente',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  items: ambientes
+                      .map((a) => DropdownMenuItem(value: a, child: Text(a)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setDlgState(() => ambienteSel = v);
+                  },
+                ),
+                if (ambienteSel == 'Otro') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: customCtrl,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Nombre del ambiente',
+                      hintText: 'Ej: Sala de estar',
+                      hintStyle: const TextStyle(color: AppColors.textMuted),
+                      labelStyle: const TextStyle(color: AppColors.textSecondary),
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            ElevatedButton.icon(
+              onPressed: () {
+                final lugar = ambienteSel == 'Otro' &&
+                        customCtrl.text.trim().isNotEmpty
+                    ? customCtrl.text.trim()
+                    : ambienteSel;
+                _tituloAmbiente = '$pisoSel - $lugar';
+                Navigator.of(ctx).pop();
+              },
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Generar imagen 360°'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryDark,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    customCtrl.dispose();
+  }
+
   Future<void> _procesarPanoramica() async {
     setState(() {
       _isStitching = true;
@@ -364,7 +509,7 @@ class _Captura360ScreenState extends State<Captura360Screen> {
       final res = await api.stitchPanorama360(
         inmuebleId: widget.inmueble.id,
         captures: _capturas,
-        descripcion: 'Recorrido 360 - ${widget.inmueble.titulo}',
+        descripcion: _tituloAmbiente,
       );
       if (!mounted) return;
       if (res != null && res['archivo'] != null) {
@@ -424,7 +569,7 @@ class _Captura360ScreenState extends State<Captura360Screen> {
         imageBytes: _panoramicResult!,
         filename:
             'panorama_${widget.inmueble.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        titulo: 'Recorrido 360 - ${widget.inmueble.titulo}',
+        titulo: _tituloAmbiente,
       );
       if (!mounted) return;
       if (success) {
@@ -775,33 +920,6 @@ class _Captura360ScreenState extends State<Captura360Screen> {
               ],
             ),
           ),
-
-          // 8b. Botón rápido para generar el 360° en cualquier momento (>= 4 fotos)
-          if (_capturas.length >= 4 && !_isStitching)
-            Positioned(
-              bottom: 118,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: ElevatedButton.icon(
-                  onPressed: _isCapturing ? null : _procesarPanoramica,
-                  icon: const Icon(Icons.auto_awesome, size: 18),
-                  label: Text('Generar 360° (${_capturas.length} fotos)'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    elevation: 4,
-                  ),
-                ),
-              ),
-            ),
 
           // 9. Overlay de stitching
           if (_isStitching)
