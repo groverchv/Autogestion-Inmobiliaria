@@ -1,5 +1,6 @@
 import os
 import logging
+import threading
 from pathlib import Path
 from django.conf import settings
 from django.core.mail import send_mail
