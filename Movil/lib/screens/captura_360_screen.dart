@@ -63,8 +63,8 @@ class _Captura360ScreenState extends State<Captura360Screen> {
   bool _capturaAuto = true;
   DateTime? _alineadoDesde;
   double _progresoHold = 0.0;
-  static const _esperaAutoMs = 700;
-  static const _umbralEstable = 0.45; // RMS gyro rad/s
+  static const _esperaAutoMs = 350;
+  static const _umbralEstable = 1.0; // RMS gyro rad/s
 
   // Estados de proceso
   bool _sinPermiso = false;
@@ -99,8 +99,8 @@ class _Captura360ScreenState extends State<Captura360Screen> {
     if (_indice >= _plan.length || _yawInicial == null) return false;
     final p = _plan[_indice];
     return _ori.diffYawHacia(yawObjetivo(_plan, _indice, _yawInicial!)).abs() <
-            8.0 &&
-        (p.pitch - _ori.pitch).abs() < 10.0;
+            16.0 &&
+        (p.pitch - _ori.pitch).abs() < 18.0;
   }
 
   bool get _estable => _ori.estabilidad < _umbralEstable;

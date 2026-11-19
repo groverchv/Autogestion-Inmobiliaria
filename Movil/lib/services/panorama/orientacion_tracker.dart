@@ -52,7 +52,6 @@ class OrientacionTracker {
   double _accelPitch = 0.0;
   double _accelX = 0.0, _accelY = 0.0, _accelZ = 0.0;
   bool _accelDisponible = false;
-  double _magYaw = 0.0;
   bool _magDisponible = false;
 
   // Ventana de ~300 ms para estabilidad (giro ~50 Hz → 15 muestras).
@@ -96,7 +95,6 @@ class OrientacionTracker {
       if (xh == 0 && yh == 0) return;
       var heading = math.atan2(-yh, xh) * 180.0 / math.pi;
       if (heading < 0) heading += 360.0;
-      _magYaw = heading;
       _magDisponible = true;
 
       _ventanaMag.addLast(heading);
@@ -124,10 +122,6 @@ class OrientacionTracker {
       final deltaPitch = e.x * (180.0 / math.pi) * 0.02;
 
       _yaw -= deltaYaw;
-      if (_magDisponible && _magConfiable) {
-        final err = ((_magYaw - _yaw + 540.0) % 360.0) - 180.0;
-        _yaw += err * 0.03;
-      }
       _yaw = _yaw % 360.0;
       if (_yaw < 0) _yaw += 360.0;
 
