@@ -20,27 +20,32 @@ class BarraPuntos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (int i = 0; i < total; i++) ...[
-          if (filas == 3 && i == 16 || filas == 3 && i == 24)
-            const SizedBox(width: 8),
-          Container(
-            width: i == completados ? 9 : 6,
-            height: i == completados ? 9 : 6,
-            margin: const EdgeInsets.symmetric(horizontal: 1.5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: i < completados
-                  ? const Color(0xFF10B981)
-                  : (i == completados
-                      ? const Color(0xFF38BDF8)
-                      : Colors.white38),
+    final sep1 = total == 32 ? 16 : 8;
+    final sep2 = total == 32 ? 24 : 12;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < total; i++) ...[
+            if (filas == 3 && (i == sep1 || i == sep2))
+              const SizedBox(width: 6),
+            Container(
+              width: i == completados ? 9 : 6,
+              height: i == completados ? 9 : 6,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: i < completados
+                    ? const Color(0xFF10B981)
+                    : (i == completados
+                        ? const Color(0xFF38BDF8)
+                        : Colors.white38),
+              ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

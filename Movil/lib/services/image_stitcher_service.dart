@@ -60,61 +60,71 @@ class ImageStitcherService {
       }
       return Uint8List.fromList(img.encodeJpg(panoramaCanvas, quality: 85));
     } else {
-      // ─── Modo Esférico (orden de captura: centro → arriba → abajo) ───
-      // Grid columns x 3: fila central = las primeras `columns` tomas;
-      // techo y suelo llevan `columns/2` tomas cada una, estiradas a 2
-      // celdas para cubrir el ancho completo sin huecos negros.
-      final cellWidth = decodedList.first.width;
-      final cellHeight = decodedList.first.height;
-      final totalWidth = cellWidth * columns;
-      final totalHeight = cellHeight * 3;
+      // ─── Modo Esférico 2:1 Equirrectangular (centro → arriba → abajo) ───
+      // Lienzo 2048x1024 para evitar OutOfMemory en dispositivos móviles y
+      // garantizar compatibilidad directa con el visor 360° (Pannellum / Panorama).
+      const totalWidth = 2048;
+      const totalHeight = 1024;
+      final cellHeight = totalHeight ~/ 3;
       final mitad = columns ~/ 2;
 
-      final centro = decodedList.sublist(0, columns);
-      final arriba = decodedList.sublist(
-        columns,
-        (columns + mitad).clamp(0, decodedList.length),
-      );
-      final abajo = decodedList.sublist(
-        (columns + mitad).clamp(0, decodedList.length),
-      );
+      final centroEnd = columns.clamp(0, decodedList.length);
+      final arribaEnd = (columns + mitad).clamp(0, decodedList.length);
+
+      final centro = decodedList.sublist(0, centroEnd);
+      final arriba = decodedList.sublist(centroEnd, arribaEnd);
+      final abajo = decodedList.sublist(arribaEnd);
 
       final sphericalCanvas = img.Image(width: totalWidth, height: totalHeight);
 
-      img.Image aCelda(img.Image im, {int factorAncho = 1}) {
+      img.Image aCelda(img.Image im, {int width = 256, int height = 341}) {
         return img.copyResize(
           im,
-          width: cellWidth * factorAncho,
-          height: cellHeight,
+          width: width,
+          height: height,
+          interpolation: img.Interpolation.linear,
         );
       }
 
-      for (int i = 0; i < arriba.length; i++) {
-        img.compositeImage(
-          sphericalCanvas,
-          aCelda(arriba[i], factorAncho: 2),
-          dstX: i * cellWidth * 2,
-          dstY: 0,
-        );
+      final topHeight = cellHeight;
+      final midHeight = cellHeight;
+      final botHeight = totalHeight - topHeight - midHeight;
+
+      if (arriba.isNotEmpty) {
+        final wTop = (totalWidth / arriba.length).ceil();
+        for (int i = 0; i < arriba.length; i++) {
+          img.compositeImage(
+            sphericalCanvas,
+            aCelda(arriba[i], width: wTop, height: topHeight),
+            dstX: (i * totalWidth ~/ arriba.length),
+            dstY: 0,
+          );
+        }
       }
-      for (int i = 0; i < centro.length; i++) {
-        img.compositeImage(
-          sphericalCanvas,
-          aCelda(centro[i]),
-          dstX: i * cellWidth,
-          dstY: cellHeight,
-        );
+      if (centro.isNotEmpty) {
+        final wMid = (totalWidth / centro.length).ceil();
+        for (int i = 0; i < centro.length; i++) {
+          img.compositeImage(
+            sphericalCanvas,
+            aCelda(centro[i], width: wMid, height: midHeight),
+            dstX: (i * totalWidth ~/ centro.length),
+            dstY: topHeight,
+          );
+        }
       }
-      for (int i = 0; i < abajo.length; i++) {
-        img.compositeImage(
-          sphericalCanvas,
-          aCelda(abajo[i], factorAncho: 2),
-          dstX: i * cellWidth * 2,
-          dstY: cellHeight * 2,
-        );
+      if (abajo.isNotEmpty) {
+        final wBot = (totalWidth / abajo.length).ceil();
+        for (int i = 0; i < abajo.length; i++) {
+          img.compositeImage(
+            sphericalCanvas,
+            aCelda(abajo[i], width: wBot, height: botHeight),
+            dstX: (i * totalWidth ~/ abajo.length),
+            dstY: topHeight + midHeight,
+          );
+        }
       }
 
-      return Uint8List.fromList(img.encodeJpg(sphericalCanvas, quality: 85));
+      return Uint8List.fromList(img.encodeJpg(sphericalCanvas, quality: 88));
     }
   }
 

@@ -404,7 +404,11 @@ class _Captura360ScreenState extends State<Captura360Screen> {
     try {
       final panorama = await compute(
         stitchSphericalIsolate,
-        {'imgs': _capturas, 'columns': 16, 'rows': _modoTomas == 32 ? 3 : 1},
+        {
+          'imgs': _capturas,
+          'columns': _modoTomas == 32 ? 16 : 8,
+          'rows': 3,
+        },
       );
       if (!mounted) return;
       setState(() {
@@ -595,7 +599,7 @@ class _Captura360ScreenState extends State<Captura360Screen> {
                           BarraPuntos(
                             total: _plan.length,
                             completados: _indice,
-                            filas: _modoTomas == 32 ? 3 : 1,
+                            filas: 3,
                           ),
                         ],
                       ),
@@ -624,11 +628,10 @@ class _Captura360ScreenState extends State<Captura360Screen> {
                               items: const [
                                 DropdownMenuItem(
                                     value: 16,
-                                    child: Text('16 Tomas (360° Rápido)')),
+                                    child: Text('16 Tomas (360°)')),
                                 DropdownMenuItem(
                                     value: 32,
-                                    child:
-                                        Text('32 Tomas (360° Esférico)')),
+                                    child: Text('32 Tomas (HD)')),
                               ],
                               onChanged: (v) {
                                 if (v != null) _cambiarModo(v);

@@ -70,16 +70,16 @@ class OrientacionTracker {
       _accelX = e.x;
       _accelY = e.y;
       _accelZ = e.z;
-      final roll = math.atan2(e.y, e.z);
+      // Pitch de la cámara trasera en retrato: 0° = vertical mirando al horizonte,
+      // positivo = mirando al techo (e.z < 0), negativo = mirando al piso (e.z > 0).
       _accelPitch = math.atan2(
-            -e.x,
-            e.y * math.sin(roll) + e.z * math.cos(roll),
+            -e.z,
+            math.sqrt(e.x * e.x + e.y * e.y),
           ) *
           180.0 /
           math.pi;
-      // Nivel de horizonte en retrato: giro de gravedad sobre el eje que
-      // apunta al sujeto. 0° = teléfono derecho respecto al horizonte.
-      _roll = math.atan2(-e.x, -e.y) * 180.0 / math.pi;
+      // Nivel de horizonte en retrato: 0° = teléfono derecho vertical (e.x = 0, e.y ≈ +9.8).
+      _roll = math.atan2(-e.x, e.y) * 180.0 / math.pi;
       _accelDisponible = true;
     });
 
@@ -118,10 +118,12 @@ class OrientacionTracker {
     });
 
     _gyroSub = gyroscopeEventStream().listen((e) {
+      // En retrato, girar a la derecha produce e.y < 0; restar hace que _yaw
+      // aumente al girar a la derecha (coincidiendo con el rumbo y los orbes).
       final deltaYaw = e.y * (180.0 / math.pi) * 0.02;
       final deltaPitch = e.x * (180.0 / math.pi) * 0.02;
 
-      _yaw += deltaYaw;
+      _yaw -= deltaYaw;
       if (_magDisponible && _magConfiable) {
         final err = ((_magYaw - _yaw + 540.0) % 360.0) - 180.0;
         _yaw += err * 0.03;

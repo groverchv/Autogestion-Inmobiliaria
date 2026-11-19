@@ -10,8 +10,9 @@ class PuntoCaptura {
   const PuntoCaptura(this.yawOffset, this.pitch, {this.fila = 0});
 }
 
-/// Plan de captura: 16 tomas = anillo horizontal; 32 tomas = anillo central
-/// (16) + techo (8 a +35°) + suelo (8 a -35°), igual que el stitcher espera.
+/// Plan de captura esférico (centro + techo + suelo):
+/// - 16 tomas: anillo central (8) + techo (4 a +35°) + suelo (4 a -35°).
+/// - 32 tomas: anillo central (16) + techo (8 a +35°) + suelo (8 a -35°).
 List<PuntoCaptura> planDe(int tomas) {
   if (tomas == 32) {
     return [
@@ -23,7 +24,14 @@ List<PuntoCaptura> planDe(int tomas) {
         PuntoCaptura(i * (360.0 / 8), -35.0, fila: 2),
     ];
   }
-  return [for (int i = 0; i < tomas; i++) PuntoCaptura(i * (360.0 / tomas), 0.0)];
+  return [
+    for (int i = 0; i < 8; i++)
+      PuntoCaptura(i * (360.0 / 8), 0.0),
+    for (int i = 0; i < 4; i++)
+      PuntoCaptura(i * (360.0 / 4), 35.0, fila: 1),
+    for (int i = 0; i < 4; i++)
+      PuntoCaptura(i * (360.0 / 4), -35.0, fila: 2),
+  ];
 }
 
 /// Yaw efectivo del punto [i] dado el rumbo inicial del usuario.
