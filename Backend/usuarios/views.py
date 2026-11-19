@@ -47,8 +47,20 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         if not token:
             return Response({'error': 'fcm_token requerido'}, status=status.HTTP_400_BAD_REQUEST)
         user = request.user
+        es_nuevo_token = (user.fcm_token != token)
         user.fcm_token = token
         user.save(update_fields=['fcm_token'])
+        if es_nuevo_token:
+            try:
+                from inmuebles.services_notificaciones import send_push_notification
+                send_push_notification(
+                    fcm_token=token,
+                    title='Inicio de Sesión Exitoso',
+                    body=f'Hola {user.first_name or user.email}, has iniciado sesión en Autogestión Inmobiliaria 360°.',
+                    data={'tipo': 'inicio_sesion', 'usuario_id': str(user.id)}
+                )
+            except Exception as e_push:
+                logger.warning(f"Error enviando push tras actualizar token FCM: {e_push}")
         return Response({'ok': True, 'mensaje': 'Token FCM actualizado correctamente'})
 
     @action(detail=False, methods=['get'], url_path='badges')
