@@ -1,0 +1,153 @@
+/* ==========================================================================
+   PWA & Mobile Native-Like Compact Layout
+   Optimiza tipografía, espaciados y grilla de 3 columnas cuando la app web
+   se abre como PWA instalada (standalone) o en pantallas móviles.
+   ========================================================================== */
+
+@media (display-mode: standalone), (max-width: 768px) {
+  html {
+    font-size: 13px;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+  }
+
+  body {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Navbar y header compactos tipo app nativa */
+  .navbar,
+  .propiedades-header {
+    padding-top: max(6px, env(safe-area-inset-top));
+  }
+
+  .propiedades-header__inner {
+    padding: 10px 12px !important;
+  }
+
+  .propiedades-header__brand {
+    font-size: 1rem !important;
+  }
+
+  /* Hero compacto */
+  .propiedades-hero {
+    padding: 18px 12px !important;
+  }
+
+  .propiedades-hero h1 {
+    font-size: 1.25rem !important;
+    margin-bottom: 4px !important;
+    line-height: 1.2 !important;
+  }
+
+  .propiedades-hero p {
+    font-size: 0.82rem !important;
+  }
+
+  /* Contenedor principal compacto */
+  .propiedades-content {
+    padding: 10px 8px !important;
+  }
+
+  /* Filtros compactos */
+  .propiedades-filters-card {
+    padding: 10px !important;
+    margin-bottom: 12px !important;
+    border-radius: 12px !important;
+    gap: 8px !important;
+    position: static !important;
+  }
+
+  .propiedades-filters-card input,
+  .propiedades-filters-card select,
+  .propiedades-filters-card button {
+    font-size: 0.82rem !important;
+    padding-top: 7px !important;
+    padding-bottom: 7px !important;
+  }
+
+  /* Grilla de inmuebles en 3 columnas compactas */
+  .propiedades-grid,
+  .inmuebles-grid,
+  .catalogo-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* Tarjetas de inmuebles compactas estilo app móvil */
+  .inmueble-card,
+  .prop-card {
+    border-radius: 10px !important;
+    min-width: 0;
+  }
+
+  .inmueble-card__image-wrapper,
+  .prop-card__img-wrap {
+    aspect-ratio: 4 / 3 !important;
+    height: auto !important;
+  }
+
+  .inmueble-card__badge,
+  .prop-card__badge {
+    top: 4px !important;
+    right: 4px !important;
+    padding: 2px 5px !important;
+    font-size: 0.58rem !important;
+    letter-spacing: 0.2px !important;
+  }
+
+  .inmueble-card__body,
+  .prop-card__body {
+    padding: 6px 7px !important;
+    gap: 3px !important;
+  }
+
+  .inmueble-card__tipo,
+  .prop-card__tipo {
+    font-size: 0.6rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inmueble-card__titulo,
+  .prop-card__title,
+  .prop-card h3 {
+    font-size: 0.74rem !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+  }
+
+  .inmueble-card__location,
+  .prop-card__location {
+    font-size: 0.64rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inmueble-card__price,
+  .prop-card__price {
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+  }
+
+  .inmueble-card__features,
+  .prop-card__meta,
+  .prop-card__footer {
+    font-size: 0.62rem !important;
+    gap: 4px !important;
+    flex-wrap: wrap;
+  }
+
+  /* Botones y textos generales en vistas internas */
+  button,
+  .btn {
+    font-size: 0.82rem;
+  }
+}
