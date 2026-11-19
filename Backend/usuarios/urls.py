@@ -25,6 +25,8 @@ router.register(r'panel/notificaciones', NotificacionViewSet, basename='panel-no
 urlpatterns = [
     # Ruta directa para perfil /api/usuarios/me/
     path('me/', UsuarioViewSet.as_view({'get': 'me', 'put': 'me', 'patch': 'me'}), name='usuario_me_directo'),
+    path('actualizar-fcm-token/', UsuarioViewSet.as_view({'post': 'actualizar_fcm_token'}), name='actualizar_fcm_token_directo'),
+    path('cerrar-sesion/', UsuarioViewSet.as_view({'post': 'cerrar_sesion'}), name='cerrar_sesion_directo'),
     path('', include(router.urls)),
     #  RUTAS DE AUTENTICACIÓN (LOGIN) 
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
