@@ -58,7 +58,7 @@ services:
       EMAIL_HOST_PASSWORD: ${MAIL_PASSWORD}
       DEFAULT_FROM_EMAIL: "Inmobiliaria 360 <${MAIL_FROM:-muertemuerte36@gmail.com}>"
     expose:
-      - "8000"
+      - "8080"
 
   blockchain-gateway:
     build: ./Blockchain
