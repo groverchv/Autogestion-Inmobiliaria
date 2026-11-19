@@ -225,6 +225,17 @@ class ApiService {
     } catch (_) {}
   }
 
+  Future<void> notificarCierreSesion() async {
+    final token = await getToken();
+    if (token == null) return;
+    try {
+      await _request('POST',
+        Uri.parse('$_baseUrl/usuarios/cerrar-sesion/'),
+        headers: _headers(token),
+      );
+    } catch (_) {}
+  }
+
   // ─── Catálogo & Inmuebles ────────────────────────────────────────────
   Future<List<Inmueble>> getCatalogo({
     String query = '',

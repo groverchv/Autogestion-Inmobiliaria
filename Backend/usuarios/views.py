@@ -63,6 +63,23 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                 logger.warning(f"Error enviando push tras actualizar token FCM: {e_push}")
         return Response({'ok': True, 'mensaje': 'Token FCM actualizado correctamente'})
 
+    @action(detail=False, methods=['post'], url_path='cerrar-sesion', permission_classes=[permissions.IsAuthenticated])
+    def cerrar_sesion(self, request):
+        """Envía notificación push al usuario cuando cierra sesión."""
+        user = request.user
+        if getattr(user, 'fcm_token', None):
+            try:
+                from inmuebles.services_notificaciones import send_push_notification
+                send_push_notification(
+                    fcm_token=user.fcm_token,
+                    title='Sesión Cerrada',
+                    body=f'Hasta pronto {user.first_name or user.email}, has cerrado sesión en Autogestión Inmobiliaria 360°.',
+                    data={'tipo': 'cierre_sesion', 'usuario_id': str(user.id)}
+                )
+            except Exception as e_push:
+                logger.warning(f"Error enviando push de cierre de sesión: {e_push}")
+        return Response({'ok': True, 'mensaje': 'Sesión cerrada correctamente'})
+
     @action(detail=False, methods=['get'], url_path='badges')
     def badges(self, request):
         """Contadores de cosas no leídas para el navbar."""

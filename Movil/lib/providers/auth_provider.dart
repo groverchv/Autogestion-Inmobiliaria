@@ -114,6 +114,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await _apiService.notificarCierreSesion();
     await _apiService.clearAuth();
     _user = null;
     notifyListeners();
