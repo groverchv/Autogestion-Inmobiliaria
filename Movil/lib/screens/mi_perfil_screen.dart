@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
+import 'soporte_screen.dart';
 
 class MiPerfilScreen extends StatefulWidget {
   const MiPerfilScreen({super.key});
@@ -156,6 +157,27 @@ class _MiPerfilScreenState extends State<MiPerfilScreen> {
                   child: _isSaving
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Text('Guardar Cambios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Botón Soporte y Contacto
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SoporteScreen()),
+                  );
+                },
+                icon: const Icon(Icons.support_agent, color: AppColors.primary, size: 18),
+                label: const Text(
+                  'Soporte y Contacto por Correo',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 14),

@@ -1056,4 +1056,32 @@ class ApiService {
     }
     return null;
   }
+
+  /// Envía una consulta de soporte por correo electrónico al equipo corporativo.
+  Future<bool> enviarConsultaSoporte({
+    required String nombre,
+    required String email,
+    String telefono = '',
+    required String asunto,
+    required String mensaje,
+  }) async {
+    try {
+      final response = await _request(
+        'POST',
+        Uri.parse('$_baseUrl/corp/public/soporte'),
+        headers: _headers(null),
+        body: jsonEncode({
+          'nombre': nombre,
+          'email': email,
+          'telefono': telefono,
+          'asunto': asunto,
+          'mensaje': mensaje,
+          'origenUrl': 'app-movil-soporte',
+        }),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
 }
