@@ -76,7 +76,7 @@ app:
     folder: ${CLOUDINARY_FOLDER:corporativo}
   # Asunto "mailto" requerido por el estándar VAPID
   push:
-    subject: ${PUSH_SUBJECT:mailto:groverchoquevillca80@gmail.com}
+    subject: ${PUSH_SUBJECT:mailto:muertemuerte36@gmail.com}
   # Correo que recibe notificaciones de nuevos leads
   notificaciones:
     email-destino: ${NOTIF_EMAIL_DESTINO:}
