@@ -213,6 +213,18 @@ class ApiService {
     return {'notificaciones': 0, 'mensajes': 0};
   }
 
+  Future<void> actualizarFcmToken(String fcmToken) async {
+    final token = await getToken();
+    if (token == null) return;
+    try {
+      await _request('POST',
+        Uri.parse('$_baseUrl/usuarios/actualizar-fcm-token/'),
+        headers: _headers(token),
+        body: jsonEncode({'fcm_token': fcmToken}),
+      );
+    } catch (_) {}
+  }
+
   // ─── Catálogo & Inmuebles ────────────────────────────────────────────
   Future<List<Inmueble>> getCatalogo({
     String query = '',

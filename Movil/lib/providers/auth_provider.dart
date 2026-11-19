@@ -3,6 +3,7 @@ import '../utils/mensajes_error.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
+import '../services/push_notification_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -26,6 +27,8 @@ class AuthProvider extends ChangeNotifier {
       _user = await _apiService.getProfile();
       _isLoading = false;
       notifyListeners();
+      // Sincronizar token FCM y registrar dispositivo para notificaciones push
+      PushNotificationService.sincronizarTokenConBackend(_apiService);
       return true;
     } catch (e) {
       _isLoading = false;
@@ -68,6 +71,8 @@ class AuthProvider extends ChangeNotifier {
       _user = await _apiService.getProfile();
       _isLoading = false;
       notifyListeners();
+      // Sincronizar token FCM y registrar dispositivo para notificaciones push
+      PushNotificationService.sincronizarTokenConBackend(_apiService);
       return true;
     } catch (e) {
       _isLoading = false;
