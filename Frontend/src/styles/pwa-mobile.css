@@ -138,11 +138,115 @@
   }
 
   .inmueble-card__features,
-  .prop-card__meta,
-  .prop-card__footer {
+  .prop-card__meta {
     font-size: 0.62rem !important;
     gap: 4px !important;
     flex-wrap: wrap;
+  }
+
+  /* Footer de tarjeta de inmueble: precio arriba y botón debajo al 100% sin encimarse */
+  .prop-card__footer,
+  .inmueble-card__footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 5px !important;
+    padding-top: 5px !important;
+  }
+
+  .prop-card__footer button,
+  .prop-card__footer a,
+  .inmueble-card__footer button,
+  .inmueble-card__footer a {
+    width: 100% !important;
+    padding: 5px 4px !important;
+    font-size: 0.64rem !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    border-radius: 6px !important;
+  }
+
+  /* Badges sobre la foto más pequeños para 3 columnas */
+  .prop-card__badges,
+  .prop-card__tags {
+    gap: 3px !important;
+    padding: 4px !important;
+  }
+
+  .prop-card__badges span,
+  .prop-card__tags span {
+    font-size: 0.52rem !important;
+    padding: 2px 4px !important;
+  }
+
+  /* ─── Dashboard Admin: tarjetas KPI en 3 columnas compactas ─── */
+  .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .dashboard-card {
+    padding: 10px 8px !important;
+    border-radius: 12px !important;
+    min-width: 0;
+  }
+
+  .dashboard-card__icon,
+  .dashboard-icon-wrapper {
+    width: 30px !important;
+    height: 30px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .dashboard-card__label,
+  .dashboard-card__title {
+    font-size: 0.62rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dashboard-card__value,
+  .dashboard-card__count {
+    font-size: 1.15rem !important;
+  }
+
+  /* ─── Cambiar de plan: los 3 planes en 3 columnas compactas ─── */
+  .planes-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .plan-card {
+    padding: 8px 6px !important;
+    border-radius: 10px !important;
+    min-width: 0;
+  }
+
+  .plan-card h3 {
+    font-size: 0.78rem !important;
+  }
+
+  .plan-card p {
+    font-size: 0.64rem !important;
+    margin: 4px 0 !important;
+  }
+
+  .plan-card ul {
+    font-size: 0.6rem !important;
+    line-height: 1.45 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .plan-card ul li svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .plan-card button {
+    padding: 6px 4px !important;
+    font-size: 0.62rem !important;
+    gap: 3px !important;
   }
 
   /* Botones y textos generales en vistas internas */

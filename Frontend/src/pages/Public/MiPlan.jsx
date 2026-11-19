@@ -198,12 +198,12 @@ const MiPlan = () => {
 
       {/* ─── Planes disponibles ─── */}
       <h2 style={{ marginTop: '2.5rem', fontSize: '1.15rem', ...txt }}>Cambiar de plan</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
+      <div className="planes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
         {planes.map((p) => {
           const esActual = plan?.id === p.id;
           const hayPendiente = pendiente && pendiente.plan === p.id;
           return (
-            <div key={p.id} style={{ ...card, border: esActual ? '2px solid var(--color-primary)' : '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
+            <div key={p.id} className="plan-card" style={{ ...card, border: esActual ? '2px solid var(--color-primary)' : '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
               {esActual && <span style={{ alignSelf: 'flex-start', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tu plan actual</span>}
               <h3 style={{ margin: '6px 0 0', fontSize: '1.05rem', ...txt }}>{p.nombre}</h3>
               <p style={{ margin: '4px 0 0', fontSize: '0.8rem', ...txtSec }}>{p.descripcion}</p>
