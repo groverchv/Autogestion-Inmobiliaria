@@ -47,6 +47,30 @@ export async function solicitarPermisoNotificaciones() {
           { headers: { Authorization: `Bearer ${tokenAuth}` } }
         ).catch(() => {});
       }
+
+      // Demostración inmediata: disparar notificación local Push en el sistema/navegador
+      if ("Notification" in window && Notification.permission === "granted") {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          if (registration && registration.showNotification) {
+            registration.showNotification("Inicio de Sesión Exitoso", {
+              body: "Bienvenido a Inmobiliaria 360. Las notificaciones push están activas y sincronizadas.",
+              icon: "/favicon.ico",
+              badge: "/favicon.ico",
+              tag: "login-success",
+              data: { url: "/app/propiedades" }
+            });
+          } else {
+            new Notification("Inicio de Sesión Exitoso", {
+              body: "Bienvenido a Inmobiliaria 360. Las notificaciones push están activas y sincronizadas.",
+              icon: "/favicon.ico"
+            });
+          }
+        } catch (e) {
+          console.warn("No se pudo mostrar la notificación local inmediata:", e);
+        }
+      }
+
       return currentToken;
     } else {
       console.warn("No se pudo obtener el token de registro FCM.");
