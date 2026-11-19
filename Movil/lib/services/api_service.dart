@@ -47,6 +47,9 @@ class ApiService {
     if (token != null) 'Authorization': 'Bearer $token',
   };
 
+  /// Cliente HTTP persistente (Keep-Alive TLS) para reducir latencia en cada llamada.
+  static final http.Client _client = http.Client();
+
   /// Envoltura resiliente para todas las llamadas JSON de la API:
   /// timeout por llamada, reintento con backoff en 5xx/timeout y
   /// refresh transparente del access token cuando el servidor responde 401.
@@ -65,11 +68,11 @@ class ApiService {
       http.Response resp;
       try {
         resp = await switch (metodo) {
-          'GET' => http.get(uri, headers: h).timeout(_timeout),
-          'POST' => http.post(uri, headers: h, body: body).timeout(_timeout),
-          'PATCH' => http.patch(uri, headers: h, body: body).timeout(_timeout),
-          'PUT' => http.put(uri, headers: h, body: body).timeout(_timeout),
-          'DELETE' => http.delete(uri, headers: h).timeout(_timeout),
+          'GET' => _client.get(uri, headers: h).timeout(_timeout),
+          'POST' => _client.post(uri, headers: h, body: body).timeout(_timeout),
+          'PATCH' => _client.patch(uri, headers: h, body: body).timeout(_timeout),
+          'PUT' => _client.put(uri, headers: h, body: body).timeout(_timeout),
+          'DELETE' => _client.delete(uri, headers: h).timeout(_timeout),
           _ => throw ArgumentError('Método no soportado: $metodo'),
         };
       } on TimeoutException {

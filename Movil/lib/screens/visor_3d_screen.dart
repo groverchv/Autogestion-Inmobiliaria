@@ -11,7 +11,8 @@ class Visor3DPlanoScreen extends StatefulWidget {
   State<Visor3DPlanoScreen> createState() => _Visor3DPlanoScreenState();
 }
 
-class _Visor3DPlanoScreenState extends State<Visor3DPlanoScreen> {
+class _Visor3DPlanoScreenState extends State<Visor3DPlanoScreen>
+    with WidgetsBindingObserver {
   double _rotX = 0.5;
   double _rotY = 0.5;
   double _scale = 1.0;
@@ -22,6 +23,7 @@ class _Visor3DPlanoScreenState extends State<Visor3DPlanoScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _gyroSub = gyroscopeEventStream(
       samplingPeriod: SensorInterval.gameInterval,
     ).listen((event) {
@@ -45,7 +47,18 @@ class _Visor3DPlanoScreenState extends State<Visor3DPlanoScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _gyroSub?.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      _lastGyroTime = null;
+      _gyroSub?.resume();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _gyroSub?.cancel();
     super.dispose();
   }
