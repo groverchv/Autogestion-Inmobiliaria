@@ -60,12 +60,11 @@ class ImageStitcherService {
       }
       return Uint8List.fromList(img.encodeJpg(panoramaCanvas, quality: 85));
     } else {
-      // ─── Modo Esférico 2:1 Equirrectangular (centro → arriba → abajo) ───
+      // ─── Modo Esférico 2:1 Equirrectangular con Blending Suave (IA-ready) ───
       // Lienzo 2048x1024 para evitar OutOfMemory en dispositivos móviles y
       // garantizar compatibilidad directa con el visor 360° (Pannellum / Panorama).
       const totalWidth = 2048;
       const totalHeight = 1024;
-      final cellHeight = totalHeight ~/ 3;
       final mitad = columns ~/ 2;
 
       final centroEnd = columns.clamp(0, decodedList.length);
@@ -77,51 +76,93 @@ class ImageStitcherService {
 
       final sphericalCanvas = img.Image(width: totalWidth, height: totalHeight);
 
-      img.Image aCelda(img.Image im, {int width = 256, int height = 341}) {
-        return img.copyResize(
-          im,
-          width: width,
-          height: height,
-          interpolation: img.Interpolation.linear,
+      /// Dibuja una fila de imágenes a lo ancho de [totalWidth] con difuminado
+      /// suave (feathering) en las uniones para eliminar cortes bruscos.
+      void dibujarFilaConBlending(
+        List<img.Image> fotos,
+        int yInicio,
+        int altoFila,
+      ) {
+        if (fotos.isEmpty) return;
+        final n = fotos.length;
+        final step = totalWidth / n;
+        final overlap = (step * 0.14).round().clamp(8, 48);
+        final tileW = step.ceil() + overlap;
+
+        final tiles = <img.Image>[
+          for (final f in fotos)
+            img.copyResize(
+              f,
+              width: tileW,
+              height: altoFila,
+              interpolation: img.Interpolation.linear,
+            ),
+        ];
+
+        for (int i = 0; i < n; i++) {
+          final tile = tiles[i];
+          final startX = (i * step).round();
+          for (int y = 0; y < altoFila; y++) {
+            final dstY = yInicio + y;
+            if (dstY < 0 || dstY >= totalHeight) continue;
+            for (int x = 0; x < tileW; x++) {
+              final dstX = (startX + x) % totalWidth;
+              final srcPx = tile.getPixel(x, y);
+              if (i > 0 && x < overlap) {
+                final alpha = x / overlap;
+                final dstPx = sphericalCanvas.getPixel(dstX, dstY);
+                final r = (dstPx.r * (1 - alpha) + srcPx.r * alpha).round();
+                final g = (dstPx.g * (1 - alpha) + srcPx.g * alpha).round();
+                final b = (dstPx.b * (1 - alpha) + srcPx.b * alpha).round();
+                sphericalCanvas.setPixelRgb(dstX, dstY, r, g, b);
+              } else {
+                sphericalCanvas.setPixelRgb(
+                  dstX,
+                  dstY,
+                  srcPx.r.toInt(),
+                  srcPx.g.toInt(),
+                  srcPx.b.toInt(),
+                );
+              }
+            }
+          }
+        }
+      }
+
+      if (arriba.isEmpty && abajo.isEmpty) {
+        // Si el usuario generó con solo el anillo central, expandir suavemente
+        // el anillo central y rellenar techo/suelo con los bordes difuminados.
+        const midY = 170;
+        const midH = 684;
+        dibujarFilaConBlending(centro, midY, midH);
+        for (int x = 0; x < totalWidth; x++) {
+          final topPx = sphericalCanvas.getPixel(x, midY);
+          final botPx = sphericalCanvas.getPixel(x, midY + midH - 1);
+          for (int y = 0; y < midY; y++) {
+            sphericalCanvas.setPixelRgb(
+                x, y, topPx.r.toInt(), topPx.g.toInt(), topPx.b.toInt());
+          }
+          for (int y = midY + midH; y < totalHeight; y++) {
+            sphericalCanvas.setPixelRgb(
+                x, y, botPx.r.toInt(), botPx.g.toInt(), botPx.b.toInt());
+          }
+        }
+      } else {
+        final topHeight = totalHeight ~/ 3;
+        final midHeight = totalHeight ~/ 3;
+        final botHeight = totalHeight - topHeight - midHeight;
+
+        dibujarFilaConBlending(
+          arriba.isNotEmpty ? arriba : centro,
+          0,
+          topHeight,
         );
-      }
-
-      final topHeight = cellHeight;
-      final midHeight = cellHeight;
-      final botHeight = totalHeight - topHeight - midHeight;
-
-      if (arriba.isNotEmpty) {
-        final wTop = (totalWidth / arriba.length).ceil();
-        for (int i = 0; i < arriba.length; i++) {
-          img.compositeImage(
-            sphericalCanvas,
-            aCelda(arriba[i], width: wTop, height: topHeight),
-            dstX: (i * totalWidth ~/ arriba.length),
-            dstY: 0,
-          );
-        }
-      }
-      if (centro.isNotEmpty) {
-        final wMid = (totalWidth / centro.length).ceil();
-        for (int i = 0; i < centro.length; i++) {
-          img.compositeImage(
-            sphericalCanvas,
-            aCelda(centro[i], width: wMid, height: midHeight),
-            dstX: (i * totalWidth ~/ centro.length),
-            dstY: topHeight,
-          );
-        }
-      }
-      if (abajo.isNotEmpty) {
-        final wBot = (totalWidth / abajo.length).ceil();
-        for (int i = 0; i < abajo.length; i++) {
-          img.compositeImage(
-            sphericalCanvas,
-            aCelda(abajo[i], width: wBot, height: botHeight),
-            dstX: (i * totalWidth ~/ abajo.length),
-            dstY: topHeight + midHeight,
-          );
-        }
+        dibujarFilaConBlending(centro, topHeight, midHeight);
+        dibujarFilaConBlending(
+          abajo.isNotEmpty ? abajo : centro,
+          topHeight + midHeight,
+          botHeight,
+        );
       }
 
       return Uint8List.fromList(img.encodeJpg(sphericalCanvas, quality: 88));

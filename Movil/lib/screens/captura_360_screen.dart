@@ -17,7 +17,6 @@ import '../models/models.dart';
 import '../providers/auth_provider.dart';
 import '../services/image_stitcher_service.dart';
 import '../services/panorama/almacen_sesion.dart';
-import '../services/panorama/detector_desenfoque.dart';
 import '../services/panorama/orientacion_tracker.dart';
 import '../services/panorama/plan_captura.dart';
 import '../widgets/panorama/captura_hud.dart';
@@ -77,7 +76,6 @@ class _Captura360ScreenState extends State<Captura360Screen> {
   Uint8List? _panoramicResult;
   String? _panoServidorUrl;
   String? _statusMessage;
-  int _rechazosBlur = 0;
   int _flashTick = 0; // incrementa → dispara el flash visual de obturador
   String? _faseMsg;
   int _faseActual = 0;
@@ -264,21 +262,6 @@ class _Captura360ScreenState extends State<Captura360Screen> {
           img.encodeJpg(img.copyResize(decoded, height: 900), quality: 85),
         );
       }
-
-      // Control de nitidez: toma movida → se repite la misma dirección
-      final nitidez = await evaluarNitidez(bytes);
-      if (nitidez < umbralNitidez && _rechazosBlur < 2 && mounted) {
-        _rechazosBlur++;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('La toma salió borrosa — repite apuntando al orbe'),
-            backgroundColor: Color(0xFFF59E0B),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-      _rechazosBlur = 0;
 
       _capturas.add(bytes);
       AlmacenSesionCaptura.guardarToma(
@@ -794,6 +777,33 @@ class _Captura360ScreenState extends State<Captura360Screen> {
               ],
             ),
           ),
+
+          // 8b. Botón rápido para generar el 360° en cualquier momento (>= 4 fotos)
+          if (_capturas.length >= 4 && !_isStitching)
+            Positioned(
+              bottom: 118,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: ElevatedButton.icon(
+                  onPressed: _isCapturing ? null : _procesarPanoramica,
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: Text('Generar 360° (${_capturas.length} fotos)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+              ),
+            ),
 
           // 9. Overlay de stitching
           if (_isStitching)
